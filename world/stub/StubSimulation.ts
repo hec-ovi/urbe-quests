@@ -5,7 +5,7 @@
  * day (Mon-Sat 08:00-16:00) and evening (daily 16:00-23:30) shifts.
  */
 
-import type { NamedParcel, NamedWorld, NPCType, NPCTypeSet } from '../types/named-world.js';
+import type { NamedParcel, NamedWorld, NamePool, NPCType, NPCTypeSet } from '../types/named-world.js';
 import type {
   BehaviorState,
   FlagOp,
@@ -26,9 +26,6 @@ import { RoutineBuilder } from './routines.js';
 const DAY_SHIFT: Shift = { startMin: 480, endMin: 960, days: [0, 1, 2, 3, 4, 5], kind: 'day' };
 const EVENING_SHIFT: Shift = { startMin: 960, endMin: 1410, days: [0, 1, 2, 3, 4, 5, 6], kind: 'evening' };
 
-const GIVEN_NAMES = ['Ash', 'Bren', 'Cato', 'Dara', 'Edda', 'Falk', 'Gus', 'Hale', 'Iva', 'Joss', 'Kell', 'Lena', 'Marek', 'Nia', 'Orin', 'Pia', 'Ruth', 'Sten', 'Tova', 'Vero'];
-const FAMILY_NAMES = ['Adler', 'Boone', 'Corve', 'Draes', 'Ellon', 'Fane', 'Grell', 'Hart', 'Ives', 'Kade', 'Locke', 'Mour', 'Nash', 'Odel', 'Pryce', 'Quill', 'Rane', 'Soller', 'Thane', 'Vail'];
-
 export interface StubSimulationInput {
   seed: string;
   world: NamedWorld;
@@ -39,6 +36,7 @@ export class StubSimulation implements SimulationPort {
   private readonly seed: string;
   private readonly world: NamedWorld;
   private readonly types: NPCType[];
+  private readonly namePool: NamePool;
   private readonly npcs = new Map<string, NPCInstance>();
   private readonly slots = new Map<string, string>();
   private readonly interrupted = new Set<string>();
@@ -48,6 +46,7 @@ export class StubSimulation implements SimulationPort {
     this.seed = input.seed;
     this.world = input.world;
     this.types = input.types.types;
+    this.namePool = input.types.namePool;
   }
 
   getNPCVendor(query: VendorQuery): NPCInstance {
@@ -221,7 +220,7 @@ export class StubSimulation implements SimulationPort {
 
   private instantiateWorker(parcel: NamedParcel, type: NPCType, role: string, shift: Shift, slotKey: string): NPCInstance {
     const rng = new Rng(`${this.seed}:${slotKey}`);
-    const name: NPCName = { given: rng.pick(GIVEN_NAMES), family: rng.pick(FAMILY_NAMES) };
+    const name: NPCName = { given: rng.pick(this.namePool.given), family: rng.pick(this.namePool.family) };
     const job: Job = { parcelId: parcel.id, role, shift };
     const npc = this.createInstance({ name, type, job, rng });
     this.slots.set(slotKey, npc.npcId);
@@ -274,7 +273,7 @@ export class StubSimulation implements SimulationPort {
       family.push({
         npcId: `npc_stub_${++this.counter}`,
         relation: relations[rng.int(relations.length)]!,
-        name: { given: rng.pick(GIVEN_NAMES), family: name.family },
+        name: { given: rng.pick(this.namePool.given), family: name.family },
         instantiated: false,
       });
     }

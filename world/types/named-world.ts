@@ -57,7 +57,14 @@ export interface NPCType {
   weight: number;
 }
 
+/** Themed personal name pool; names repeat across NPCs by design. Min 20 each. */
+export interface NamePool {
+  given: string[];
+  family: string[];
+}
+
 export interface NPCTypeSet {
   meta: { theme: string; worldSeed: string | number; createdAt: string; model?: string };
   types: NPCType[];
+  namePool: NamePool;
 }

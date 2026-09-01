@@ -4,6 +4,10 @@
     "worldSeed": "neon-bay-1",
     "createdAt": "2026-08-31T00:00:00Z"
   },
+  "namePool": {
+    "given": ["Ash", "Bren", "Cato", "Dara", "Edda", "Falk", "Gus", "Hale", "Iva", "Joss", "Kell", "Lena", "Marek", "Nia", "Orin", "Pia", "Ruth", "Sten", "Tova", "Vero"],
+    "family": ["Adler", "Boone", "Corve", "Draes", "Ellon", "Fane", "Grell", "Hart", "Ives", "Kade", "Locke", "Mour", "Nash", "Odel", "Pryce", "Quill", "Rane", "Soller", "Thane", "Vail"]
+  },
   "types": [
     {
       "type": "cafe_barista",

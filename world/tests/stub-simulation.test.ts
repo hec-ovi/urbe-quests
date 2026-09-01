@@ -21,6 +21,8 @@ describe('fixtures', () => {
       expect(world.districts.length).toBeGreaterThan(0);
       expect(world.districts.every((d) => d.name.length > 0)).toBe(true);
       expect(types.types.every((t) => t.boilerplate.length > 0)).toBe(true);
+      expect(types.namePool.given.length).toBeGreaterThanOrEqual(20);
+      expect(types.namePool.family.length).toBeGreaterThanOrEqual(20);
     }
   });
 });

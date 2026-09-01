@@ -17,11 +17,6 @@ import { CastResolver } from '../CastResolver.js';
 const SIM_ENTRY = new URL('../../../simulation/src/index.ts', import.meta.url);
 const TUE_10 = 1 * 1440 + 600;
 
-const NAME_POOL = {
-  given: ['Ash', 'Bren', 'Cato', 'Dara', 'Edda', 'Falk', 'Gus', 'Hale', 'Iva', 'Joss', 'Kell', 'Lena', 'Marek', 'Nia', 'Orin', 'Pia', 'Ruth', 'Sten', 'Tova', 'Vero'],
-  family: ['Adler', 'Boone', 'Corve', 'Draes', 'Ellon', 'Fane', 'Grell', 'Hart', 'Ives', 'Kade', 'Locke', 'Mour', 'Nash', 'Odel', 'Pryce', 'Quill', 'Rane', 'Soller', 'Thane', 'Vail'],
-};
-
 const ZERO_COUNTS = {
   residential: 0, hotel: 0, offices: 0, corpo: 0, hospital: 0, clinic: 0, police: 0,
   military: 0, factory: 0, commerce: 0, mall: 0, restaurant: 0, coffee_shop: 0,
@@ -70,13 +65,13 @@ function miniBlueprint(): CityBlueprint {
   };
 }
 
-/** Neon-bay types shaped for simulation: district-name grounding stripped (the placeholder blueprint has no names), simulation's embedded name pool added. */
+/** Neon-bay types shaped for simulation: district-name grounding stripped (the placeholder blueprint has no names). */
 function simTypeSet(): SimNPCTypeSet {
   const { types } = loadFixtureWorld('neon-bay');
   return {
     meta: types.meta,
     types: types.types.map((t) => ({ ...t, grounding: { parcelTypes: t.grounding.parcelTypes, tiers: t.grounding.tiers } })),
-    namePool: NAME_POOL,
+    namePool: types.namePool,
   };
 }
 

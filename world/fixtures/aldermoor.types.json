@@ -4,6 +4,10 @@
     "worldSeed": "aldermoor-1",
     "createdAt": "2026-08-31T00:00:00Z"
   },
+  "namePool": {
+    "given": ["Aldous", "Bertha", "Cedric", "Duna", "Edmund", "Frey", "Godwin", "Hild", "Isolde", "Jocelin", "Kenrick", "Leofa", "Maud", "Nyle", "Osric", "Petra", "Rowan", "Sibyl", "Tancred", "Wilmot"],
+    "family": ["Ashdown", "Blackbrook", "Cooper", "Draper", "Eelgate", "Fletcher", "Graymantle", "Harrow", "Ironwood", "Kettleworth", "Longstride", "Mercer", "Nettlebed", "Oakhurst", "Pargeter", "Quickwater", "Reedmoor", "Stonewell", "Thatcher", "Wainwright"]
+  },
   "types": [
     {
       "type": "tavern_keeper",
