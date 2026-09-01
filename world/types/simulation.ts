@@ -23,7 +23,7 @@ export type PlaceRef =
   | { kind: 'edge'; id: string }
   | { kind: 'stop'; id: string }
   | { kind: 'parcel'; id: string }
-  | { kind: 'line'; id: string };
+  | { kind: 'route'; id: string };
 
 export interface NPCName {
   given: string;
