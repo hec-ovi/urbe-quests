@@ -1,0 +1,1 @@
+Fold the following conversation turns into this NPC's memory. Write one compact note in third person, past tense, keeping: who said what that mattered, promises made, names and facts exchanged, and how the NPC felt about it. Drop small talk. The note is memory, not a transcript.

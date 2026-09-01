@@ -37,7 +37,7 @@ export class QuestlineRuntime {
 
   constructor(
     readonly def: QuestlineDefinition,
-    private readonly cast: ResolvedCast,
+    readonly cast: ResolvedCast,
     private readonly sim: SimulationPort,
   ) {
     new FlowValidator().validate(def);
