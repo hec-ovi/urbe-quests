@@ -114,7 +114,7 @@ export class AvailabilityService {
 }
 
 /** Pairwise same-day overlap of two weekly window sets. */
-export function intersectWindows(a: AvailabilityWindow[], b: AvailabilityWindow[]): AvailabilityWindow[] {
+function intersectWindows(a: AvailabilityWindow[], b: AvailabilityWindow[]): AvailabilityWindow[] {
   const result: AvailabilityWindow[] = [];
   for (const wa of a) {
     for (const wb of b) {

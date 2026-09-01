@@ -19,14 +19,13 @@ Status: v0.1. Built against naming v0.1 and simulation v0.1.
 
 ## Errors
 Closed set, thrown as `QuestError { code, message, detail? }` ([errors.ts](errors.ts)):
-- `E_INVALID_INPUT`: input fails validation; message names the field.
 - `E_INVALID_FLOW`: questline graph invalid (unknown ids, unreachable steps, cycles, undeclared flags or roles).
-- `E_UNKNOWN_ID`: questline, step, role, fact or NPC id not found.
-- `E_WRONG_STATE`: event does not apply to any active step, or operation conflicts with quest state.
+- `E_UNKNOWN_ID`: questline, step, role, npc type or cast entry not found.
+- `E_WRONG_STATE`: event matches no active step, questline already ended, or dialog with a dead NPC.
 - `E_UNAVAILABLE`: step acted on outside its availability window.
-- `E_CAST`: a role cannot be resolved or reserved against the simulation.
-- `E_LLM`: provider failure after retries, or output that fails repair.
-`SimulationError` from the port passes through untouched.
+- `E_CAST`: a role cannot be resolved or reserved against the simulation (cause in detail).
+- `E_LLM`: agent or model output unusable after repair, or the build loop never finishes.
+`SimulationError` from the port passes through untouched, except cast resolution, which wraps its no-match and reserve conflicts into `E_CAST`.
 
 ## Invariants
 - No LLM inside generation-state or flow-state code paths: only story text, questline drafting and memory summarization are creative; every transition, gate and availability check is deterministic code.

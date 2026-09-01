@@ -6,8 +6,7 @@
 
 import type { NamedWorld } from '../world/types/named-world.js';
 import type { NPCInstance } from '../world/types/simulation.js';
-
-const DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+import { clock, dayName } from './time.js';
 
 export class BackgroundRenderer {
   constructor(private readonly world: NamedWorld) {}
@@ -47,12 +46,6 @@ export class BackgroundRenderer {
 
   private days(days: number[]): string {
     if (days.length === 7) return 'every day';
-    return days.map((d) => DAY_NAMES[d] ?? `day ${d}`).join(', ');
+    return days.map(dayName).join(', ');
   }
-}
-
-function clock(minuteOfDay: number): string {
-  const h = String(Math.floor(minuteOfDay / 60)).padStart(2, '0');
-  const m = String(minuteOfDay % 60).padStart(2, '0');
-  return `${h}:${m}`;
 }

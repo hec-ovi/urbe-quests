@@ -1,7 +1,6 @@
 /** Closed error set for the quests layer (see CONTRACT.md). */
 
 export type QuestErrorCode =
-  | 'E_INVALID_INPUT'
   | 'E_INVALID_FLOW'
   | 'E_UNKNOWN_ID'
   | 'E_WRONG_STATE'

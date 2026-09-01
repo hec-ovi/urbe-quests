@@ -15,6 +15,7 @@ import type { SimulationPort } from '../world/types/simulation.js';
 import { BackgroundRenderer } from './BackgroundRenderer.js';
 import { MemoryStore, type MemoryStoreOptions } from './MemoryStore.js';
 import type { ContextSegment, DialogContext, DialogTurn, MemorySnapshot } from './schema.js';
+import { clock, dayName } from './time.js';
 
 export interface DialogContextServiceInput {
   world: NamedWorld;
@@ -24,7 +25,6 @@ export interface DialogContextServiceInput {
   memory?: MemoryStoreOptions;
 }
 
-const DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const SYSTEM_PROMPT = readFileSync(new URL('./prompts/dialog-system.md', import.meta.url), 'utf8');
 
 export class DialogContextService {
@@ -123,10 +123,8 @@ export class DialogContextService {
 
   private renderNow(npcId: string, timeMin: number, turns: DialogTurn[]): string {
     const behavior = this.sim.behaviorAt(npcId, timeMin);
-    const day = DAY_NAMES[Math.floor(timeMin / 1440) % 7];
-    const minute = timeMin % 1440;
-    const clock = `${String(Math.floor(minute / 60)).padStart(2, '0')}:${String(minute % 60).padStart(2, '0')}`;
-    const lines = [`It is ${day} ${clock}; right now you are ${behavior.activity.replace('_', ' ')}.`];
+    const day = dayName(Math.floor(timeMin / 1440) % 7);
+    const lines = [`It is ${day} ${clock(timeMin % 1440)}; right now you are ${behavior.activity.replace('_', ' ')}.`];
     if (turns.length > 0) {
       lines.push('The conversation so far:');
       for (const turn of turns) lines.push(`${turn.speaker === 'player' ? 'Player' : 'You'}: ${turn.text}`);
