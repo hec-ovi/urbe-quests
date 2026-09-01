@@ -1,7 +1,9 @@
 /**
  * Resolves questline roles to real NPCs through the simulation: reserved
- * identities via reserveNPC, everyone else as whoever is on duty by type.
- * The builder never chooses ids or coordinates; the simulation does.
+ * identities via reserveNPC (reused when that person already exists, so one
+ * story character is one NPC across questlines), everyone else as whoever is
+ * on duty by type. The builder never chooses ids or coordinates; the
+ * simulation does.
  */
 
 import { QuestError } from '../errors.js';
@@ -25,6 +27,10 @@ export class CastResolver {
   private resolveRole(def: QuestlineDefinition, role: QuestRole, referenceTimeMin: number): string {
     const workplace = this.workplaceOf(def, role.roleId);
     if (role.reservedName !== undefined) {
+      const existing = this.sim
+        .findNPCs({ type: role.npcType })
+        .find((npc) => npc.name.given === role.reservedName!.given && npc.name.family === role.reservedName!.family);
+      if (existing !== undefined) return existing.npcId;
       try {
         return this.sim.reserveNPC({
           name: role.reservedName,

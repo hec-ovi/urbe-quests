@@ -100,14 +100,26 @@ export class QuestlineRuntime {
     return this.questFlags;
   }
 
-  /** Can the player act on this step right now (liveness, schedule, conditions)? */
+  /** Items held now, derived from completed steps in order: taken or given, minus delivered. */
+  inventory(): Set<string> {
+    const held = new Set<string>();
+    for (const id of this.completed) {
+      const step = this.step(id);
+      const t = step.target;
+      if (t.kind === 'pickup' || t.kind === 'steal') held.add(t.itemId);
+      for (const itemId of step.gives) held.add(itemId);
+      if (t.kind === 'deliver') held.delete(t.itemId);
+    }
+    return held;
+  }
+
+  /** Can the player act on this step right now (liveness, schedule, items, conditions)? */
   stepAvailability(stepId: string, timeMin: number): StepAvailability {
     const step = this.step(stepId);
     if (!this.active.has(stepId)) return { available: false, reason: 'condition' };
     const target = this.availabilityService.targetAvailability(step, timeMin);
     if (!target.available) return target;
-    if (!this.evaluator.all(step.conditions, timeMin)) return { available: false, reason: 'condition' };
-    return { available: true };
+    return this.stateGate(step, timeMin);
   }
 
   /** Weekly windows for schedule-bound steps, derived from routines on demand. */
@@ -147,14 +159,23 @@ export class QuestlineRuntime {
   }
 
   /**
-   * Advance-time gate. Talk and listen enforce presence (the schedule gate);
-   * a kill event is its own proof, and the runtime records the death.
+   * Advance-time gate. Talk, listen and steal enforce presence (the schedule
+   * gate); a kill event is its own proof, and the runtime records the death.
    */
   private advanceGate(step: QuestStep, timeMin: number): StepAvailability {
-    if (!this.evaluator.all(step.conditions, timeMin)) return { available: false, reason: 'condition' };
+    const state = this.stateGate(step, timeMin);
+    if (!state.available) return state;
     if (step.target.kind === 'talk' || step.target.kind === 'listen' || step.target.kind === 'steal') {
       return this.availabilityService.targetAvailability(step, timeMin);
     }
+    return { available: true };
+  }
+
+  /** Quest-state gate: required items held, extra conditions passing. */
+  private stateGate(step: QuestStep, timeMin: number): StepAvailability {
+    const held = this.inventory();
+    if (!step.needs.every((itemId) => held.has(itemId))) return { available: false, reason: 'missing_item' };
+    if (!this.evaluator.all(step.conditions, timeMin)) return { available: false, reason: 'condition' };
     return { available: true };
   }
 

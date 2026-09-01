@@ -10,13 +10,13 @@ Purpose: assembles what an NPC is allowed to know into cache-ordered dialog cont
 - `memory?`: `{ tailSize?, foldSize? }` (defaults 12 and 6).
 
 Then:
-- `attachQuestline(runtime)`: a `QuestlineRuntime` whose cast personas and flag-gated facts join their NPC's context.
+- `attachQuestline(runtime)`: a `QuestlineRuntime` whose cast personas, flag-gated facts, active wants and endings join their NPC's context.
 - `contextFor(npcId, timeMin) -> DialogContext` ([schema.ts](schema.ts)).
 - `recordTurn(npcId, { speaker, text, atMin })`: appends memory; folds the oldest window into a digest note through the LLM when the tail overflows.
 - `serializeMemory()` / `restoreMemory(data)`.
 
 ## Out
-`DialogContext`: ordered `segments`, each `{ id, text, shared }`, in fixed order world, type, npc, quest, memory, turns. `shared: true` segments (world, type) are byte-stable across calls and across NPCs of a type: the engine concatenates segments in order and may place provider cache breakpoints after shared ones. The world segment carries the character-play and deflection rules ([prompts/dialog-system.md](prompts/dialog-system.md)); npc carries the deterministic background (home, job, shift, family, haunts) plus quest personas; quest carries only facts whose gate flag is set; turns carries the volatile now line and the verbatim tail.
+`DialogContext`: ordered `segments`, each `{ id, text, shared }`, in fixed order world, type, npc, quest, memory, turns. `shared: true` segments (world, type) are byte-stable across calls and across NPCs of a type: the engine concatenates segments in order and may place provider cache breakpoints after shared ones. The world segment carries the character-play, register and deflection rules ([prompts/dialog-system.md](prompts/dialog-system.md)); npc carries the deterministic background (home, job, shift, family, haunts) plus quest personas; quest carries facts whose gate flag is set, the active steps this NPC wants (what happens and what it means to them), and the epilogue of an ending this NPC's questline reached; turns carries the volatile now line and the verbatim tail.
 
 ## Errors
 - `E_WRONG_STATE`: contextFor on a dead NPC (the dead do not talk).
@@ -24,10 +24,10 @@ Then:
 `SimulationError` (unknown npc, dead on record) passes through.
 
 ## Invariants
-- Closed knowledge: context text contains only world rules, type boilerplate, simulation background, attached personas, unlocked quest facts, and recorded conversation. Ungated quest facts of other NPCs and gated facts with unset flags never appear.
+- Closed knowledge: context text contains only world rules, type boilerplate, simulation background, attached personas, unlocked quest facts, this NPC's active wants and lived endings, and recorded conversation. Scope is decided by runtime state and the cast mapping, never by the model; gated facts with unset flags and other NPCs' wants never appear.
 - Shared segments are memoized per service (the cache for common instances) and stable per world/type.
 - The LLM is used for summarization only; what an NPC knows is decided by flags and code.
 - Prompts live in [prompts/](prompts/) .md files; no output caps.
 
 ## Depends on
-- ../world (types, SimulationPort), ../flow (runtime, facts), ../ports (LLMPort)
+- ../world (types, SimulationPort), ../flow (runtime, steps, facts), ../ports (LLMPort)

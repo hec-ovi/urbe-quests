@@ -2,10 +2,11 @@
 
 - root: CONTRACT.md, the coupling surface for ../engine.
 - world/: consumed dependency surface: mirror types of naming and simulation contracts, fixture named worlds (two eras), deterministic stub simulation.
-- flow/: questline schema and deterministic runtime: typed step DAG, acts, branches, flags, schedule-gated availability. No LLM.
-- builder/: agent-driven questline drafting tool, era-fit step scenario catalogs, cast resolution and reservation through the simulation port. Depends on flow, world.
-- story/: story pass: main history line and side quest premises from theme and named zones. Depends on world.
-- dialog/: NPC dialog context: scoped fact store, flag-gated quest knowledge, scored memory with summarization, cache-ordered context segments, deflection. Depends on world, flow.
-- ports/: injected LLM and agent interfaces shared by story, builder, dialog.
+- flow/: questline schema and deterministic runtime: typed step DAG, acts, branches, flags, typed items with gives and needs, schedule-gated availability. No LLM.
+- story/: text-only story passes: the film script from the creation prompt (characters, four movements of passages, enforced minimums) and the side situations written from it. Fixture story. Depends on world, ports.
+- builder/: translation of a story arc into a questline: text-only plan pass (self-questioning), agent-driven build over the flow tools with step and artifact catalogs, cast resolution by type through the simulation port. Depends on flow, world, story, ports.
+- creation/: the creation workflow: script, main translation, situations and side translations from one prompt with one port per stage. Sample output. Depends on story, builder, world, ports.
+- dialog/: NPC dialog context: scoped fact store, flag-gated quest knowledge, active wants and ending reactions, scored memory with summarization, cache-ordered context segments, deflection. Depends on world, flow, ports.
+- ports/: injected LLM and agent interfaces shared by story, builder, dialog. prompts.ts at the root loads every box's prompt files.
 
-Dependency edges: builder -> flow, world, ports; story -> world, ports; dialog -> world, flow, ports; flow -> world; world -> (nothing).
+Dependency edges: creation -> story, builder, world, ports; builder -> flow, world, story, ports; story -> world, ports; dialog -> world, flow, ports; flow -> world; world -> (nothing).

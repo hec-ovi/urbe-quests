@@ -1,25 +1,28 @@
 /**
  * Drives the agent through the drafting tools until the questline validates,
- * then resolves the cast. Create, then step by step, then finish.
+ * then resolves the cast. Create, then step by step, then finish. The agent
+ * works from the translation plan, the character cards and the synopsis, not
+ * from the full arc: the thinking happened in the plan pass.
  */
 
-import { readFileSync } from 'node:fs';
 import { QuestError } from '../errors.js';
+import { promptLoader } from '../prompts.js';
 import type { AgentPort, AgentTurn } from '../ports/llm.js';
 import type { QuestlineDefinition, ResolvedCast } from '../flow/schema.js';
-import type { StoryDocument } from '../story/schema.js';
 import type { NamedWorld, NPCTypeSet } from '../world/types/named-world.js';
 import type { SimulationPort } from '../world/types/simulation.js';
 import { CastResolver } from './CastResolver.js';
 import { QuestlineDraft } from './QuestlineDraft.js';
+import { renderAssignment } from './renderAssignment.js';
+import type { QuestAssignment } from './schema.js';
 import { ToolDispatcher } from './ToolDispatcher.js';
 import { BUILDER_TOOLS } from './tools.js';
 import { WorldCatalog } from './WorldCatalog.js';
 
 export interface BuildInput {
-  premise: { title: string; premise: string };
-  /** Main story line for context; recommended so side quests orbit it. */
-  story?: StoryDocument;
+  assignment: QuestAssignment;
+  /** Translation plan from the planner: what to build, in prose. */
+  plan: string;
   world: NamedWorld;
   types: NPCTypeSet;
   sim: SimulationPort;
@@ -37,11 +40,11 @@ export interface BuildResult {
 const DEFAULT_REFERENCE_TIME = 1 * 1440 + 600;
 const DEFAULT_MAX_ROUNDS = 40;
 
-const prompt = (file: string) => readFileSync(new URL(`./prompts/${file}`, import.meta.url), 'utf8');
+const prompt = promptLoader(new URL('./prompts/', import.meta.url));
 
 export class QuestlineBuilder {
   async build(input: BuildInput): Promise<BuildResult> {
-    const system = `${prompt('builder-system.md')}\n\n${prompt('step-catalog.md')}`;
+    const system = [prompt('builder-system.md'), prompt('step-catalog.md'), prompt('artifact-catalog.md')].join('\n\n');
     const userPrompt = this.renderPrompt(input);
     const dispatcher = new ToolDispatcher(new QuestlineDraft());
     const transcript: AgentTurn[] = [];
@@ -71,25 +74,10 @@ export class QuestlineBuilder {
   }
 
   private renderPrompt(input: BuildInput): string {
-    const parts: string[] = [];
-    if (input.story !== undefined) {
-      const m = input.story.mainline;
-      parts.push(
-        'The city\'s main story line:',
-        `Introduction: ${m.introduction}`,
-        `Development: ${m.development}`,
-        `Conflict: ${m.conflict}`,
-        `Resolution: ${m.resolution}`,
-        '',
-      );
-    }
-    parts.push(
-      `Build this questline:`,
-      `Title: ${input.premise.title}`,
-      `Premise: ${input.premise.premise}`,
-      '',
+    return [
+      `Build this questline:\n${renderAssignment(input.assignment)}`,
+      `The translation plan to follow:\n${input.plan}`,
       new WorldCatalog(input.world, input.types).render(),
-    );
-    return parts.join('\n');
+    ].join('\n\n');
   }
 }

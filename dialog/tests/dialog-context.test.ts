@@ -31,8 +31,15 @@ const DEF: QuestlineDefinition = {
     {
       stepId: 's_talk',
       actId: 'a1',
-      narrative: { description: 'Small talk first.', playerHint: 'Talk to the barista at the Static Cafe.' },
+      narrative: {
+        description: 'Small talk first.',
+        playerHint: 'Talk to the barista at the Static Cafe.',
+        stake: 'She needs someone to carry the precinct rumor out before it carries her.',
+      },
+      wantedByRoleId: 'informer',
       target: { kind: 'talk', roleId: 'informer', atParcelId: 'p4' },
+      gives: [],
+      needs: [],
       conditions: [],
       effects: [{ kind: 'setFlag', flag: 'trusted' }],
       next: [],
@@ -86,6 +93,19 @@ describe('DialogContextService', () => {
     expect(all).not.toContain('I bought the precinct list');
 
     expect(service.contextFor(buyerId, TUE_10).segments[0]!.text).toBe(world!.text);
+  });
+
+  it('carries the giver\'s active want mid-quest and the epilogue once the questline ends, only for the cast', () => {
+    const { service, runtime, informerId, buyerId } = setup();
+    const quest = (npcId: string) => service.contextFor(npcId, TUE_10).segments.find((s) => s.id === 'quest')?.text ?? '';
+    expect(quest(informerId)).toContain('What you want from the player right now');
+    expect(quest(informerId)).toContain('carry the precinct rumor out');
+    expect(quest(buyerId)).not.toContain('carry the precinct rumor out');
+
+    runtime.advance({ kind: 'talkedTo', npcId: informerId }, TUE_10);
+    expect(quest(informerId)).not.toContain('What you want from the player');
+    expect(quest(informerId)).toContain('How it ended, as you lived it:\n- The rumor changes hands.');
+    expect(quest(buyerId)).toContain('The rumor changes hands.');
   });
 
   it('reveals a gated fact only after the quest flag unlocks it', () => {

@@ -1,0 +1,33 @@
+# CONTRACT: quests/creation
+
+Purpose: the questline creation workflow: one creation prompt in; the film script, its main questline, the side situations and one side questline each out.
+
+## In
+`new QuestlineCreation().run(input)` ([QuestlineCreation.ts](QuestlineCreation.ts)), `CreationInput` ([schema.ts](schema.ts)):
+- `prompt`: the user's creation prompt.
+- `world`, `types`; `sim`: `SimulationPort`.
+- `ports`: `StagePorts { script, situations, plan: LLMPort; build: AgentPort }`, one per stage so the engine chooses the model for each.
+- `minimums? { script?, situations? }`, `referenceTimeMin?`, `maxRounds?`, passed through to the inner boxes.
+
+## Out
+`CreationResult`: `script` (ScriptPassResult), `situations` (SituationsPassResult), `main` (TranslationResult: plan, definition, cast), `side` (one `SideQuest`, a TranslationResult with its `situationId`, per situation, in situation order).
+
+`Assignments` ([Assignments.ts](Assignments.ts)) is how story becomes translator input: the main line takes the logline as synopsis, every character card and the four movements as arc; a situation takes its four parts as arc, borrowed characters with their full script card, new ones with the situation's line about them.
+
+## Steps
+1. Script pass, text only.
+2. Main translation (plan, then build), in parallel with 3.
+3. Situations pass, text only, then one translation per situation, in parallel.
+
+## Errors
+`E_LLM` (detail names the stage), `E_CAST` and `SimulationError` pass through from the inner boxes; the run fails as a whole.
+
+## Invariants
+- Each stage reads its own port; nothing here calls a model directly or caps output.
+- Story text flows downstream as prose renders of the parsed script, never as ids.
+
+## Sample
+[samples/cyberpunk/](samples/cyberpunk/) holds one real pass (`meta.json` names the prompt, model and world): `script.md`, `situations.md`, `main.plan.md`, `main.questline.json`, `side-<id>.plan.md`, `side-<id>.questline.json`. `npm run sample -- "<prompt>" <name>` ([samples/run-local.ts](samples/run-local.ts)) regenerates one against an OpenAI-compatible endpoint (`LLM_BASE_URL`, `LLM_MODEL`).
+
+## Depends on
+- ../story, ../builder, ../world, ../ports

@@ -6,8 +6,8 @@
  * prompt, so it cannot leak; deflection is the character genuinely not knowing.
  */
 
-import { readFileSync } from 'node:fs';
 import { QuestError } from '../errors.js';
+import { promptLoader } from '../prompts.js';
 import type { QuestlineRuntime } from '../flow/QuestlineRuntime.js';
 import type { LLMPort } from '../ports/llm.js';
 import type { NamedWorld, NPCType, NPCTypeSet } from '../world/types/named-world.js';
@@ -25,7 +25,7 @@ export interface DialogContextServiceInput {
   memory?: MemoryStoreOptions;
 }
 
-const SYSTEM_PROMPT = readFileSync(new URL('./prompts/dialog-system.md', import.meta.url), 'utf8');
+const SYSTEM_PROMPT = promptLoader(new URL('./prompts/', import.meta.url))('dialog-system.md');
 
 export class DialogContextService {
   private readonly world: NamedWorld;
@@ -46,7 +46,7 @@ export class DialogContextService {
     this.background = new BackgroundRenderer(input.world);
   }
 
-  /** Questlines contribute personas and flag-gated knowledge for their cast. */
+  /** Questlines contribute personas, flag-gated knowledge, active wants and ending reactions for their cast. */
   attachQuestline(runtime: QuestlineRuntime): void {
     this.questlines.push(runtime);
   }
@@ -109,16 +109,33 @@ export class DialogContextService {
     return parts.join('\n');
   }
 
+  /**
+   * Scope is code-decided: facts whose gate is open, active steps this NPC
+   * wants (through the cast mapping), and the epilogue of an ending this NPC
+   * was part of. The model never chooses what enters.
+   */
   private renderQuestKnowledge(npcId: string): string {
     const known: string[] = [];
+    const wants: string[] = [];
+    const endings: string[] = [];
     for (const runtime of this.questlines) {
       for (const fact of runtime.def.facts) {
         if (runtime.cast[fact.roleId] !== npcId) continue;
         if (fact.gateFlag !== undefined && !runtime.flags().has(fact.gateFlag)) continue;
         known.push(`- ${fact.text}`);
       }
+      for (const step of runtime.activeSteps()) {
+        if (step.wantedByRoleId === undefined || runtime.cast[step.wantedByRoleId] !== npcId) continue;
+        wants.push(`- ${step.narrative.description} ${step.narrative.stake}`);
+      }
+      const ending = runtime.ending();
+      if (ending !== undefined && Object.values(runtime.cast).includes(npcId)) endings.push(`- ${ending.epilogue}`);
     }
-    return known.length > 0 ? `Things you know and may speak about when it fits:\n${known.join('\n')}` : '';
+    const blocks: string[] = [];
+    if (known.length > 0) blocks.push(`Things you know and may speak about when it fits:\n${known.join('\n')}`);
+    if (wants.length > 0) blocks.push(`What you want from the player right now, and what it means to you:\n${wants.join('\n')}`);
+    if (endings.length > 0) blocks.push(`How it ended, as you lived it:\n${endings.join('\n')}`);
+    return blocks.join('\n');
   }
 
   private renderNow(npcId: string, timeMin: number, turns: DialogTurn[]): string {

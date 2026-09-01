@@ -1,4 +1,5 @@
 # Changelog
 
+0.2: questline creation workflow from one prompt: a text-only film script with enforced minimums (characters, passages per movement), translation as a text-only plan pass followed by the flow tool build, side situations (each with its own presentation, development, conflict and resolution) translated the same way, one injected port per stage. Items are typed artifacts (device, weapon, document, key, substance, valuable, information); steps carry gives and needs and the runtime derives the inventory; every step names who wants it and its stake, and NPC dialog context carries the giver's active wants and ending reactions. Committed fixture story and a local-model sample; 42 tests.
 0.1: contract v0.1 against naming v0.1 and simulation v0.1. Story pass (backbone call, repair round), questline builder (agent tool loop, era step catalog, cast by type), deterministic flow runtime (typed step DAG, schedule-gated availability, flags, endings), dialog context service (cache-ordered layers, flag-gated knowledge, tiered memory). Two fixture worlds and a stub simulation; 30 tests.
 0.0: scaffold, contract pending.

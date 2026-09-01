@@ -1,38 +1,40 @@
 # CONTRACT: quests
 
-Purpose: writes the world's story (main line plus side premises), builds questlines as deterministic typed step flows whose NPCs are resolved by type through simulation queries, and assembles NPC dialog context (scoped knowledge, memory, deflection) for the engine's LLM calls.
+Purpose: creates the world's story and questlines from one creation prompt (a film script, translated into a main questline and side quests as deterministic typed step flows whose NPCs are resolved by type through simulation queries) and assembles NPC dialog context (scoped knowledge, active wants, memory, deflection) for the engine's LLM calls.
 
-Status: v0.1. Built against naming v0.1 and simulation v0.1.
+Status: v0.2. Built against naming v0.1 and simulation v0.1.
 
 ## In
 - Named world and NPC type set: shapes in [world/types/named-world.ts](world/types/named-world.ts), mirrors of ../naming/schema/world-state.schema.json and npc-types.schema.json.
 - Simulation: a `SimulationPort` ([world/types/simulation.ts](world/types/simulation.ts)), the consumed slice of ../simulation's CitySimulation (getNPCVendor, reserveNPC, findNPCs, getNPC, behaviorAt, interrupt, resume, applyFlag). The real simulation satisfies it; [world/stub/StubSimulation.ts](world/stub/StubSimulation.ts) ships for standalone runs.
-- World description prompt (theme string) for the story pass.
-- LLM access is injected, never owned: `LLMPort` (text completion) and `AgentPort` (tool loop), [ports/llm.ts](ports/llm.ts). No output caps anywhere.
+- Creation prompt: the user's words ("create a dark cynical sci fi cyberpunk story").
+- LLM access is injected per stage, never owned: `StagePorts { script, situations, plan: LLMPort; build: AgentPort }` ([creation/schema.ts](creation/schema.ts)); dialog summarization takes its own `LLMPort`. Ports in [ports/llm.ts](ports/llm.ts). No output caps anywhere.
 - At runtime: player events (talked, arrived, picked up, ...) and current time in simulation minutes.
 
 ## Out
-- Story pass: `runStoryPass(input) -> StoryDocument` ([story/CONTRACT.md](story/CONTRACT.md)): main line with introduction, development, conflict, resolution, plus side quest premises. One backbone call, context isolated from geometry.
-- Questline builder: `buildQuestline(premise, deps) -> QuestlineDefinition` ([builder/CONTRACT.md](builder/CONTRACT.md)): agent-driven create/step/branch tool with era-fit step scenario catalogs; roles resolved by type via SimulationPort, cast reserved with persona overlays.
-- Flow runtime: `QuestlineRuntime` ([flow/CONTRACT.md](flow/CONTRACT.md)): pure code state machine over the questline DAG. Availability (schedule and liveness) is evaluated on demand from routines; flags are the only persisted state; a dead NPC voids its quests.
-- Dialog context: `DialogContextService` ([dialog/CONTRACT.md](dialog/CONTRACT.md)): per-NPC-instance scoped fact store (background, persona, flag-gated quest knowledge), scored memory with summarization tiers, cache-ordered context segments, deflection guidance. Facts outside the scope never enter the prompt.
+- Creation: `new QuestlineCreation().run(input) -> CreationResult` ([creation/CONTRACT.md](creation/CONTRACT.md)): text-only script pass, translation of the script into the main questline (plan pass, then flow tool build), text-only situations pass and one side questline per situation. Every stage runs alone too:
+  - Story: `ScriptPass`, `SituationsPass` ([story/CONTRACT.md](story/CONTRACT.md)).
+  - Translation: `QuestlineTranslator`, `TranslationPlanner`, `QuestlineBuilder` ([builder/CONTRACT.md](builder/CONTRACT.md)).
+- Flow runtime: `QuestlineRuntime` ([flow/CONTRACT.md](flow/CONTRACT.md)): pure code state machine over the questline DAG. Availability (schedule, liveness, held items) is evaluated on demand; flags and step history are the only persisted state; a dead NPC voids its quests.
+- Dialog context: `DialogContextService` ([dialog/CONTRACT.md](dialog/CONTRACT.md)): per-NPC-instance scoped fact store (background, persona, flag-gated quest knowledge, the steps this NPC currently wants and the endings it lived), scored memory with summarization tiers, cache-ordered context segments, deflection guidance. Facts outside the scope never enter the prompt.
 
 ## Errors
 Closed set, thrown as `QuestError { code, message, detail? }` ([errors.ts](errors.ts)):
-- `E_INVALID_FLOW`: questline graph invalid (unknown ids, unreachable steps, cycles, undeclared flags or roles).
+- `E_INVALID_FLOW`: questline graph invalid (unknown ids, unreachable steps, cycles, undeclared flags, roles or items, information handled as a physical item, unplaced pickup).
 - `E_UNKNOWN_ID`: questline, step, role, npc type or cast entry not found.
 - `E_WRONG_STATE`: event matches no active step, questline already ended, or dialog with a dead NPC.
-- `E_UNAVAILABLE`: step acted on outside its availability window.
+- `E_UNAVAILABLE`: step acted on outside its availability (dead, absent, off duty, missing item, condition).
 - `E_CAST`: a role cannot be resolved or reserved against the simulation (cause in detail).
-- `E_LLM`: agent or model output unusable after repair, or the build loop never finishes.
+- `E_LLM`: model output unusable after repair (detail: stage, raw, problems), an empty plan, or a build loop that never finishes.
 `SimulationError` from the port passes through untouched, except cast resolution, which wraps its no-match and reserve conflicts into `E_CAST`.
 
 ## Invariants
-- No LLM inside generation-state or flow-state code paths: only story text, questline drafting and memory summarization are creative; every transition, gate and availability check is deterministic code.
-- The builder never places NPCs by id or coordinates: steps bind roles, roles resolve by type through the SimulationPort.
-- NPC knowledge is closed: a fact enters dialog context only from simulation background, persona overlay, unlocked quest grants or recorded interaction; deflection applies to everything else.
-- Every prompt, boilerplate and few-shot set lives in its own .md file under the owning box's prompts/ folder; output length is never capped in params or wording.
-- Standalone: everything runs on the 2D plane against [world/fixtures/](world/fixtures/) and the stub simulation, no other layer present.
+- No LLM inside generation-state or flow-state code paths: only the script, the situations, the translation plan, questline drafting and memory summarization are creative; every transition, gate and availability check is deterministic code.
+- Authority is split: the script owns plot, character and voice; the simulation owns who people are, where they live and work and when; the closed step and item vocabulary owns what is playable.
+- The builder never places NPCs by id or coordinates: steps bind roles, roles resolve by type through the SimulationPort; one story character is one NPC across questlines.
+- NPC knowledge is closed: a fact enters dialog context only from simulation background, persona overlay, unlocked quest grants, active steps this NPC wants, endings this NPC was part of, or recorded interaction, all decided by runtime state and the cast mapping; deflection applies to everything else.
+- Every prompt, boilerplate and few-shot set lives in its own .md file under the owning box's prompts/ folder; output length is never capped; minimums are floors, never exact counts.
+- Standalone: everything runs on the 2D plane against [world/fixtures/](world/fixtures/), [story/fixtures/](story/fixtures/) and the stub simulation, no other layer present.
 
 ## Depends on
 - ../naming/CONTRACT.md (named world, NPC type set)

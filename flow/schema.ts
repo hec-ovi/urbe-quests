@@ -39,11 +39,16 @@ export interface QuestRole {
   reservedName?: { given: string; family: string };
 }
 
+/** Closed artifact vocabulary; era fit is a builder catalog concern. Information is told, never picked up. */
+export type ItemKind = 'device' | 'weapon' | 'document' | 'key' | 'substance' | 'valuable' | 'information';
+
 export interface QuestItem {
   itemId: string;
   name: string;
+  /** Whose it is and what it means to them, then what it is. */
   description: string;
-  /** Where the item sits on the 2D plane, when it starts placed. */
+  kind: ItemKind;
+  /** Where a physical item sits on the 2D plane when it starts placed; required for pickup targets. */
   atParcelId?: string;
 }
 
@@ -91,9 +96,15 @@ export type PlaceTarget = { parcelId: string } | { districtId: string };
 export interface QuestStep {
   stepId: string;
   actId: string;
-  /** Story text first: what happens and why it matters. */
-  narrative: { description: string; playerHint: string };
+  /** Story text first: what happens, what the player sees, and the stake: what it means to whoever wants it and what it costs them if it fails. */
+  narrative: { description: string; playerHint: string; stake: string };
+  /** The role whose want this step serves; their dialog carries the stake while the step is active. */
+  wantedByRoleId?: string;
   target: StepTarget;
+  /** Items the player receives when the step completes (handed over, or information told). */
+  gives: string[];
+  /** Items the player must hold to act on the step. */
+  needs: string[];
   /** Extra gates besides graph edges; all must pass for the step to be actionable. */
   conditions: Predicate[];
   /** Applied when the step completes. */

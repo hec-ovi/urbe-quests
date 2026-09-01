@@ -8,7 +8,7 @@ import { QuestError } from '../errors.js';
 import type { NPCInstance, SimulationPort } from '../world/types/simulation.js';
 import type { QuestStep, ResolvedCast } from './schema.js';
 
-export type UnavailableReason = 'role_dead' | 'not_present' | 'off_duty' | 'condition';
+export type UnavailableReason = 'role_dead' | 'not_present' | 'off_duty' | 'missing_item' | 'condition';
 
 export interface StepAvailability {
   available: boolean;

@@ -1,7 +1,7 @@
 /** Structural validation of a QuestlineDefinition. Throws E_INVALID_FLOW. */
 
 import { QuestError } from '../errors.js';
-import type { Predicate, QuestlineDefinition, QuestStep } from './schema.js';
+import type { Predicate, QuestItem, QuestlineDefinition, QuestStep } from './schema.js';
 
 export class FlowValidator {
   validate(def: QuestlineDefinition): void {
@@ -18,7 +18,7 @@ export class FlowValidator {
 
     const stepIds = new Set(def.steps.map((s) => s.stepId));
     const roleIds = new Set(def.roles.map((r) => r.roleId));
-    const itemIds = new Set(def.items.map((i) => i.itemId));
+    const items = new Map(def.items.map((i) => [i.itemId, i]));
     const actIds = new Set(def.acts.map((a) => a.actId));
     const endingIds = new Set(def.endings.map((e) => e.endingId));
     const flags = new Set(def.flags);
@@ -30,7 +30,13 @@ export class FlowValidator {
 
     for (const step of def.steps) {
       if (!actIds.has(step.actId)) fail(`step ${step.stepId}: unknown act ${step.actId}`);
-      this.checkTarget(step, roleIds, itemIds, fail);
+      if (step.wantedByRoleId !== undefined && !roleIds.has(step.wantedByRoleId)) {
+        fail(`step ${step.stepId}: wanted by unknown role ${step.wantedByRoleId}`);
+      }
+      this.checkTarget(step, roleIds, items, fail);
+      for (const itemId of [...step.gives, ...step.needs]) {
+        if (!items.has(itemId)) fail(`step ${step.stepId}: unknown item ${itemId}`);
+      }
       for (const p of [...step.conditions, ...step.next.flatMap((e) => e.when)]) {
         this.checkPredicate(step.stepId, p, flags, stepIds, roleIds, fail);
       }
@@ -82,13 +88,17 @@ export class FlowValidator {
     }
   }
 
-  private checkTarget(step: QuestStep, roles: Set<string>, items: Set<string>, fail: (m: string) => never): void {
+  private checkTarget(step: QuestStep, roles: Set<string>, items: Map<string, QuestItem>, fail: (m: string) => never): void {
     const t = step.target;
     const requireRole = (roleId: string) => {
       if (!roles.has(roleId)) fail(`step ${step.stepId}: unknown role ${roleId}`);
     };
-    const requireItem = (itemId: string) => {
-      if (!items.has(itemId)) fail(`step ${step.stepId}: unknown item ${itemId}`);
+    /** Physical items only: information is told by a step's gives, never handled. */
+    const requirePhysicalItem = (itemId: string): QuestItem => {
+      const item = items.get(itemId);
+      if (item === undefined) return fail(`step ${step.stepId}: unknown item ${itemId}`);
+      if (item.kind === 'information') fail(`step ${step.stepId}: ${t.kind} on information item ${itemId}`);
+      return item;
     };
     switch (t.kind) {
       case 'talk':
@@ -99,13 +109,15 @@ export class FlowValidator {
         if (t.roleIds[0] === t.roleIds[1]) fail(`step ${step.stepId}: listen needs two distinct roles`);
         return;
       case 'pickup':
-        requireItem(t.itemId);
+        if (requirePhysicalItem(t.itemId).atParcelId === undefined) {
+          fail(`step ${step.stepId}: pickup item ${t.itemId} has no parcel`);
+        }
         return;
       case 'deliver':
-        requireItem(t.itemId);
+        requirePhysicalItem(t.itemId);
         return;
       case 'steal':
-        requireItem(t.itemId);
+        requirePhysicalItem(t.itemId);
         requireRole(t.fromRoleId);
         return;
       case 'assassinate':
@@ -145,6 +157,7 @@ export class FlowValidator {
     const used = new Set<string>();
     for (const step of def.steps) {
       const t = step.target;
+      if (step.wantedByRoleId !== undefined) used.add(step.wantedByRoleId);
       if (t.kind === 'talk' || t.kind === 'assassinate') used.add(t.roleId);
       if (t.kind === 'listen') t.roleIds.forEach((r) => used.add(r));
       if (t.kind === 'steal') used.add(t.fromRoleId);

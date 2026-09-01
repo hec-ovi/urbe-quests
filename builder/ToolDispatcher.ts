@@ -41,6 +41,8 @@ export class ToolDispatcher {
         return { result: this.draft.addEnding(input as never) };
       case 'add_step': {
         const step = {
+          gives: [],
+          needs: [],
           conditions: [],
           effects: [],
           branching: 'parallel',

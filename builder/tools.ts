@@ -72,16 +72,18 @@ export const BUILDER_TOOLS: AgentTool[] = [
   },
   {
     name: 'add_item',
-    description: 'Add a quest item.',
+    description:
+      'Add an artifact. Write whose it is and what it means to them before what it is. Physical kinds start placed at a parcel (then a pickup step) or in a person\'s hands (then a steal step, or the step that gives it). Kind information is never picked up: a talk, listen or observe step gives it.',
     inputSchema: {
       type: 'object',
       properties: {
         name: { type: 'string' },
-        description: { type: 'string' },
+        description: { type: 'string', description: 'Whose it is, what it means to them, what it is.' },
         itemId: { type: 'string' },
-        atParcelId: { type: 'string', description: 'Where the item starts, when it starts placed.' },
+        kind: { enum: ['device', 'weapon', 'document', 'key', 'substance', 'valuable', 'information'] },
+        atParcelId: { type: 'string', description: 'Where a physical item starts when it starts placed; required for pickup targets.' },
       },
-      required: ['name', 'description', 'itemId'],
+      required: ['name', 'description', 'itemId', 'kind'],
     },
   },
   {
@@ -128,7 +130,7 @@ export const BUILDER_TOOLS: AgentTool[] = [
   {
     name: 'add_step',
     description:
-      'Add a step. Write the narrative first, then the mechanics. Steps connect through next edges; a step with no edges is terminal and needs an endingId. Mark starting steps with entry: true.',
+      'Add a step. Write the narrative and the stake first, then the mechanics. Every step names the role who wants it. Steps connect through next edges; a step with no edges is terminal and needs an endingId. Mark starting steps with entry: true.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -137,9 +139,14 @@ export const BUILDER_TOOLS: AgentTool[] = [
           properties: {
             description: { type: 'string', description: 'What happens in the story at this step.' },
             playerHint: { type: 'string', description: 'What the player sees as the objective.' },
+            stake: {
+              type: 'string',
+              description: 'What this step means to the person who wants it and what it costs them if it does not happen, in their own truth.',
+            },
           },
-          required: ['description', 'playerHint'],
+          required: ['description', 'playerHint', 'stake'],
         },
+        wantedByRoleId: { type: 'string', description: 'The role whose want this step serves; they speak the stake to the player.' },
         stepId: { type: 'string' },
         actId: { type: 'string' },
         target: {
@@ -161,6 +168,8 @@ export const BUILDER_TOOLS: AgentTool[] = [
           },
           required: ['kind'],
         },
+        gives: { type: 'array', items: { type: 'string' }, description: 'Item ids the player receives when the step completes (handed over, or information told).' },
+        needs: { type: 'array', items: { type: 'string' }, description: 'Item ids the player must hold to act on the step.' },
         conditions: { type: 'array', items: predicate, description: 'Extra gates; usually empty.' },
         effects: { type: 'array', items: effect },
         next: {

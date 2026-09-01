@@ -90,8 +90,11 @@ const DEF: QuestlineDefinition = {
     {
       stepId: 's_talk',
       actId: 'a1',
-      narrative: { description: 'Coffee first.', playerHint: 'Talk to the barista at work.' },
+      narrative: { description: 'Coffee first.', playerHint: 'Talk to the barista at work.', stake: 'She hears everything and nobody asks.' },
+      wantedByRoleId: 'informer',
       target: { kind: 'talk', roleId: 'informer', atParcelId: 'p4' },
+      gives: [],
+      needs: [],
       conditions: [],
       effects: [],
       next: [],

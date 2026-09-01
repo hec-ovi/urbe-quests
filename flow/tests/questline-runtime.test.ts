@@ -20,7 +20,9 @@ function definition(): QuestlineDefinition {
       { roleId: 'barista', npcType: 'cafe_barista', persona: 'Nervy, owes money, trusts nobody twice.' },
       { roleId: 'exec', npcType: 'corpo_exec', persona: 'Collects leverage the way others collect art.' },
     ],
-    items: [{ itemId: 'chip', name: 'Scorched data chip', description: 'Half-melted, still readable.', atParcelId: 'p7' }],
+    items: [
+      { itemId: 'chip', name: 'Scorched data chip', description: 'The barista burned the purge talk onto it; it is her only leverage.', kind: 'device', atParcelId: 'p7' },
+    ],
     facts: [
       { factId: 'f_overheard', roleId: 'barista', text: 'I heard two Helix men plan a purge over espresso.' },
       { factId: 'f_buyer', roleId: 'exec', text: 'I will pay for the chip, no questions.', gateFlag: 'has_chip' },
@@ -33,8 +35,11 @@ function definition(): QuestlineDefinition {
       {
         stepId: 's_talk',
         actId: 'a1',
-        narrative: { description: 'The barista wants to talk, but only behind the counter.', playerHint: 'Visit the Static Cafe while it is open.' },
+        narrative: { description: 'The barista wants to talk, but only behind the counter.', playerHint: 'Visit the Static Cafe while it is open.', stake: 'If nobody carries this, she carries it alone.' },
+        wantedByRoleId: 'barista',
         target: { kind: 'talk', roleId: 'barista', atParcelId: 'p4' },
+        gives: [],
+        needs: [],
         conditions: [],
         effects: [],
         next: [
@@ -46,8 +51,11 @@ function definition(): QuestlineDefinition {
       {
         stepId: 's_pickup',
         actId: 'a1',
-        narrative: { description: 'The chip is stashed at the Grey Market Exchange.', playerHint: 'Pick up the chip.' },
+        narrative: { description: 'The chip is stashed at the Grey Market Exchange.', playerHint: 'Pick up the chip.', stake: 'Without the chip her word is a rumor.' },
+        wantedByRoleId: 'barista',
         target: { kind: 'pickup', itemId: 'chip' },
+        gives: [],
+        needs: [],
         conditions: [],
         effects: [{ kind: 'setFlag', flag: 'has_chip' }],
         next: [{ toStepId: 's_meet', when: [] }],
@@ -56,8 +64,11 @@ function definition(): QuestlineDefinition {
       {
         stepId: 's_meet',
         actId: 'a2',
-        narrative: { description: 'The exec knows you are sniffing around.', playerHint: 'Meet the executive.' },
+        narrative: { description: 'The exec knows you are sniffing around.', playerHint: 'Meet the executive.', stake: 'Leverage is only worth what someone will pay to bury.' },
+        wantedByRoleId: 'exec',
         target: { kind: 'talk', roleId: 'exec' },
+        gives: [],
+        needs: [],
         conditions: [],
         effects: [],
         next: [
@@ -69,8 +80,11 @@ function definition(): QuestlineDefinition {
       {
         stepId: 's_handover',
         actId: 'a2',
-        narrative: { description: 'Money for silence.', playerHint: 'Deliver the chip to Helix Dynamics Tower.' },
+        narrative: { description: 'Money for silence.', playerHint: 'Deliver the chip to Helix Dynamics Tower.', stake: 'The purge stays quiet and so does the barista.' },
+        wantedByRoleId: 'exec',
         target: { kind: 'deliver', itemId: 'chip', place: { parcelId: 'p1' } },
+        gives: [],
+        needs: [],
         conditions: [],
         effects: [],
         next: [],
@@ -80,8 +94,11 @@ function definition(): QuestlineDefinition {
       {
         stepId: 's_report',
         actId: 'a2',
-        narrative: { description: 'No chip, no leverage; the law is what is left.', playerHint: 'Go to Precinct 9.' },
+        narrative: { description: 'No chip, no leverage; the law is what is left.', playerHint: 'Go to Precinct 9.', stake: 'A file is the only thing the tower cannot buy back.' },
+        wantedByRoleId: 'barista',
         target: { kind: 'goto', place: { parcelId: 'p8' } },
+        gives: [],
+        needs: [],
         conditions: [],
         effects: [],
         next: [],
@@ -196,6 +213,33 @@ describe('QuestlineRuntime', () => {
     expect(done.endingId).toBe('e_sold');
   });
 
+  it('gates a step on held items and derives the inventory from pickups, gives and deliveries', () => {
+    const { sim, cast, baristaId, execId } = setup();
+    const def = definition();
+    def.items.push({ itemId: 'name', name: 'The buyer\'s name', description: 'Who pays for the purge; the barista heard it.', kind: 'information' });
+    def.steps[0]!.gives = ['name'];
+    def.steps[2]!.needs = ['name', 'chip'];
+    const runtime = new QuestlineRuntime(def, cast, sim);
+    runtime.advance({ kind: 'talkedTo', npcId: baristaId }, TUE_10);
+    expect(runtime.inventory()).toEqual(new Set(['name']));
+    expect(runtime.stepAvailability('s_meet', TUE_10)).toEqual({ available: false, reason: 'missing_item' });
+    expect(() => runtime.advance({ kind: 'talkedTo', npcId: execId }, TUE_10)).toThrowError(
+      expect.objectContaining({ code: 'E_UNAVAILABLE' }),
+    );
+    runtime.advance({ kind: 'pickedUp', itemId: 'chip' }, TUE_10);
+    expect(runtime.stepAvailability('s_meet', TUE_10)).toEqual({ available: true });
+    runtime.advance({ kind: 'talkedTo', npcId: execId }, TUE_10);
+    runtime.advance({ kind: 'delivered', itemId: 'chip', parcelId: 'p1' }, TUE_10);
+    expect(runtime.inventory()).toEqual(new Set(['name']));
+  });
+
+  it('rejects handling information as a physical item with E_INVALID_FLOW', () => {
+    const { sim, cast } = setup();
+    const def = definition();
+    def.items[0]!.kind = 'information';
+    expect(() => new QuestlineRuntime(def, cast, sim)).toThrowError(expect.objectContaining({ code: 'E_INVALID_FLOW' }));
+  });
+
   it('completes an assassinate step and records the death in the simulation', () => {
     const { sim } = setup();
     const mark = sim.reserveNPC({ name: { given: 'Odo', family: 'Grell' }, type: 'corpo_exec', jobParcelId: 'p3' });
@@ -211,9 +255,11 @@ describe('QuestlineRuntime', () => {
         {
           stepId: 's_kill',
           actId: 'a1',
-          narrative: { description: 'No witnesses.', playerHint: 'Find the mark.' },
+          narrative: { description: 'No witnesses.', playerHint: 'Find the mark.', stake: 'Every memo he signs empties another floor.' },
           target: { kind: 'assassinate', roleId: 'mark' },
-          conditions: [],
+          gives: [],
+        needs: [],
+        conditions: [],
           effects: [],
           next: [],
           branching: 'parallel',
