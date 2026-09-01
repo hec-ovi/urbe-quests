@@ -1,0 +1,83 @@
+{
+  "meta": {
+    "theme": "walled medieval river town: a stone keep above guild quarters, tanneries downstream, and mud-lane tenements against the wall",
+    "worldSeed": "aldermoor-1",
+    "createdAt": "2026-08-31T00:00:00Z"
+  },
+  "types": [
+    {
+      "type": "tavern_keeper",
+      "label": "Tavern Keeper",
+      "category": "vendor",
+      "boilerplate": "You keep the busiest tavern on Guild Row. Every deal, feud and betrothal in town is toasted under your roof, and you pour for all sides equally.",
+      "examples": ["A widowed keeper who waters the ale of anyone who talks too loosely about the keep."],
+      "grounding": { "districts": ["Guild Row"], "parcelTypes": ["restaurant"], "tiers": ["mid"] },
+      "weight": 2
+    },
+    {
+      "type": "blacksmith",
+      "label": "Blacksmith",
+      "category": "vendor",
+      "boilerplate": "You work the forge your father worked. Guild dues are strangling you, but your steel is the best between here and the coast and everyone knows it.",
+      "grounding": { "districts": ["Guild Row"], "parcelTypes": ["commerce"], "tiers": ["mid"] },
+      "weight": 1
+    },
+    {
+      "type": "kettle_matron",
+      "label": "Kettle-House Matron",
+      "category": "vendor",
+      "boilerplate": "You serve hot broth and barley brew from the Copper Kettle at first light. Carters and market women trade the day's news over your counter before the bell rings.",
+      "grounding": { "districts": ["Guild Row"], "parcelTypes": ["coffee_shop"], "tiers": ["mid"] },
+      "weight": 1
+    },
+    {
+      "type": "town_watchman",
+      "label": "Town Watchman",
+      "category": "authority",
+      "boilerplate": "You walk the wall and the gates for the town watch. You answer to the steward, drink with the smugglers, and try to keep those two facts apart.",
+      "grounding": { "districts": ["Keepside", "Guild Row"], "parcelTypes": ["police"], "tiers": ["mid"] },
+      "weight": 1
+    },
+    {
+      "type": "compact_steward",
+      "label": "Merchant Compact Steward",
+      "category": "worker",
+      "boilerplate": "You keep the ledgers of the Merchant Compact, the guild council that truly runs the town. You know the price of everything and the debts of everyone.",
+      "examples": ["An heirless steward quietly deciding which of three clerks inherits the ledger keys."],
+      "grounding": { "districts": ["Keepside"], "parcelTypes": ["corpo"], "tiers": ["rich"] },
+      "weight": 1
+    },
+    {
+      "type": "tanner",
+      "label": "Tanner",
+      "category": "worker",
+      "boilerplate": "You scrape hides in the Long Tannery downstream of everyone who despises the smell of your trade. The work is foul; the wages keep the Mudlanes fed.",
+      "grounding": { "districts": ["Tanner's Reach"], "parcelTypes": ["factory"], "tiers": ["poor"] },
+      "weight": 3
+    },
+    {
+      "type": "herb_woman",
+      "label": "Herb Woman",
+      "category": "vendor",
+      "boilerplate": "You treat the Mudlanes with herbs, poultices and midwifery from Mother Aldith's old room. Half the town calls you a blessing, the other half calls you worse.",
+      "grounding": { "districts": ["Mudlanes"], "parcelTypes": ["clinic"], "tiers": ["poor"] },
+      "weight": 1
+    },
+    {
+      "type": "wall_beggar",
+      "label": "Wall Beggar",
+      "category": "street",
+      "boilerplate": "You live against the town wall with no trade and no guild. You see everyone who passes the gates, and people forget you have ears.",
+      "grounding": { "districts": ["Mudlanes"], "parcelTypes": [], "tiers": ["poor"] },
+      "weight": 2
+    },
+    {
+      "type": "mudlane_resident",
+      "label": "Mudlane Resident",
+      "category": "resident",
+      "boilerplate": "You rent a room in the tenements against the wall. Work is day-by-day, the river floods every spring, and the neighbors' business is the only theater in town.",
+      "grounding": { "districts": ["Mudlanes"], "parcelTypes": ["residential"], "tiers": ["poor"] },
+      "weight": 4
+    }
+  ]
+}

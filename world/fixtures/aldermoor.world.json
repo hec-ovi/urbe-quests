@@ -1,0 +1,30 @@
+{
+  "meta": {
+    "seed": "aldermoor-1",
+    "naming": {
+      "theme": "walled medieval river town: a stone keep above guild quarters, tanneries downstream, and mud-lane tenements against the wall",
+      "namedAt": "2026-08-31T00:00:00Z"
+    }
+  },
+  "districts": [
+    { "id": "d1", "kind": "downtown", "tier": "rich", "name": "Keepside" },
+    { "id": "d2", "kind": "commercial", "tier": "mid", "name": "Guild Row" },
+    { "id": "d3", "kind": "residential", "tier": "poor", "name": "Mudlanes" },
+    { "id": "d4", "kind": "industrial", "tier": "poor", "name": "Tanner's Reach" }
+  ],
+  "parcels": [
+    { "id": "p1", "districtId": "d1", "type": "corpo", "tier": "rich", "name": "The Merchant Compact Hall" },
+    { "id": "p2", "districtId": "d1", "type": "hotel", "tier": "rich", "name": "The Gilded Ram" },
+    { "id": "p3", "districtId": "d1", "type": "police", "tier": "mid", "name": "Keepside Watch House" },
+    { "id": "p4", "districtId": "d2", "type": "restaurant", "tier": "mid", "name": "The Brindled Hart Tavern" },
+    { "id": "p5", "districtId": "d2", "type": "commerce", "tier": "mid", "name": "Harrow's Smithy" },
+    { "id": "p6", "districtId": "d2", "type": "mall", "tier": "mid", "name": "The Cloth Market" },
+    { "id": "p7", "districtId": "d2", "type": "coffee_shop", "tier": "mid", "name": "The Copper Kettle" },
+    { "id": "p8", "districtId": "d3", "type": "residential", "tier": "poor", "name": "Wallward Rows" },
+    { "id": "p9", "districtId": "d3", "type": "residential", "tier": "poor", "name": "Eelgate Yard" },
+    { "id": "p10", "districtId": "d3", "type": "clinic", "tier": "poor", "name": "Mother Aldith's" },
+    { "id": "p11", "districtId": "d4", "type": "factory", "tier": "poor", "name": "The Long Tannery" },
+    { "id": "p12", "districtId": "d4", "type": "residential", "tier": "poor", "name": "Reachside Cots" },
+    { "id": "p13", "districtId": "d1", "type": "residential", "tier": "rich", "name": "The High Terraces" }
+  ]
+}

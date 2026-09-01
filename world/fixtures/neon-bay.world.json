@@ -1,0 +1,31 @@
+{
+  "meta": {
+    "seed": "neon-bay-1",
+    "naming": {
+      "theme": "rain-soaked cyberpunk port city: corporate arcologies tower over flooded docklands, neon markets, and sinking tenements",
+      "namedAt": "2026-08-31T00:00:00Z"
+    }
+  },
+  "districts": [
+    { "id": "d1", "kind": "downtown", "tier": "high_rich", "name": "Crown Spire" },
+    { "id": "d2", "kind": "commercial", "tier": "mid", "name": "Kanaal Market" },
+    { "id": "d3", "kind": "residential", "tier": "poor", "name": "The Sump" },
+    { "id": "d4", "kind": "industrial", "tier": "poor", "name": "Rustfields" }
+  ],
+  "parcels": [
+    { "id": "p1", "districtId": "d1", "type": "corpo", "tier": "high_rich", "name": "Helix Dynamics Tower" },
+    { "id": "p2", "districtId": "d1", "type": "hotel", "tier": "rich", "name": "Hotel Meridian" },
+    { "id": "p3", "districtId": "d1", "type": "offices", "tier": "rich", "name": "Crown Exchange" },
+    { "id": "p4", "districtId": "d2", "type": "coffee_shop", "tier": "mid", "name": "Static Cafe" },
+    { "id": "p5", "districtId": "d2", "type": "restaurant", "tier": "mid", "name": "Noodle Saint" },
+    { "id": "p6", "districtId": "d2", "type": "mall", "tier": "mid", "name": "Kanaal Arcade" },
+    { "id": "p7", "districtId": "d2", "type": "commerce", "tier": "poor", "name": "Grey Market Exchange" },
+    { "id": "p8", "districtId": "d2", "type": "police", "tier": "mid", "name": "Precinct 9" },
+    { "id": "p9", "districtId": "d3", "type": "residential", "tier": "poor", "name": "Blockhouse Elin" },
+    { "id": "p10", "districtId": "d3", "type": "residential", "tier": "poor", "name": "Blockhouse Vosk" },
+    { "id": "p11", "districtId": "d3", "type": "clinic", "tier": "poor", "name": "Doc Sanna's" },
+    { "id": "p12", "districtId": "d4", "type": "factory", "tier": "poor", "name": "Rustfields Fab 3" },
+    { "id": "p13", "districtId": "d1", "type": "residential", "tier": "high_rich", "name": "Spire Residences" },
+    { "id": "p14", "districtId": "d4", "type": "residential", "tier": "poor", "name": "Slagrow Stacks" }
+  ]
+}
