@@ -8,8 +8,10 @@
 
 import type { QuestAssignment } from '../builder/schema.js';
 import { QuestlineTranslator } from '../builder/QuestlineTranslator.js';
+import { QuestError } from '../errors.js';
 import { ScriptPass } from '../story/ScriptPass.js';
 import { SituationsPass } from '../story/SituationsPass.js';
+import type { SituationsPassResult } from '../story/schema.js';
 import { Assignments } from './Assignments.js';
 import type { CreationInput, CreationProgress, CreationResult, SideQuest } from './schema.js';
 
@@ -42,14 +44,25 @@ export class QuestlineCreation {
       return result;
     };
 
+    /** A situations text that cannot be read costs the side quests, not the run: the main line is the product. */
+    const runSituations = async (): Promise<SituationsPassResult> => {
+      try {
+        return await new SituationsPass().run({
+          script: script.script,
+          world,
+          types,
+          llm: ports.situations,
+          ...(input.minimums?.situations !== undefined ? { minimums: input.minimums.situations } : {}),
+        });
+      } catch (error) {
+        if (!(error instanceof QuestError) || error.code !== 'E_LLM') throw error;
+        input.warn?.(`every side quest dropped: ${error.message}`);
+        return { situations: [], raw: (error.detail as { raw?: string } | undefined)?.raw ?? '' };
+      }
+    };
+
     const sideQuests = async (): Promise<{ situations: CreationResult['situations']; side: SideQuest[] }> => {
-      const situations = await new SituationsPass().run({
-        script: script.script,
-        world,
-        types,
-        llm: ports.situations,
-        ...(input.minimums?.situations !== undefined ? { minimums: input.minimums.situations } : {}),
-      });
+      const situations = await runSituations();
       progress({ kind: 'situations', result: situations });
       // A side quest that fails to build is dropped with a word to the caller; the main line is the product.
       const settled = await Promise.allSettled(

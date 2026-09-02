@@ -8,7 +8,7 @@ Purpose: the questline creation workflow: one creation prompt in; the film scrip
 - `world`, `types`; `sim`: `SimulationPort`.
 - `ports`: `StagePorts { script, situations, plan: LLMPort; build: AgentPort }`, one per stage so the engine chooses the model for each.
 - `minimums? { script?, situations? }`, `referenceTimeMin?`, `maxRounds?`, passed through to the inner boxes.
-- `warn?`: told about a side quest that was dropped. `progress?`: told as each stage lands (`script`, `situations`, `questline` with `'main'` or the situation id and its `TranslationResult`) and on every build round (`build` carrying the builder's `BuildProgress`), so a host logs where a long run is and keeps what is already made.
+- `warn?`: told about a dropped side quest, one by id or all of them when the situations text could not be read. `progress?`: told as each stage lands (`script`, `situations`, `questline` with `'main'` or the situation id and its `TranslationResult`) and on every build round (`build` carrying the builder's `BuildProgress`), so a host logs where a long run is and keeps what is already made.
 
 ## Out
 `CreationResult`: `script` (ScriptPassResult), `situations` (SituationsPassResult), `main` (TranslationResult: plan, definition, cast), `side` (one `SideQuest`, a TranslationResult with its `situationId`, per situation, in situation order).
@@ -21,7 +21,7 @@ Purpose: the questline creation workflow: one creation prompt in; the film scrip
 3. Situations pass, text only, then one translation per situation, in parallel.
 
 ## Errors
-`E_LLM` (detail names the stage), `E_CAST` and `SimulationError` pass through from the inner boxes; the run fails as a whole.
+The side branch never fails the run: a side quest whose translation throws is dropped by id, and an `E_LLM` from the situations pass drops all of them (`situations` comes back empty, holding the unusable text as `raw`), both through `warn`. Everything else passes through from the inner boxes and fails the run: `E_LLM` from the script or the main translation (detail names the stage), `E_CAST` from the main cast, `SimulationError`.
 
 ## Invariants
 - Each stage reads its own port; nothing here calls a model directly or caps output.

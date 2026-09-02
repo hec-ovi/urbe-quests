@@ -8,7 +8,7 @@ Status: v0.2. Built against naming v0.1 and simulation v0.1.
 - Named world and NPC type set: shapes in [world/types/named-world.ts](world/types/named-world.ts), mirrors of ../naming/schema/world-state.schema.json and npc-types.schema.json.
 - Simulation: a `SimulationPort` ([world/types/simulation.ts](world/types/simulation.ts)), the consumed slice of ../simulation's CitySimulation (getNPCVendor, reserveNPC, findNPCs, getNPC, behaviorAt, interrupt, resume, applyFlag). The real simulation satisfies it; [world/stub/StubSimulation.ts](world/stub/StubSimulation.ts) ships for standalone runs.
 - Creation prompt: the user's words ("create a dark cynical sci fi cyberpunk story").
-- Creation drops a side quest whose build fails and says so through `warn` on the input; the main line failing fails the run.
+- Creation keeps a failure local to what failed: a side quest whose build fails is dropped, and a situations pass that cannot be read drops all of them, both reported through `warn` on the input; the script or the main line failing fails the run.
 - LLM access is injected per stage, never owned: `StagePorts { script, situations, plan: LLMPort; build: AgentPort }` ([creation/schema.ts](creation/schema.ts)); dialog summarization takes its own `LLMPort`. Ports in [ports/llm.ts](ports/llm.ts). No output caps anywhere.
 - At runtime: player events (talked, arrived, picked up, ...) and current time in simulation minutes.
 

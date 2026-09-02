@@ -38,13 +38,14 @@ function planPort() {
   return { port, calls };
 }
 
-/** Builds the same two-step questline for whatever assignment arrives, in one round. */
-function buildAgent() {
+/** Builds the same two-step questline for whatever assignment arrives, in one round; answers in words for the plan named in `refuse`. */
+function buildAgent(refuse?: string) {
   const requests: Parameters<AgentPort['step']>[0][] = [];
   let count = 0;
   const port: AgentPort = {
     step: async (request) => {
       requests.push(request);
+      if (refuse !== undefined && request.prompt.includes(`Plan for ${refuse}`)) return { kind: 'done', text: 'I would rather describe it.' };
       const id = `q_${++count}`;
       const calls: AgentToolCall[] = [
         { tool: 'create_questline', input: { id, title: id, premise: 'A tip, then a chip.' } },
@@ -87,13 +88,13 @@ function buildAgent() {
   return { port, requests };
 }
 
-function setup(scriptResponses: string[]) {
+function setup(scriptResponses: string[], options: { refuse?: string; situations?: string[] } = {}) {
   const { world, types } = loadFixtureWorld('neon-bay');
   const sim = new StubSimulation({ seed: 'creation-test', world, types });
   const script = textPort(scriptResponses);
-  const situations = textPort([FIXTURE.situations]);
+  const situations = textPort(options.situations ?? [FIXTURE.situations]);
   const plan = planPort();
-  const build = buildAgent();
+  const build = buildAgent(options.refuse);
   const ports = { script: script.port, situations: situations.port, plan: plan.port, build: build.port };
   return { world, types, sim, ports, script, situations, plan, build };
 }
@@ -143,6 +144,48 @@ describe('QuestlineCreation', () => {
     expect(events[0]?.kind).toBe('script');
     expect(events.filter((e) => e.kind === 'build').map((e) => e.kind === 'build' && e.build.committed)).toEqual([7, 7, 7, 7]);
     expect(events.filter((e) => e.kind === 'questline').map((e) => e.kind === 'questline' && e.questline).sort()).toEqual(['main', 'sit_1', 'sit_2', 'sit_3']);
+  });
+
+  it('drops the side quest that fails to build, warns, and keeps the rest of the run', async () => {
+    const deps = setup([FIXTURE.script], { refuse: 'The Last Fare' });
+    const warnings: string[] = [];
+    const result = await new QuestlineCreation().run({
+      prompt: 'anything',
+      world: deps.world,
+      types: deps.types,
+      sim: deps.sim,
+      ports: deps.ports,
+      warn: (message) => warnings.push(message),
+    });
+
+    expect(result.main.definition.steps).toHaveLength(2);
+    expect(result.side.map((s) => s.situationId)).toEqual(['sit_2', 'sit_3']);
+    expect(warnings).toEqual([expect.stringContaining('side quest sit_1 dropped')]);
+  });
+
+  it('drops every side quest when the situations text cannot be read, and still returns the main line', async () => {
+    const deps = setup([FIXTURE.script], { situations: ['not a situation list', 'still not one'] });
+    const warnings: string[] = [];
+    const result = await new QuestlineCreation().run({
+      prompt: 'anything',
+      world: deps.world,
+      types: deps.types,
+      sim: deps.sim,
+      ports: deps.ports,
+      warn: (message) => warnings.push(message),
+    });
+
+    expect(result.main.definition.steps).toHaveLength(2);
+    expect(result.situations).toEqual({ situations: [], raw: 'still not one' });
+    expect(result.side).toEqual([]);
+    expect(warnings).toEqual([expect.stringContaining('every side quest dropped')]);
+  });
+
+  it('fails the run when the main line fails to build', async () => {
+    const deps = setup([FIXTURE.script], { refuse: 'The Water Bill' });
+    await expect(
+      new QuestlineCreation().run({ prompt: 'anything', world: deps.world, types: deps.types, sim: deps.sim, ports: deps.ports }),
+    ).rejects.toThrowError(expect.objectContaining({ code: 'E_LLM' }));
   });
 
   it('fails with E_LLM when the script is unusable, before any translation starts', async () => {
