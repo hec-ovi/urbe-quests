@@ -1,7 +1,7 @@
 # Changelog
 
+0.2.9: every builder tool call is checked against its own schema before it reaches the draft, so a half-written step is answered with the fields it needs instead of throwing out of the build loop.
 0.2.8: the plan closes with a manifest of ids that bounds the build: the draft accepts only planned ids and names the planned list on a refusal, checks every reference the moment it is made, reports the planned pieces still missing on finish and in every nudge, and the round budget is two per planned piece plus eight; creation reports progress events per stage and build round, and the sample writes each stage as it lands.
-
 0.2.7: the step cap is a 40-step safety net above the plan's budget, so a fix after validation is never refused; the creation sample sends LLM_API_KEY as a bearer token for hosted servers.
 0.2.6: a questline carries at most 20 steps (the tools refuse a 21st and point at finishing); the plan prompt sizes a main line at 6 to 16 steps, a side situation at 4 to 8.
 0.2.5: the builder answers a text-only reply with a nudge back to the tools (three times, prompts/builder-nudge.md; transcripts carry text turns); creation drops a side quest that fails to build and reports it through `warn`.

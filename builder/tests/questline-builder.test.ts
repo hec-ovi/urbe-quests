@@ -162,6 +162,18 @@ describe('QuestlineDraft through the tools', () => {
 });
 
 describe('QuestlineBuilder', () => {
+  it('answers a half-written call with what the tool needs and goes on', async () => {
+    const halfStep = step({ stepId: 's_ask', actId: 'a1', narrative: { description: 'Ask Mara about the ledger.' } });
+    const { agent, requests } = scriptedAgent([{ kind: 'calls', calls: [...SETUP_CALLS, halfStep] }, ...FULL_BUILD]);
+    const { definition } = await build(agent);
+
+    const results = requests[1]!.transcript.filter((t) => t.role === 'tool').flatMap((t) => t.results.map((r) => r.result));
+    expect(results).toContain(
+      'error: add_step not accepted: target is missing; next is missing; narrative.playerHint is missing; narrative.stake is missing',
+    );
+    expect(definition.steps).toHaveLength(3);
+  });
+
   it('answers a text-only reply with a nudge that names what is missing, and goes on', async () => {
     const { agent, requests } = scriptedAgent([{ kind: 'done', text: 'I have added everything.' }, ...FULL_BUILD]);
     const { definition } = await build(agent);

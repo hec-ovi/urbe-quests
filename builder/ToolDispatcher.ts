@@ -1,11 +1,14 @@
 /**
- * Routes agent tool calls onto the draft. Draft errors come back as tool
- * results so the agent can correct itself; they never abort the loop.
+ * Routes agent tool calls onto the draft. A call is checked against its own
+ * schema first, so a half-written one is answered rather than thrown; draft
+ * errors come back as tool results too. Nothing here aborts the loop.
  */
 
 import type { AgentToolCall } from '../ports/llm.js';
 import type { QuestlineDefinition, QuestStep } from '../flow/schema.js';
+import { toolInputProblems } from './checkToolInput.js';
 import { DraftError, QuestlineDraft } from './QuestlineDraft.js';
+import { BUILDER_TOOLS } from './tools.js';
 
 export interface DispatchOutcome {
   result: string;
@@ -16,6 +19,10 @@ export class ToolDispatcher {
   constructor(private readonly draft: QuestlineDraft) {}
 
   dispatch(call: AgentToolCall): DispatchOutcome {
+    const schema = BUILDER_TOOLS.find((t) => t.name === call.tool)?.inputSchema;
+    if (schema === undefined) return { result: `error: unknown tool ${call.tool}` };
+    const problems = toolInputProblems(schema, call.input ?? {});
+    if (problems.length > 0) return { result: `error: ${call.tool} not accepted: ${problems.join('; ')}` };
     try {
       return this.route(call);
     } catch (error) {
@@ -54,6 +61,7 @@ export class ToolDispatcher {
         const finished = this.draft.finish();
         return { result: `questline ${finished.id} is valid and complete`, finished };
       }
+      // A tool in the catalog with no route here: a mismatch worth naming.
       default:
         return { result: `error: unknown tool ${call.tool}` };
     }
