@@ -42,9 +42,10 @@ async function main(): Promise<void> {
     ports: recordedPorts(recording),
   });
 
+  // No timestamp: a rebuild of a committed sample should leave no diff.
   writer.write(
     'meta.json',
-    JSON.stringify({ prompt: recording.prompt, model: recording.model, world: worldPath !== undefined ? basename(worldPath) : 'neon-bay', source: 'recording', ranAt: new Date().toISOString() }, null, 2) + '\n',
+    JSON.stringify({ prompt: recording.prompt, model: recording.model, world: worldPath !== undefined ? basename(worldPath) : 'neon-bay', source: 'recording' }, null, 2) + '\n',
   );
   log(`done: ${result.script.script.characters.length} characters, ${result.side.length} of ${result.situations.situations.length} side quests, written to ${writer.path}`);
 }
