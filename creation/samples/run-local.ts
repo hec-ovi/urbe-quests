@@ -13,11 +13,15 @@
  */
 
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { Agent, setGlobalDispatcher } from 'undici';
 import type { AgentPort, AgentReply, AgentTool, AgentTurn, LLMPort } from '../../ports/llm.js';
 import { loadFixtureWorld, StubSimulation, type NamedWorld, type NPCTypeSet } from '../../world/index.js';
 import { QuestlineCreation } from '../QuestlineCreation.js';
 
 const BASE_URL = process.env['LLM_BASE_URL'] ?? 'http://localhost:8080/v1';
+
+// A local model can think for many minutes on one build round; the default five-minute header timeout would end the run.
+setGlobalDispatcher(new Agent({ headersTimeout: 0, bodyTimeout: 0 }));
 
 type Message =
   | { role: 'system' | 'user'; content: string }
