@@ -1,5 +1,6 @@
 # Changelog
 
+0.2.6: a questline carries at most 20 steps (the tools refuse a 21st and point at finishing); the plan prompt sizes a main line at 6 to 16 steps, a side situation at 4 to 8.
 0.2.5: the builder answers a text-only reply with a nudge back to the tools (three times, prompts/builder-nudge.md; transcripts carry text turns); creation drops a side quest that fails to build and reports it through `warn`.
 0.2.4: runtime.ts, the browser-safe entry (flow runtime, validator, cast resolver, errors, types) with no node APIs behind it.
 0.2.3: `attachQuestline` replaces a runtime of the same questline id instead of stacking it.

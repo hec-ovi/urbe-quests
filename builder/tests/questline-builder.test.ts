@@ -8,6 +8,8 @@
 import { describe, expect, it } from 'vitest';
 import type { AgentPort, AgentReply, AgentToolCall, LLMPort } from '../../ports/llm.js';
 import { loadFixtureWorld, StubSimulation } from '../../world/index.js';
+import { ToolDispatcher } from '../ToolDispatcher.js';
+import { QuestlineDraft } from '../QuestlineDraft.js';
 import { QuestlineBuilder } from '../QuestlineBuilder.js';
 import { QuestlineTranslator } from '../QuestlineTranslator.js';
 import type { QuestAssignment } from '../schema.js';
@@ -114,6 +116,25 @@ function fixtureDeps() {
 }
 
 describe('QuestlineBuilder', () => {
+  it('refuses a 21st step and points at finishing', () => {
+    const dispatcher = new ToolDispatcher(new QuestlineDraft());
+    for (const call of SETUP_CALLS) dispatcher.dispatch(call);
+    const results = Array.from({ length: 21 }, (_, i) =>
+      dispatcher.dispatch(
+        step({
+          narrative: { description: `Beat ${i}.`, playerHint: 'Go.', stake: 'Something.' },
+          wantedByRoleId: 'barista',
+          stepId: `s_${i}`,
+          actId: 'a1',
+          target: { kind: 'talk', roleId: 'barista', atParcelId: 'p4' },
+          next: [],
+        }),
+      ).result,
+    );
+    expect(results[19]).toContain('added');
+    expect(results[20]).toMatch(/^error: .*20 steps.*finish_questline/);
+  });
+
   it('answers a text-only reply with a nudge back to the tools and goes on', async () => {
     const { agent, requests } = scriptedAgent([{ kind: 'done', text: 'I have added everything.' }, ...FULL_BUILD]);
     const deps = fixtureDeps();

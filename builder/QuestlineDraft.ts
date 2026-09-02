@@ -15,6 +15,9 @@ import type {
   QuestStep,
 } from '../flow/schema.js';
 
+/** A questline the player can hold in their head: the tools refuse a step past this. */
+export const MAX_STEPS = 20;
+
 export class DraftError extends Error {}
 
 export class QuestlineDraft {
@@ -77,6 +80,9 @@ export class QuestlineDraft {
 
   addStep(step: QuestStep & { entry?: boolean }): string {
     const def = this.current();
+    if (def.steps.length >= MAX_STEPS) {
+      throw new DraftError(`the questline already carries ${MAX_STEPS} steps, the most it may; fold this beat into an existing step and call finish_questline`);
+    }
     this.rejectDuplicate(def.steps.map((s) => s.stepId), step.stepId, 'step');
     const { entry, ...rest } = step;
     for (const p of [...rest.conditions, ...rest.next.flatMap((e) => e.when)]) {
