@@ -35,7 +35,7 @@ Items are typed artifacts (a device, a weapon, a document, a key, a substance, a
 ## Out
 
 - **`QuestlineCreation.run(input)`**: the script, the main questline with its plan and cast, the situations, and one side questline per situation. `ScriptPass`, `SituationsPass`, `TranslationPlanner`, `QuestlineBuilder` and `QuestlineTranslator` run alone too.
-- **`QuestlineRuntime`**: a pure state machine over the questline graph. Availability comes from the cast's real schedules, liveness and held items, evaluated on demand; a dead NPC voids its quests.
+- **`QuestlineRuntime`**: a pure state machine over the questline graph. Availability comes from the cast's real schedules, liveness and held items, evaluated on demand, and every step resolves the place to mark on a map; a dead NPC voids its quests.
 - **`DialogContextService`**: a per-NPC fact store (background, persona, flag-gated quest knowledge, what this character currently wants from the player and why, how a finished questline ended for them) with scored memory and summarization tiers, emitted as cache-ordered context segments plus deflection guidance. A fact enters the prompt only through runtime state and the cast mapping; everything else gets deflected.
 
 Each part carries its own contract: [story/CONTRACT.md](story/CONTRACT.md), [builder/CONTRACT.md](builder/CONTRACT.md), [creation/CONTRACT.md](creation/CONTRACT.md), [flow/CONTRACT.md](flow/CONTRACT.md), [dialog/CONTRACT.md](dialog/CONTRACT.md). The root `CONTRACT.md` is the surface and the closed error set.
