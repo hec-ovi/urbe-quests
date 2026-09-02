@@ -6,13 +6,15 @@
  *
  *   npm run sample -- "create a dark cynical sci fi cyberpunk story" cyberpunk
  *
+ * Args: "<creation prompt>" <sample name> [<named world json> <npc types json>];
+ * without the two paths the neon-bay fixture is the world.
  * Env: LLM_BASE_URL (default http://localhost:8080/v1), LLM_MODEL (default:
  * the first model the server lists). No output caps are sent.
  */
 
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import type { AgentPort, AgentReply, AgentTool, AgentTurn, LLMPort } from '../../ports/llm.js';
-import { loadFixtureWorld, StubSimulation } from '../../world/index.js';
+import { loadFixtureWorld, StubSimulation, type NamedWorld, type NPCTypeSet } from '../../world/index.js';
 import { QuestlineCreation } from '../QuestlineCreation.js';
 
 const BASE_URL = process.env['LLM_BASE_URL'] ?? 'http://localhost:8080/v1';
@@ -142,12 +144,15 @@ function loggedAgent(stage: string, port: AgentPort, log: Log): AgentPort {
 }
 
 async function main(): Promise<void> {
-  const [prompt, name] = process.argv.slice(2);
+  const [prompt, name, worldPath, typesPath] = process.argv.slice(2);
   if (prompt === undefined || name === undefined) {
-    throw new Error('usage: run-local.ts "<creation prompt>" <sample name>');
+    throw new Error('usage: run-local.ts "<creation prompt>" <sample name> [<named world json> <npc types json>]');
   }
   const client = await OpenAICompatibleClient.connect();
-  const { world, types } = loadFixtureWorld('neon-bay');
+  const { world, types } =
+    worldPath !== undefined && typesPath !== undefined
+      ? { world: JSON.parse(readFileSync(worldPath, 'utf8')) as NamedWorld, types: JSON.parse(readFileSync(typesPath, 'utf8')) as NPCTypeSet }
+      : loadFixtureWorld('neon-bay');
   const sim = new StubSimulation({ seed: `sample-${name}`, world, types });
   const started = Date.now();
   const log: Log = (line) => console.error(`[${Math.round((Date.now() - started) / 1000)}s] ${line}`);
@@ -169,7 +174,7 @@ async function main(): Promise<void> {
   const dir = new URL(`./${name}/`, import.meta.url);
   mkdirSync(dir, { recursive: true });
   const write = (file: string, text: string) => writeFileSync(new URL(file, dir), text);
-  write('meta.json', JSON.stringify({ prompt, model: client.model, world: 'neon-bay', ranAt: new Date().toISOString() }, null, 2) + '\n');
+  write('meta.json', JSON.stringify({ prompt, model: client.model, world: worldPath ?? 'neon-bay', ranAt: new Date().toISOString() }, null, 2) + '\n');
   write('script.md', result.script.raw);
   write('situations.md', result.situations.raw);
   write('main.plan.md', result.main.plan);

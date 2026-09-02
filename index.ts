@@ -27,6 +27,7 @@ export { TranslationPlanner, type PlanInput } from './builder/TranslationPlanner
 export { QuestlineBuilder, type BuildInput, type BuildResult } from './builder/QuestlineBuilder.js';
 export { QuestlineTranslator, type TranslateInput } from './builder/QuestlineTranslator.js';
 export { BUILDER_TOOLS } from './builder/tools.js';
+export { CastResolver } from './builder/CastResolver.js';
 
 export type { CreationInput, CreationResult, SideQuest, StagePorts } from './creation/schema.js';
 export { Assignments } from './creation/Assignments.js';
