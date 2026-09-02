@@ -10,7 +10,7 @@ Purpose: assembles what an NPC is allowed to know into cache-ordered dialog cont
 - `memory?`: `{ tailSize?, foldSize? }` (defaults 12 and 6).
 
 Then:
-- `attachQuestline(runtime)`: a `QuestlineRuntime` whose cast personas, flag-gated facts, active wants and endings join their NPC's context.
+- `attachQuestline(runtime)`: a `QuestlineRuntime` whose cast personas, flag-gated facts, active wants and endings join their NPC's context. Attaching a questline of the same id again replaces the earlier runtime, so a host that restores state per turn never stacks copies.
 - `contextFor(npcId, timeMin) -> DialogContext` ([schema.ts](schema.ts)).
 - `recordTurn(npcId, { speaker, text, atMin })`: appends memory; folds the oldest window into a digest note through the LLM when the tail overflows.
 - `serializeMemory()` / `restoreMemory(data)`.

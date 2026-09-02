@@ -71,6 +71,15 @@ function setup(memory?: { tailSize: number; foldSize: number }) {
 }
 
 describe('DialogContextService', () => {
+  it('replaces a questline attached again under the same id instead of stacking it', () => {
+    const { service, runtime, informerId, sim } = setup();
+    const again = QuestlineRuntime.restore(runtime.def, runtime.cast, sim, runtime.serialize());
+    service.attachQuestline(again);
+    const quest = service.contextFor(informerId, TUE_10).segments.find((s) => s.id === 'quest');
+    const wants = quest?.text.split('\n').filter((line) => line.startsWith('- ')) ?? [];
+    expect(wants.length).toBe(new Set(wants).size);
+  });
+
   it('layers context in cache order with shared world and type segments and the closed knowledge scope', () => {
     const { service, informerId, buyerId } = setup();
     const context = service.contextFor(informerId, TUE_10);

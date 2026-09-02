@@ -46,9 +46,11 @@ export class DialogContextService {
     this.background = new BackgroundRenderer(input.world);
   }
 
-  /** Questlines contribute personas, flag-gated knowledge, active wants and ending reactions for their cast. */
+  /** Questlines contribute personas, flag-gated knowledge, active wants and ending reactions for their cast. Attaching a questline of the same id again replaces the earlier runtime. */
   attachQuestline(runtime: QuestlineRuntime): void {
-    this.questlines.push(runtime);
+    const index = this.questlines.findIndex((q) => q.def.id === runtime.def.id);
+    if (index >= 0) this.questlines[index] = runtime;
+    else this.questlines.push(runtime);
   }
 
   contextFor(npcId: string, timeMin: number): DialogContext {
