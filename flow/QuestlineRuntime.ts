@@ -7,6 +7,7 @@ import { QuestError } from '../errors.js';
 import type { SimulationPort } from '../world/types/simulation.js';
 import { AvailabilityService, type AvailabilityWindow, type StepAvailability } from './availability.js';
 import type { PlayerEvent } from './events.js';
+import { StepPlaces, type QuestPlace } from './places.js';
 import { PredicateEvaluator } from './predicates.js';
 import type { QuestEnding, QuestlineDefinition, QuestStep, ResolvedCast } from './schema.js';
 import { FlowValidator } from './validate.js';
@@ -33,6 +34,7 @@ export class QuestlineRuntime {
   private readonly questFlags = new Set<string>();
   private endingId: string | undefined;
   private readonly availabilityService: AvailabilityService;
+  private readonly stepPlaces: StepPlaces;
   private readonly evaluator: PredicateEvaluator;
 
   constructor(
@@ -48,6 +50,7 @@ export class QuestlineRuntime {
     }
     this.steps = new Map(def.steps.map((s) => [s.stepId, s]));
     this.availabilityService = new AvailabilityService(sim, cast);
+    this.stepPlaces = new StepPlaces(sim, cast, def.items);
     this.evaluator = new PredicateEvaluator({
       flags: this.questFlags,
       completedSteps: this.completed,
@@ -125,6 +128,11 @@ export class QuestlineRuntime {
   /** Weekly windows for schedule-bound steps, derived from routines on demand. */
   windows(stepId: string): AvailabilityWindow[] | undefined {
     return this.availabilityService.windows(this.step(stepId));
+  }
+
+  /** Where the step points at that minute, for a marker on the map; undefined when there is nothing to mark. */
+  stepPlace(stepId: string, timeMin: number): QuestPlace | undefined {
+    return this.stepPlaces.place(this.step(stepId), timeMin);
   }
 
   advance(event: PlayerEvent, timeMin: number): AdvanceResult {

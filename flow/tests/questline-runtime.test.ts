@@ -193,6 +193,21 @@ describe('QuestlineRuntime', () => {
     );
   });
 
+  it('resolves the place each step points at: the pinned parcel, the item, the delivery, and the person live', () => {
+    const { sim, cast, execId } = setup();
+    const runtime = new QuestlineRuntime(definition(), cast, sim);
+
+    expect(runtime.stepPlace('s_talk', TUE_10)).toEqual({ kind: 'parcel', id: 'p4' });
+    expect(runtime.stepPlace('s_pickup', TUE_10)).toEqual({ kind: 'parcel', id: 'p7' });
+    expect(runtime.stepPlace('s_handover', TUE_10)).toEqual({ kind: 'parcel', id: 'p1' });
+    // s_meet pins no parcel: the exec is wherever the simulation has him at that minute.
+    expect(runtime.stepPlace('s_meet', TUE_10)).toEqual(sim.behaviorAt(execId, TUE_10).place);
+    expect(runtime.stepPlace('s_meet', TUE_03)).toEqual(sim.behaviorAt(execId, TUE_03).place);
+
+    sim.applyFlag(execId, { kind: 'die' });
+    expect(runtime.stepPlace('s_meet', TUE_10)).toBeUndefined();
+  });
+
   it('stalls when the only active step targets a dead NPC', () => {
     const { sim, cast, baristaId } = setup();
     const runtime = new QuestlineRuntime(definition(), cast, sim);

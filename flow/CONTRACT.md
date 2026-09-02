@@ -14,6 +14,7 @@ Purpose: deterministic questline state machine over a condition-gated DAG of typ
 - `activeSteps()`, `flags()`, `ending()`, `inventory()` (items held now: taken or given by completed steps, minus delivered).
 - `stepAvailability(stepId, timeMin)`: liveness, presence, held items and condition gate, computed on demand; reasons role_dead, not_present, off_duty, missing_item, condition.
 - `windows(stepId)`: weekly availability windows derived from the target NPC's routine; undefined for schedule-free steps.
+- `stepPlace(stepId, timeMin)`: where the step points, for a marker on the map: the parcel or district the target names, the parcel the item sits at, or the simulation's live place for the person it targets (parcel, street edge, stop, route). Undefined when the simulation has no place to give (the person is dead, the item is not placed); it answers where, never whether, so a host pairs it with `stepAvailability`.
 - `advance(event, timeMin)`: completes matching available steps, applies effects (quest flags, simulation flags), activates edges (parallel or exclusive branching), reports an ending on terminal steps. Talk, listen and steal enforce presence at advance time; a kill event records the death in the simulation.
 - `serialize()` / `QuestlineRuntime.restore(...)`.
 

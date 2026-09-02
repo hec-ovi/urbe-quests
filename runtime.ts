@@ -17,4 +17,5 @@ export {
   type QuestlineStatus,
 } from './flow/QuestlineRuntime.js';
 export type { AvailabilityWindow, StepAvailability, UnavailableReason } from './flow/availability.js';
+export type { QuestPlace } from './flow/places.js';
 export { CastResolver } from './builder/CastResolver.js';
