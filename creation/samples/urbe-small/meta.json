@@ -1,0 +1,7 @@
+{
+  "prompt": "Give me a rain-soaked cyberpunk story about a corporation rationing water and power to keep its numbers clean, and the people on the docks who pay for it. I want it grounded and personal, no chosen-one nonsense: someone ordinary who refuses to let a death get filed as weather.",
+  "model": "claude-sonnet-4.6 (sub-agent standing in for the local model)",
+  "world": "city-urbe-small.named.json",
+  "source": "recording",
+  "ranAt": "2026-09-02T19:12:26.511Z"
+}

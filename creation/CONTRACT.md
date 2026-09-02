@@ -32,5 +32,7 @@ The side branch never fails the run: a side quest whose translation throws is dr
 
 `npm run replay -- <recording json> <name> [<named world json> <npc types json>]` ([samples/replay.ts](samples/replay.ts), ports in [samples/RecordedPorts.ts](samples/RecordedPorts.ts)) rebuilds a sample from a recorded run: the model's text and tool calls come from JSON (`prompt`, `model`, `script`, `situations`, `plans` and `builds` keyed by assignment title), everything else is the real workflow, so a sample is rebuilt and checked with no model present.
 
+[samples/urbe-small/](samples/urbe-small/) is the small city's set: the story, three situations, a ten-step main questline in four acts with two endings and one side questline per situation, all rebuilt from its `recording.json` against the named world the engine carries.
+
 ## Depends on
 - ../story, ../builder, ../world, ../ports

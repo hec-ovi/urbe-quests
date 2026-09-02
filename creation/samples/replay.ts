@@ -11,6 +11,7 @@
  */
 
 import { readFileSync } from 'node:fs';
+import { basename } from 'node:path';
 import { loadFixtureWorld, StubSimulation, type NamedWorld, type NPCTypeSet } from '../../world/index.js';
 import { QuestlineCreation } from '../QuestlineCreation.js';
 import { recordedPorts, type Recording } from './RecordedPorts.js';
@@ -43,7 +44,7 @@ async function main(): Promise<void> {
 
   writer.write(
     'meta.json',
-    JSON.stringify({ prompt: recording.prompt, model: recording.model, world: worldPath ?? 'neon-bay', source: 'recording', ranAt: new Date().toISOString() }, null, 2) + '\n',
+    JSON.stringify({ prompt: recording.prompt, model: recording.model, world: worldPath !== undefined ? basename(worldPath) : 'neon-bay', source: 'recording', ranAt: new Date().toISOString() }, null, 2) + '\n',
   );
   log(`done: ${result.script.script.characters.length} characters, ${result.side.length} of ${result.situations.situations.length} side quests, written to ${writer.path}`);
 }

@@ -14,6 +14,7 @@
  */
 
 import { readFileSync } from 'node:fs';
+import { basename } from 'node:path';
 import type { LLMPort } from '../../ports/llm.js';
 import { loadFixtureWorld, StubSimulation, type NamedWorld, type NPCTypeSet } from '../../world/index.js';
 import { QuestlineCreation } from '../QuestlineCreation.js';
@@ -63,7 +64,7 @@ async function main(): Promise<void> {
     },
   });
 
-  writer.write('meta.json', JSON.stringify({ prompt, model: client.model, world: worldPath ?? 'neon-bay', ranAt: new Date().toISOString() }, null, 2) + '\n');
+  writer.write('meta.json', JSON.stringify({ prompt, model: client.model, world: worldPath !== undefined ? basename(worldPath) : 'neon-bay', ranAt: new Date().toISOString() }, null, 2) + '\n');
   log(`done: ${result.script.script.characters.length} characters, ${result.side.length} of ${result.situations.situations.length} side quests, written to ${writer.path}`);
 }
 

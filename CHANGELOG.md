@@ -1,5 +1,6 @@
 # Changelog
 
+0.2.14: the small city ships a sample questline set (samples/urbe-small): a rain-soaked harbour story, a ten-step main line in four acts with two endings, and three side quests, rebuildable from its recording.
 0.2.13: a recorded run (script, situations, plans and tool calls as JSON) replays through the real workflow with `npm run replay`, so a sample is rebuilt, checked and changed with no model present.
 0.2.12: the runtime answers where a step points (`stepPlace`): the parcel or district it names, the parcel its item sits at, or the live place of the person it targets, so a host can mark quests on the map.
 0.2.11: the browser entry is held to its promise by a test that walks every module reachable from runtime.ts and fails on any specifier outside the box.

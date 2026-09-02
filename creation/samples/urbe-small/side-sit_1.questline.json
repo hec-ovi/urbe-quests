@@ -1,0 +1,217 @@
+{
+  "definition": {
+    "id": "q_oxide_filter",
+    "title": "Last Call at Oxide Filter",
+    "premise": "A barista who has poured the same order for two years starts noticing what her regular writes on the cups she never finishes, and has to decide what to do with someone else's guilt before building security decides for her.",
+    "roles": [
+      {
+        "roleId": "r_denna",
+        "npcType": "corpo_coffee_barista",
+        "reservedName": {
+          "given": "Denna",
+          "family": "Cho"
+        },
+        "persona": "Quiet, precise with drink orders, reads people by what they order and never finish. Wants someone she can trust to see what she's been saving; fears being the one whose name is on the sweep report; would never just throw the cups away."
+      },
+      {
+        "roleId": "r_talis",
+        "npcType": "corpo_analyst",
+        "reservedName": {
+          "given": "Talis",
+          "family": "Rook"
+        },
+        "persona": "Precise until the precision runs out. Orders the same coffee every day and leaves it to go cold when the numbers she's reading won't leave her alone."
+      },
+      {
+        "roleId": "r_guard",
+        "npcType": "security_guard",
+        "persona": "Runs the confiscation sweep on a fixed rotation and thinks paper cups with handwriting on them are somebody else's problem the moment they're bagged."
+      }
+    ],
+    "items": [
+      {
+        "itemId": "i1_window",
+        "kind": "information",
+        "name": "the rotation window",
+        "description": "Denna's read on when the confiscation bin sits unwatched between the guard's rounds. To her it's the only chance the cups have of coming back before they're read by the wrong people."
+      },
+      {
+        "itemId": "i1_cups",
+        "kind": "document",
+        "name": "the cup notes",
+        "description": "A fistful of paper cups with Talis Rook's own numbers and dates scrawled on them, saved by Denna instead of thrown out. To Talis they are the doubt she has never once said out loud."
+      }
+    ],
+    "facts": [
+      {
+        "factId": "f1a_denna",
+        "roleId": "r_denna",
+        "text": "You learn who's about to break by what they stop finishing. Talis stopped finishing her coffee the same week she stopped finishing sentences."
+      }
+    ],
+    "acts": [
+      {
+        "actId": "b1_counter",
+        "title": "The Counter",
+        "summary": "Denna notices the pattern and needs a reason to trust someone with it."
+      },
+      {
+        "actId": "b2_recovery",
+        "title": "The Recovery",
+        "summary": "What security took has to come back before the wrong people read it."
+      }
+    ],
+    "steps": [
+      {
+        "gives": [],
+        "needs": [],
+        "conditions": [],
+        "effects": [],
+        "branching": "parallel",
+        "stepId": "s1_goto",
+        "actId": "b1_counter",
+        "wantedByRoleId": "r_denna",
+        "narrative": {
+          "description": "Denna waves you toward a corner table at Oxide Filter during the one slow hour of her shift, when the lobby traffic thins out enough that nobody is counting who talks to who.",
+          "playerHint": "Go to Oxide Filter during the slow hour.",
+          "stake": "She is not saying a word about this over a full counter. If you show up at the wrong hour she loses her nerve and the cups stay wherever they've ended up."
+        },
+        "target": {
+          "kind": "goto",
+          "place": {
+            "parcelId": "p40"
+          }
+        },
+        "next": [
+          {
+            "toStepId": "s1_ask",
+            "when": []
+          }
+        ]
+      },
+      {
+        "gives": [],
+        "needs": [],
+        "conditions": [],
+        "effects": [],
+        "branching": "parallel",
+        "stepId": "s1_ask",
+        "actId": "b1_counter",
+        "wantedByRoleId": "r_denna",
+        "narrative": {
+          "description": "Denna tells you about the cups while she steams milk for someone else, never looking up, describing exactly how a security sweep swept her savings into a confiscation bin along with the lobby's other unclaimed paper.",
+          "playerHint": "Hear Denna out about the cups.",
+          "stake": "She has been saving evidence of somebody else's doubt for weeks with no plan for it. Saying it out loud to you is the first risk she has taken since she started saving them."
+        },
+        "target": {
+          "kind": "talk",
+          "roleId": "r_denna",
+          "atParcelId": "p40"
+        },
+        "next": [
+          {
+            "toStepId": "s1_observe",
+            "when": []
+          }
+        ]
+      },
+      {
+        "gives": [
+          "i1_window"
+        ],
+        "needs": [],
+        "conditions": [],
+        "effects": [],
+        "branching": "parallel",
+        "stepId": "s1_observe",
+        "actId": "b2_recovery",
+        "wantedByRoleId": "r_denna",
+        "narrative": {
+          "description": "You watch the lobby floor from a mezzanine seat long enough to clock the guard's rounds, the gap between when the bin gets checked and when it gets moved.",
+          "playerHint": "Observe the Glass Apex district to learn the rotation.",
+          "stake": "Guessing wrong means walking into the sweep in progress. Denna needs the window, not a guess, before the bin gets emptied for good."
+        },
+        "target": {
+          "kind": "observe",
+          "districtId": "d1"
+        },
+        "next": [
+          {
+            "toStepId": "s1_steal",
+            "when": []
+          }
+        ]
+      },
+      {
+        "gives": [
+          "i1_cups"
+        ],
+        "needs": [
+          "i1_window"
+        ],
+        "conditions": [],
+        "effects": [],
+        "branching": "parallel",
+        "stepId": "s1_steal",
+        "actId": "b2_recovery",
+        "wantedByRoleId": "r_denna",
+        "narrative": {
+          "description": "In the gap Denna's window gave you, you lift the bagged cups out of the confiscation bin while the floor guard is two corridors away on his fixed round.",
+          "playerHint": "Take the cup notes before the sweep report goes upstairs.",
+          "stake": "Once the sweep report is filed with Denna's name on it, the cups become a disciplinary case instead of a coffee order. This is the only window that closes it clean."
+        },
+        "target": {
+          "kind": "steal",
+          "itemId": "i1_cups",
+          "fromRoleId": "r_guard"
+        },
+        "next": [
+          {
+            "toStepId": "s1_final",
+            "when": []
+          }
+        ]
+      },
+      {
+        "gives": [],
+        "needs": [
+          "i1_cups"
+        ],
+        "conditions": [],
+        "effects": [],
+        "branching": "parallel",
+        "stepId": "s1_final",
+        "actId": "b2_recovery",
+        "wantedByRoleId": "r_talis",
+        "narrative": {
+          "description": "You set the recovered cups on the counter in front of Talis Rook, who recognizes her own handwriting before she recognizes what it means that someone else read it first.",
+          "playerHint": "Give the cup notes back to Talis.",
+          "stake": "Nobody has ever shown Talis proof of her own doubt before. What she does with it now is hers, but she can't pretend she never wrote it."
+        },
+        "target": {
+          "kind": "talk",
+          "roleId": "r_talis",
+          "atParcelId": "p40"
+        },
+        "next": [],
+        "endingId": "e1_kept"
+      }
+    ],
+    "endings": [
+      {
+        "endingId": "e1_kept",
+        "title": "Kept in the Apron",
+        "epilogue": "You put the cups back in Talis Rook's hands at her own counter, stained and unexplained. She never asks where they went. She orders it the same way the next morning, black, too hot to drink, and lets it go cold for a different reason this time."
+      }
+    ],
+    "flags": [],
+    "entryStepIds": [
+      "s1_goto"
+    ]
+  },
+  "cast": {
+    "r_denna": "npc_16",
+    "r_talis": "npc_8",
+    "r_guard": "npc_19"
+  }
+}

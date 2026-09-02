@@ -1,0 +1,212 @@
+{
+  "definition": {
+    "id": "q_signal_sump",
+    "title": "Signal Under Sump Row",
+    "premise": "A street kid who fished a company drive out of the flood finds something stranger in the same water: a junction box quietly stealing power from the district's own storm pumps, and needs a maintenance tech willing to look at it instead of look away.",
+    "roles": [
+      {
+        "roleId": "r_kip",
+        "npcType": "street_eater",
+        "reservedName": {
+          "given": "Kip",
+          "family": "Thorn"
+        },
+        "persona": "Fast, transactional, softens once trust is earned. Wants a witness who won't cash a good find in cheap; fears sitting on something worth more than his life; would never let this one go for less than its actual weight."
+      },
+      {
+        "roleId": "r_wick",
+        "npcType": "subway_tech",
+        "reservedName": {
+          "given": "Wick",
+          "family": "Talbot"
+        },
+        "persona": "Talks like he's still reading a schematic, careful, methodical. Wants a reason to look at a junction he's never been cleared to open; fears what he already suspects it's doing to his mother's block more than he fears his own shift log."
+      }
+    ],
+    "items": [
+      {
+        "itemId": "i2_key",
+        "kind": "key",
+        "name": "the spare hatch key",
+        "description": "A maintenance key Kip won't say how he got, cut for a hatch nobody's supposed to open off-shift. Means the only way into the junction that doesn't ask questions first."
+      },
+      {
+        "itemId": "i2_readout",
+        "kind": "information",
+        "name": "the routing reading",
+        "description": "What Wick reads off the junction box: power meant for the Sump Row storm pumps, routed elsewhere on a schedule that matches every low-tide cut this year. To him it means the redirection has a shape now, not just a rumor."
+      }
+    ],
+    "facts": [
+      {
+        "factId": "f2a_wick",
+        "roleId": "r_wick",
+        "text": "I don't report what's in those tunnels because the people I'd report it to are the reason it's down there."
+      }
+    ],
+    "acts": [
+      {
+        "actId": "c1_tip",
+        "title": "The Tip",
+        "summary": "Kip needs someone who won't just sell the story cheap to see the junction for what it is."
+      },
+      {
+        "actId": "c2_tunnel",
+        "title": "The Tunnel",
+        "summary": "Getting close to the box costs access nobody hands out for free."
+      }
+    ],
+    "steps": [
+      {
+        "gives": [],
+        "needs": [],
+        "conditions": [],
+        "effects": [],
+        "branching": "parallel",
+        "stepId": "s2_goto",
+        "actId": "c1_tip",
+        "wantedByRoleId": "r_kip",
+        "narrative": {
+          "description": "Kip waves you down at Dredge Feed before you've even cleared the flooded stairwell, too excited to haggle for once.",
+          "playerHint": "Go find Kip at Dredge Feed.",
+          "stake": "He has found something he cannot price on his own, and he would rather show it to a witness than describe it to a buyer who might not believe him."
+        },
+        "target": {
+          "kind": "goto",
+          "place": {
+            "parcelId": "p13"
+          }
+        },
+        "next": [
+          {
+            "toStepId": "s2_ask",
+            "when": []
+          }
+        ]
+      },
+      {
+        "gives": [
+          "i2_key"
+        ],
+        "needs": [],
+        "conditions": [],
+        "effects": [],
+        "branching": "parallel",
+        "stepId": "s2_ask",
+        "actId": "c1_tip",
+        "wantedByRoleId": "r_kip",
+        "narrative": {
+          "description": "Kip describes a junction box still humming under the drained floodwater, feeding a line that isn't on any map he's ever traded for, and presses a spare hatch key into your hand before he can talk himself out of it.",
+          "playerHint": "Hear Kip out and take the spare key.",
+          "stake": "He needs the box read by someone who understands wiring, not sold to someone who understands buyers. The key is the only way in that doesn't announce itself."
+        },
+        "target": {
+          "kind": "talk",
+          "roleId": "r_kip",
+          "atParcelId": "p13"
+        },
+        "next": [
+          {
+            "toStepId": "s2_work",
+            "when": []
+          }
+        ]
+      },
+      {
+        "gives": [],
+        "needs": [
+          "i2_key"
+        ],
+        "conditions": [],
+        "effects": [],
+        "branching": "parallel",
+        "stepId": "s2_work",
+        "actId": "c2_tunnel",
+        "wantedByRoleId": "r_wick",
+        "narrative": {
+          "description": "You use the spare key to pick up an unrostered maintenance shift out of the Harbor Junction office, the easiest way to be standing near the overnight hatch without anyone asking why.",
+          "playerHint": "Work a maintenance shift to get near the hatch.",
+          "stake": "Wick cannot get near that junction without an official reason, and neither can you. A shift nobody questions is the only access that doesn't get reported before you've even opened the panel."
+        },
+        "target": {
+          "kind": "work",
+          "atParcelId": "p51",
+          "role": "maintenance temp"
+        },
+        "next": [
+          {
+            "toStepId": "s2_talk_wick",
+            "when": []
+          }
+        ]
+      },
+      {
+        "gives": [
+          "i2_readout"
+        ],
+        "needs": [],
+        "conditions": [],
+        "effects": [],
+        "branching": "parallel",
+        "stepId": "s2_talk_wick",
+        "actId": "c2_tunnel",
+        "wantedByRoleId": "r_wick",
+        "narrative": {
+          "description": "Inside the hatch, Wick reads the junction's routing twice before he'll say it out loud, his hands shaking less from the cold than from what the numbers mean for the six blocks over his own mother's flat.",
+          "playerHint": "Talk to Wick about what the junction is doing.",
+          "stake": "He is the only one who can make this reading mean something instead of just look strange. Saying it to you out loud is the first time he has said it to anyone."
+        },
+        "target": {
+          "kind": "talk",
+          "roleId": "r_wick",
+          "atParcelId": "p51"
+        },
+        "next": [
+          {
+            "toStepId": "s2_final",
+            "when": []
+          }
+        ]
+      },
+      {
+        "gives": [],
+        "needs": [
+          "i2_readout"
+        ],
+        "conditions": [],
+        "effects": [],
+        "branching": "parallel",
+        "stepId": "s2_final",
+        "actId": "c2_tunnel",
+        "wantedByRoleId": "r_kip",
+        "narrative": {
+          "description": "You bring the reading back to Kip at Dredge Feed, and for once he doesn't ask what it's worth before he asks what it means.",
+          "playerHint": "Bring the routing reading back to Kip.",
+          "stake": "This is the first fact he has ever held that has a name attached instead of a price. He finally has something worth more than a sale."
+        },
+        "target": {
+          "kind": "talk",
+          "roleId": "r_kip",
+          "atParcelId": "p13"
+        },
+        "next": [],
+        "endingId": "e2_confirmed"
+      }
+    ],
+    "endings": [
+      {
+        "endingId": "e2_confirmed",
+        "title": "A Fact With a Name On It",
+        "epilogue": "Wick writes the routing down for Kip plainly, the way he'd write a repair order, and doesn't take it up his own chain, because his chain is the reason it's down there unreported. Kip finally has something worth more than a sale: a fact with a name on it, and someone who already believes him."
+      }
+    ],
+    "flags": [],
+    "entryStepIds": [
+      "s2_goto"
+    ]
+  },
+  "cast": {
+    "r_kip": "npc_4",
+    "r_wick": "npc_21"
+  }
+}

@@ -1,0 +1,223 @@
+{
+  "definition": {
+    "id": "q_exchange_rate",
+    "title": "The Exchange Rate",
+    "premise": "A mall vendor's grey-market ration chit turns out to be stolen from a batch that was supposed to be destroyed, and when the man who tipped her off to it collapses in her queue, she and the transit agent who caught the serial have to get him help before they decide who's to blame.",
+    "roles": [
+      {
+        "roleId": "r_yara",
+        "npcType": "mall_vendor",
+        "reservedName": {
+          "given": "Yara",
+          "family": "Fenn"
+        },
+        "persona": "Prices anything in a second, never asks what it's for, until she has to. Wants a fair price and no questions; fears the batch being traced to her stall; would never leave a customer to collapse over a chit she sold him."
+      },
+      {
+        "roleId": "r_milo",
+        "npcType": "transit_agent",
+        "reservedName": {
+          "given": "Milo",
+          "family": "Draeger"
+        },
+        "persona": "Checks serials twice out of habit, not suspicion, until the habit finds something real. Wants to know what he actually bought for his mother; fears finding out he's been funding the exact thing he's supposed to catch."
+      }
+    ],
+    "items": [
+      {
+        "itemId": "i3_chit",
+        "kind": "valuable",
+        "name": "the ration chit",
+        "description": "A grey-market water ration top-up with a serial that matches a batch logged as destroyed three weeks ago. To Milo it means the batch never actually left circulation."
+      },
+      {
+        "itemId": "i3_meds",
+        "kind": "substance",
+        "name": "the stim kit",
+        "description": "The emergency kit Yara keeps under her counter for exactly this kind of collapse. To her it's the difference between an ambulance that asks questions and a clinic that doesn't."
+      },
+      {
+        "itemId": "i3_batch",
+        "kind": "information",
+        "name": "the batch reading",
+        "description": "What the chit's serial actually traces to once Milo runs it against the transit log. To him it means a route through the tunnels, not just a stolen object."
+      }
+    ],
+    "facts": [
+      {
+        "factId": "f3a_yara",
+        "roleId": "r_yara",
+        "text": "Got my stall license off a man who owed my mother a favor and never learned my name. I've been pricing things fast ever since so nobody has to ask twice."
+      }
+    ],
+    "acts": [
+      {
+        "actId": "d1_stall",
+        "title": "The Stall",
+        "summary": "A chit that shouldn't exist changes what Milo thought he was buying."
+      },
+      {
+        "actId": "d2_reckoning",
+        "title": "The Reckoning",
+        "summary": "Someone pays for the batch before anyone can decide who's guilty."
+      }
+    ],
+    "steps": [
+      {
+        "gives": [],
+        "needs": [],
+        "conditions": [],
+        "effects": [],
+        "branching": "parallel",
+        "stepId": "s3_goto",
+        "actId": "d1_stall",
+        "wantedByRoleId": "r_yara",
+        "narrative": {
+          "description": "Yara Fenn waves you over to her stall at the Sump Exchange mall between customers, sizing you up for a sale before you've said a word.",
+          "playerHint": "Go to Yara Fenn's stall at Sump Exchange.",
+          "stake": "She has got a queue and no patience for browsers. If you don't come to her, she is not chasing you down to explain what's wrong with the chit she just sold."
+        },
+        "target": {
+          "kind": "goto",
+          "place": {
+            "parcelId": "p9"
+          }
+        },
+        "next": [
+          {
+            "toStepId": "s3_ask",
+            "when": []
+          }
+        ]
+      },
+      {
+        "gives": [
+          "i3_chit",
+          "i3_meds"
+        ],
+        "needs": [],
+        "conditions": [],
+        "effects": [],
+        "branching": "parallel",
+        "stepId": "s3_ask",
+        "actId": "d1_stall",
+        "wantedByRoleId": "r_yara",
+        "narrative": {
+          "description": "Yara slides a ration chit and a battered stim kit across the counter in the same motion, already talking about the next customer before you've finished asking where the chit came from.",
+          "playerHint": "Talk to Yara about the chit.",
+          "stake": "She needs this batch moved before anyone traces the serials back to her stall, and she'd rather you be the one holding both the chit and the means to fix what it might cost someone."
+        },
+        "target": {
+          "kind": "talk",
+          "roleId": "r_yara",
+          "atParcelId": "p9"
+        },
+        "next": [
+          {
+            "toStepId": "s3_confront",
+            "when": []
+          }
+        ]
+      },
+      {
+        "gives": [
+          "i3_batch"
+        ],
+        "needs": [
+          "i3_chit"
+        ],
+        "conditions": [],
+        "effects": [],
+        "branching": "parallel",
+        "stepId": "s3_confront",
+        "actId": "d2_reckoning",
+        "wantedByRoleId": "r_milo",
+        "narrative": {
+          "description": "Milo Draeger takes one look at the chit's serial at his Harbor Junction booth and pulls up the transit log without a word, checking it twice the way he checks everything.",
+          "playerHint": "Show the chit to Milo at the Harbor Junction booth.",
+          "stake": "He bought one of these for his own mother without checking. Now he needs to know exactly what he paid for before he decides what to do about it."
+        },
+        "target": {
+          "kind": "talk",
+          "roleId": "r_milo",
+          "atParcelId": "p51"
+        },
+        "next": [
+          {
+            "toStepId": "s3_deliver",
+            "when": []
+          }
+        ]
+      },
+      {
+        "gives": [],
+        "needs": [
+          "i3_meds"
+        ],
+        "conditions": [],
+        "effects": [],
+        "branching": "parallel",
+        "stepId": "s3_deliver",
+        "actId": "d2_reckoning",
+        "wantedByRoleId": "r_yara",
+        "narrative": {
+          "description": "Word reaches you that the dock worker who tipped Yara off to the batch has collapsed in her queue, chit still in his fist, and you get the stim kit to the Vitalis Spire Clinic's after-hours intake before anyone has to call it an emergency.",
+          "playerHint": "Deliver the stim kit to the Vitalis Spire Clinic.",
+          "stake": "Yara would rather explain a delivery than an ambulance report. Getting the kit there fast is the difference between a patient and a case number."
+        },
+        "target": {
+          "kind": "deliver",
+          "itemId": "i3_meds",
+          "place": {
+            "parcelId": "p32"
+          }
+        },
+        "next": [
+          {
+            "toStepId": "s3_wrap",
+            "when": []
+          }
+        ]
+      },
+      {
+        "gives": [],
+        "needs": [
+          "i3_batch"
+        ],
+        "conditions": [],
+        "effects": [],
+        "branching": "parallel",
+        "stepId": "s3_wrap",
+        "actId": "d2_reckoning",
+        "wantedByRoleId": "r_milo",
+        "narrative": {
+          "description": "Back at his booth, Milo looks at the batch reading you brought him and starts logging serials into a personal notebook instead of just the transit system.",
+          "playerHint": "Talk to Milo about the batch reading.",
+          "stake": "He nearly funded the exact circulation he is supposed to catch. Whatever he does with the reading now decides whether that habit means anything."
+        },
+        "target": {
+          "kind": "talk",
+          "roleId": "r_milo",
+          "atParcelId": "p51"
+        },
+        "next": [],
+        "endingId": "e3_treated"
+      }
+    ],
+    "endings": [
+      {
+        "endingId": "e3_treated",
+        "title": "Treated, Not Told",
+        "epilogue": "The collapsed worker gets treated after hours at the Vitalis Spire Clinic by a nurse who never asks for a name. Yara never learns where the batch really came from. Milo starts checking serial numbers on everything he buys for his mother, not just the one that already burned him."
+      }
+    ],
+    "flags": [],
+    "entryStepIds": [
+      "s3_goto"
+    ]
+  },
+  "cast": {
+    "r_yara": "npc_24",
+    "r_milo": "npc_26"
+  }
+}

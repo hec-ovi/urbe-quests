@@ -1,0 +1,474 @@
+{
+  "definition": {
+    "id": "q_weir_line",
+    "title": "The Weir Line",
+    "premise": "A crane operator's death gets filed as a weather accident. His sister won't sign off on that, and pulling the thread means dragging a street kid's salvage, a nurse's off-book list, an analyst's own model, and a guard's buried report up out of Sump Row and into the boardroom that scheduled the cut that killed him.",
+    "roles": [
+      {
+        "roleId": "r_petra",
+        "npcType": "renter",
+        "reservedName": {
+          "given": "Petra",
+          "family": "Moss"
+        },
+        "persona": "Blunt, runs out of patience before she runs out of words. Keeps every one of her brother Sable's shift logs since their mother died. Wants a name on the accident, not a weather pattern; fears grief with no name attached just becomes weather too; would never take a payout that reads like a price on him."
+      },
+      {
+        "roleId": "r_kip",
+        "npcType": "street_eater",
+        "reservedName": {
+          "given": "Kip",
+          "family": "Thorn"
+        },
+        "persona": "Fast, transactional, softens once trust is earned. Found a company drive in the same debris that took Sable Voss. Wants it out of his hands before whoever wants it back finds out he has it; fears being the kind of story the Sump forgets by winter; would never hand it over for free until someone asks him right."
+      },
+      {
+        "roleId": "r_doc",
+        "npcType": "clinic_nurse",
+        "reservedName": {
+          "given": "Mira",
+          "family": "Chen"
+        },
+        "persona": "Tired, exact, no wasted words. Treats execs by day for a wage and Sump Row's dock workers off the books after hours for nothing, keeping a private list of the drowned-sounding lungs the official chart has no room for. Wants the list to matter to someone with the power to act on it; fears it disappearing with her, unread."
+      },
+      {
+        "roleId": "r_talis",
+        "npcType": "corpo_analyst",
+        "reservedName": {
+          "given": "Talis",
+          "family": "Rook"
+        },
+        "persona": "Precise, then suddenly plain when the precision runs out. Wrote the ration model and signed off on the week's anomalous cut without reading past the summary line. Wants to find out the cut was a coincidence; fears finding out it was not more than she fears losing the job that pays for that fear."
+      },
+      {
+        "roleId": "r_cross",
+        "npcType": "security_guard",
+        "reservedName": {
+          "given": "Cross",
+          "family": "Ivanov"
+        },
+        "persona": "Flat and procedural until it isn't. Filed the maintenance report the night Sable Voss died and was told by morning it never existed, but kept his own copy. Wants the report on record with his own name on it; fears losing the pension that keeps his mother housed in Sump Row; would never destroy the copy."
+      },
+      {
+        "roleId": "r_ilona",
+        "npcType": "exec_resident",
+        "reservedName": {
+          "given": "Ilona",
+          "family": "Vale"
+        },
+        "persona": "Measured, turns statements into questions so the room agrees for her. Grew up in Sump Row before marrying onto the Aurelian Hydro board, and signed the memo that let the company cut the ration early to protect the quarter. Wants to be right about the memo; fears her own signature more than she fears the drowned."
+      }
+    ],
+    "items": [
+      {
+        "itemId": "i_drive",
+        "kind": "device",
+        "name": "Sable's drive",
+        "description": "Kip's find, but really Sable's: a company data drive, cracked but readable, pulled from the same debris pile that took him. Whoever holds it holds the last thing he saw.",
+        "atParcelId": "p13"
+      },
+      {
+        "itemId": "i_medical_log",
+        "kind": "information",
+        "name": "Doc Mira's list",
+        "description": "Doc Mira Chen's off-book ledger of dock workers treated for the same drowned-sounding cough, kept because the clinic's real chart has no room for them. To her it means the pattern predates Sable by months."
+      },
+      {
+        "itemId": "i_schedule",
+        "kind": "information",
+        "name": "the redirection schedule",
+        "description": "The pattern read off Aurelian Hydro's own maintenance drones: power pulled from the Sump Row storm pumps on a fixed schedule that lines up with every low-tide cut. To Talis it means the model wasn't wrong, it was obeyed."
+      },
+      {
+        "itemId": "i_report",
+        "kind": "document",
+        "name": "Cross's copy",
+        "description": "The maintenance report Cross Ivanov filed the night Sable Voss died, power log and signature included, kept in a locker he isn't supposed to still have a key to. To him it means somebody besides the family already knew."
+      },
+      {
+        "itemId": "i_confession",
+        "kind": "information",
+        "name": "Ilona's own words",
+        "description": "What Ilona Vale said over dinner at Zenith Dining when she thought the booth beside her was empty: that she signed the redirection knowing what it would cost the low tide. To her it is the one sentence she can never unsay."
+      }
+    ],
+    "facts": [
+      {
+        "factId": "f1_petra",
+        "roleId": "r_petra",
+        "text": "He counted every lift out loud. Four containers, one gantry, no surprises. The report doesn't have a single one of his words in it."
+      },
+      {
+        "factId": "f2_doc",
+        "roleId": "r_doc",
+        "text": "I've got eleven names on that list who came in with the same drowned cough inside a year. The clinic's chart has room for zero of them."
+      },
+      {
+        "factId": "f3_talis",
+        "roleId": "r_talis",
+        "gateFlag": "f_talis_engaged",
+        "text": "I signed off on the summary line. I never read the redirection table underneath it. I don't think anyone above me did either."
+      },
+      {
+        "factId": "f4_ilona",
+        "roleId": "r_ilona",
+        "gateFlag": "f_confession",
+        "text": "I told legal there was no name attached to the anomaly. That was true for about six hours."
+      },
+      {
+        "factId": "f5_cross",
+        "roleId": "r_cross",
+        "text": "My mother's in a Sump Row block that floods on the same schedule. I filed that report for her as much as for him."
+      },
+      {
+        "factId": "f6_kip",
+        "roleId": "r_kip",
+        "text": "Found it wedged in the same debris as the body. Didn't feel right to sell something that came up with him."
+      }
+    ],
+    "acts": [
+      {
+        "actId": "a1_grief",
+        "title": "The Weir Line Breaks",
+        "summary": "An accident becomes a question the family won't let close."
+      },
+      {
+        "actId": "a2_glass",
+        "title": "Behind the Glass",
+        "summary": "The question climbs into the company that authored the answer."
+      },
+      {
+        "actId": "a3_board",
+        "title": "The Ledger and the Board",
+        "summary": "The abstraction gets a voice, overheard and undeniable."
+      },
+      {
+        "actId": "a4_choice",
+        "title": "The Choice",
+        "summary": "The case is complete; what's left is who gets to hold it."
+      }
+    ],
+    "steps": [
+      {
+        "gives": [],
+        "needs": [],
+        "conditions": [],
+        "effects": [],
+        "branching": "parallel",
+        "stepId": "s_grief",
+        "actId": "a1_grief",
+        "wantedByRoleId": "r_petra",
+        "narrative": {
+          "description": "Petra Moss corners you before you've even finished asking about her brother, a folder of shift logs already in her hand, like she's been waiting for someone new enough to the district to still ask questions.",
+          "playerHint": "Hear Petra out about her brother.",
+          "stake": "It's not weather, and if she says that to one more precinct wall she's going to put her fist through it. If nobody outside the Sump believes her, Sable goes in the ground as a footnote."
+        },
+        "target": {
+          "kind": "talk",
+          "roleId": "r_petra",
+          "atParcelId": "p12"
+        },
+        "next": [
+          {
+            "toStepId": "s_kip",
+            "when": []
+          }
+        ]
+      },
+      {
+        "gives": [],
+        "needs": [],
+        "conditions": [],
+        "effects": [],
+        "branching": "parallel",
+        "stepId": "s_kip",
+        "actId": "a1_grief",
+        "wantedByRoleId": "r_kip",
+        "narrative": {
+          "description": "Kip Thorn works the stalls at Dredge Feed like he owns the block, but he goes quiet and pulls you aside the second Petra's name comes up, describing exactly where the flood left something worth more than he wants to be caught holding.",
+          "playerHint": "Talk to Kip about what the tide left behind.",
+          "stake": "He's not selling this one, but he's not holding it either. Whoever the drive belongs to at Aurelian Hydro will come looking for it, and Kip would rather it be gone from his hands than in them when they do."
+        },
+        "target": {
+          "kind": "talk",
+          "roleId": "r_kip",
+          "atParcelId": "p13"
+        },
+        "next": [
+          {
+            "toStepId": "s_pickup",
+            "when": []
+          }
+        ]
+      },
+      {
+        "gives": [
+          "i_drive"
+        ],
+        "needs": [],
+        "conditions": [],
+        "effects": [],
+        "branching": "parallel",
+        "stepId": "s_pickup",
+        "actId": "a1_grief",
+        "wantedByRoleId": "r_kip",
+        "narrative": {
+          "description": "Right where Kip said, wedged under a loose stall board at Dredge Feed, the drive is still tangled in the same debris the tide never fully gave back.",
+          "playerHint": "Pick up the drive Kip pointed you to.",
+          "stake": "It's the only piece of Sable that survived the water. Leaving it there means leaving him a rumor instead of a record."
+        },
+        "target": {
+          "kind": "pickup",
+          "itemId": "i_drive"
+        },
+        "next": [
+          {
+            "toStepId": "s_doc",
+            "when": []
+          }
+        ]
+      },
+      {
+        "gives": [
+          "i_medical_log"
+        ],
+        "needs": [],
+        "conditions": [],
+        "effects": [],
+        "branching": "parallel",
+        "stepId": "s_doc",
+        "actId": "a1_grief",
+        "wantedByRoleId": "r_doc",
+        "narrative": {
+          "description": "Doc Mira Chen meets you in the storage room behind the Vitalis Spire Clinic, off the clock and off the chart, and lays out a list of names that all drowned the same way Sable did, just slower.",
+          "playerHint": "Talk to Doc Mira at the clinic.",
+          "stake": "She's kept this list for a year with nowhere to put it. If it dies with her it was never anything but a private grief; if it reaches someone who can act, it's evidence."
+        },
+        "target": {
+          "kind": "talk",
+          "roleId": "r_doc",
+          "atParcelId": "p32"
+        },
+        "next": [
+          {
+            "toStepId": "s_confront_talis1",
+            "when": []
+          }
+        ]
+      },
+      {
+        "gives": [],
+        "needs": [
+          "i_drive"
+        ],
+        "conditions": [],
+        "effects": [
+          {
+            "kind": "setFlag",
+            "flag": "f_talis_engaged"
+          }
+        ],
+        "branching": "parallel",
+        "stepId": "s_confront_talis1",
+        "actId": "a2_glass",
+        "wantedByRoleId": "r_talis",
+        "narrative": {
+          "description": "You find Talis Rook at Oxide Filter, the one counter close enough to Aurelian Hydro that she trusts it, and set the cracked drive on the table between the two full cups she never finished.",
+          "playerHint": "Show Talis the drive.",
+          "stake": "She wrote the model. If the drive is what it looks like, she signed something she never actually read, and she has to decide whether that's still just math."
+        },
+        "target": {
+          "kind": "talk",
+          "roleId": "r_talis",
+          "atParcelId": "p40"
+        },
+        "next": [
+          {
+            "toStepId": "s_observe",
+            "when": []
+          }
+        ]
+      },
+      {
+        "gives": [
+          "i_schedule"
+        ],
+        "needs": [],
+        "conditions": [],
+        "effects": [],
+        "branching": "parallel",
+        "stepId": "s_observe",
+        "actId": "a2_glass",
+        "wantedByRoleId": "r_talis",
+        "narrative": {
+          "description": "Talis asks you to watch the Glass Apex skyline from street level while she watches the same feed from her desk, so neither of them is trusting the dashboard alone.",
+          "playerHint": "Observe the Glass Apex district for the drone pattern.",
+          "stake": "Six drones over the district at an hour nothing should be flying, redirecting power away from the storm pumps. She needs it confirmed by a second pair of eyes before she'll believe her own model."
+        },
+        "target": {
+          "kind": "observe",
+          "districtId": "d1"
+        },
+        "next": [
+          {
+            "toStepId": "s_cross",
+            "when": []
+          }
+        ]
+      },
+      {
+        "gives": [
+          "i_report"
+        ],
+        "needs": [],
+        "conditions": [],
+        "effects": [],
+        "branching": "parallel",
+        "stepId": "s_cross",
+        "actId": "a2_glass",
+        "wantedByRoleId": "r_cross",
+        "narrative": {
+          "description": "Cross Ivanov meets you at Apex Oversight after shift change, the lockers lit by one working tube, and pulls a folder out of a locker his badge shouldn't still open.",
+          "playerHint": "Talk to Cross at Apex Oversight.",
+          "stake": "He's kept this report for months without a place to put it. Handing it over costs him the pension that keeps his mother housed, but keeping it costs him the one rule he hasn't broken yet."
+        },
+        "target": {
+          "kind": "talk",
+          "roleId": "r_cross",
+          "atParcelId": "p4"
+        },
+        "next": [
+          {
+            "toStepId": "s_listen",
+            "when": []
+          }
+        ]
+      },
+      {
+        "gives": [
+          "i_confession"
+        ],
+        "needs": [
+          "i_schedule"
+        ],
+        "conditions": [],
+        "effects": [
+          {
+            "kind": "setFlag",
+            "flag": "f_confession"
+          }
+        ],
+        "branching": "exclusive",
+        "stepId": "s_listen",
+        "actId": "a3_board",
+        "wantedByRoleId": "r_talis",
+        "narrative": {
+          "description": "Knowing the redirection schedule, you're in the next booth at Zenith Dining at exactly the hour Ilona Vale takes her board lunch, close enough to hear her explain the numbers to a colleague who never has to ask twice.",
+          "playerHint": "Listen to Ilona Vale and Talis Rook at Zenith Dining.",
+          "stake": "Talis needs to hear Ilona say it herself before she'll turn the model's evidence against the company paying her. What Ilona says over lunch is the difference between a coincidence and a confession."
+        },
+        "target": {
+          "kind": "listen",
+          "roleIds": [
+            "r_ilona",
+            "r_talis"
+          ],
+          "atParcelId": "p57"
+        },
+        "next": [
+          {
+            "toStepId": "s_expose",
+            "when": []
+          },
+          {
+            "toStepId": "s_sellout",
+            "when": []
+          }
+        ]
+      },
+      {
+        "gives": [],
+        "needs": [
+          "i_drive",
+          "i_medical_log",
+          "i_schedule",
+          "i_report",
+          "i_confession"
+        ],
+        "conditions": [],
+        "effects": [],
+        "branching": "parallel",
+        "stepId": "s_expose",
+        "actId": "a4_choice",
+        "wantedByRoleId": "r_cross",
+        "narrative": {
+          "description": "You lay the drive, the list, the schedule, the report and the overheard confession across the counter at Apex Oversight, and Cross Ivanov reads every page aloud until the desk sergeant has no choice but to write it down.",
+          "playerHint": "Give everything to Cross and put the case on record.",
+          "stake": "This is the report Cross wanted to file the night it happened. It ends his pension and starts the inquiry Petra has been asking for since the funeral."
+        },
+        "target": {
+          "kind": "talk",
+          "roleId": "r_cross",
+          "atParcelId": "p4"
+        },
+        "next": [],
+        "endingId": "e_on_record"
+      },
+      {
+        "gives": [],
+        "needs": [
+          "i_drive",
+          "i_medical_log",
+          "i_schedule",
+          "i_report",
+          "i_confession"
+        ],
+        "conditions": [],
+        "effects": [],
+        "branching": "parallel",
+        "stepId": "s_sellout",
+        "actId": "a4_choice",
+        "wantedByRoleId": "r_ilona",
+        "narrative": {
+          "description": "You bring everything to Ilona Vale at Aurelian Hydro instead, and she doesn't deny a word of it, just names a figure that would lift Petra's whole block above the flood line if the file closes quietly.",
+          "playerHint": "Bring everything to Ilona and hear her offer.",
+          "stake": "Ilona wants this to disappear at a price that looks enough like justice that nobody has to call it a bribe. It buys Sump Row real relief and buries Sable's name at the same time."
+        },
+        "target": {
+          "kind": "talk",
+          "roleId": "r_ilona",
+          "atParcelId": "p2"
+        },
+        "next": [],
+        "endingId": "e_payout"
+      }
+    ],
+    "endings": [
+      {
+        "endingId": "e_on_record",
+        "title": "On the Record",
+        "epilogue": "Cross Ivanov reads the whole case into the precinct log until someone writes it down, and loses his pension inside the week for it. Petra Moss gets a name on the file at last, not weather. Talis Rook is called before an inquiry she does not try to avoid. Ilona Vale goes back to Sump Row exactly once, in a car that does not wait for her, and the ration schedule changes before the next low tide, not because anyone forgave her, but because now everyone is watching."
+      },
+      {
+        "endingId": "e_payout",
+        "title": "The Payout",
+        "epilogue": "Ilona Vale comes down from the Glass Apex herself and offers Petra Moss a number that would move her whole block above the flood line, no admission attached, no name on any form. \"That's a lot of money for a weather event,\" Petra says. \"I know exactly what it was,\" Ilona answers, the first sentence she has spoken all year that doesn't end like a question. The block gets rebuilt three floors higher. Sable Voss stays filed as an accident forever, and nobody who watches Petra sign the papers thinks she made the wrong choice."
+      }
+    ],
+    "flags": [
+      "f_talis_engaged",
+      "f_confession"
+    ],
+    "entryStepIds": [
+      "s_grief"
+    ]
+  },
+  "cast": {
+    "r_petra": "npc_1",
+    "r_kip": "npc_4",
+    "r_doc": "npc_5",
+    "r_talis": "npc_8",
+    "r_cross": "npc_11",
+    "r_ilona": "npc_14"
+  }
+}
