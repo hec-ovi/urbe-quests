@@ -1,6 +1,6 @@
 /** Questline creation: one prompt in, the story, its questline and its side quests out. */
 
-import type { TranslationResult } from '../builder/schema.js';
+import type { BuildProgress, TranslationResult } from '../builder/schema.js';
 import type { AgentPort, LLMPort } from '../ports/llm.js';
 import type { ScriptMinimums, ScriptPassResult, SituationMinimums, SituationsPassResult } from '../story/schema.js';
 import type { NamedWorld, NPCTypeSet } from '../world/types/named-world.js';
@@ -30,7 +30,16 @@ export interface CreationInput {
   maxRounds?: number;
   /** Told about a side quest that failed to build and was dropped. */
   warn?: (message: string) => void;
+  /** Told as each stage lands and each build round passes, so a long run shows where it is. */
+  progress?: (event: CreationProgress) => void;
 }
+
+export type CreationProgress =
+  | { kind: 'script'; result: ScriptPassResult }
+  | { kind: 'situations'; result: SituationsPassResult }
+  | { kind: 'build'; questline: 'main' | string; build: BuildProgress }
+  /** A questline finished: the main line, or the side quest of that situation id. */
+  | { kind: 'questline'; questline: 'main' | string; result: TranslationResult };
 
 export interface SideQuest extends TranslationResult {
   situationId: string;

@@ -8,6 +8,7 @@ Purpose: the questline creation workflow: one creation prompt in; the film scrip
 - `world`, `types`; `sim`: `SimulationPort`.
 - `ports`: `StagePorts { script, situations, plan: LLMPort; build: AgentPort }`, one per stage so the engine chooses the model for each.
 - `minimums? { script?, situations? }`, `referenceTimeMin?`, `maxRounds?`, passed through to the inner boxes.
+- `warn?`: told about a side quest that was dropped. `progress?`: told as each stage lands (`script`, `situations`, `questline` with `'main'` or the situation id and its `TranslationResult`) and on every build round (`build` carrying the builder's `BuildProgress`), so a host logs where a long run is and keeps what is already made.
 
 ## Out
 `CreationResult`: `script` (ScriptPassResult), `situations` (SituationsPassResult), `main` (TranslationResult: plan, definition, cast), `side` (one `SideQuest`, a TranslationResult with its `situationId`, per situation, in situation order).
@@ -27,7 +28,7 @@ Purpose: the questline creation workflow: one creation prompt in; the film scrip
 - Story text flows downstream as prose renders of the parsed script, never as ids.
 
 ## Sample
-[samples/cyberpunk/](samples/cyberpunk/) holds one real pass (`meta.json` names the prompt, model and world): `script.md`, `situations.md`, `main.plan.md`, `main.questline.json`, `side-<id>.plan.md`, `side-<id>.questline.json`. `npm run sample -- "<prompt>" <name>` ([samples/run-local.ts](samples/run-local.ts)) regenerates one against an OpenAI-compatible endpoint (`LLM_BASE_URL`, `LLM_MODEL`).
+`npm run sample -- "<prompt>" <name> [<named world json> <npc types json>]` ([samples/run-local.ts](samples/run-local.ts), client in [samples/OpenAICompatibleClient.ts](samples/OpenAICompatibleClient.ts)) runs one real pass against an OpenAI-compatible endpoint (`LLM_BASE_URL`, `LLM_MODEL`, `LLM_API_KEY`) and writes `samples/<name>/` as each stage lands: `script.md`, `situations.md`, `main.plan.md`, `main.questline.json`, `side-<id>.plan.md`, `side-<id>.questline.json`, then `meta.json` (prompt, model, world). Progress goes to stderr with elapsed seconds, one line per text call, build round and finished questline.
 
 ## Depends on
 - ../story, ../builder, ../world, ../ports

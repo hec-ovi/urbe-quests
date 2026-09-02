@@ -14,6 +14,16 @@ Then write the plan:
 2. Artifacts: each item with its kind, where it starts (a place or a person), and what it means.
 3. Acts: in order, each with its meaning and its turn.
 4. Steps, act by act: for each, who wants it and why, what it means to them and what it costs them if it does not happen, the step kind and its target (person, place or item), what the player gains or must hold, which flags it sets, and where it leads. Name the splits and the endings with their epilogues.
+5. Manifest: the closed list of machine ids the builder will commit, and nothing beyond it. Give every role, item, act, ending and step named above one short id (letters, digits, underscores), in this exact shape, as the last section of the plan:
+
+## Manifest
+roles: r_barista, r_lender
+items: i_ledger (document), i_stall (information)
+acts: a_favor, a_reckoning
+endings: e_paid, e_exposed
+steps: s_ask (talk), s_fetch (pickup), s_pay (deliver), s_burn (deliver)
+
+Write "items: none" when the story turns on no artifact. The builder may add facts freely; everything else it adds must be in this manifest, so a beat that is not listed here is not built.
 
 A questline is 6 to 16 steps in 2 to 4 acts; a side situation sits at the low end, 4 to 8 steps. Pick the beats that carry the arc and fold the rest into them.
 

@@ -14,8 +14,21 @@ export interface QuestAssignment {
 }
 
 export interface TranslationResult {
-  /** The text-only translation plan the build followed. */
+  /** The text-only translation plan the build followed, manifest included. */
   plan: string;
   definition: QuestlineDefinition;
   cast: ResolvedCast;
+}
+
+/** One build round as the loop saw it, for a host's log. */
+export interface BuildProgress {
+  /** The assignment title. */
+  title: string;
+  round: number;
+  maxRounds: number;
+  /** Planned pieces (roles, items, acts, endings, steps) added so far, against the plan's total. */
+  committed: number;
+  planned: number;
+  /** The tools called this round (with refusals counted), or what happened instead. */
+  note: string;
 }

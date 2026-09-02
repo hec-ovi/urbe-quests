@@ -22,8 +22,9 @@ export { SituationsPass, DEFAULT_SITUATION_MINIMUMS, type SituationsPassInput } 
 export { renderCards, renderMovements, renderScript } from './story/renderScript.js';
 export { loadFixtureStory, type FixtureStory, type FixtureStoryName } from './story/fixtures.js';
 
-export type { QuestAssignment, TranslationResult } from './builder/schema.js';
-export { TranslationPlanner, type PlanInput } from './builder/TranslationPlanner.js';
+export type { BuildProgress, QuestAssignment, TranslationResult } from './builder/schema.js';
+export { parsePlanManifest, type PlanManifest } from './builder/PlanManifest.js';
+export { TranslationPlanner, type PlanInput, type PlanResult } from './builder/TranslationPlanner.js';
 export { QuestlineBuilder, type BuildInput, type BuildResult } from './builder/QuestlineBuilder.js';
 export { QuestlineTranslator, type TranslateInput } from './builder/QuestlineTranslator.js';
 export { BUILDER_TOOLS } from './builder/tools.js';

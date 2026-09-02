@@ -13,7 +13,7 @@ Status: v0.2. Built against naming v0.1 and simulation v0.1.
 - At runtime: player events (talked, arrived, picked up, ...) and current time in simulation minutes.
 
 ## Out
-- Creation: `new QuestlineCreation().run(input) -> CreationResult` ([creation/CONTRACT.md](creation/CONTRACT.md)): text-only script pass, translation of the script into the main questline (plan pass, then flow tool build), text-only situations pass and one side questline per situation. Every stage runs alone too:
+- Creation: `new QuestlineCreation().run(input) -> CreationResult` ([creation/CONTRACT.md](creation/CONTRACT.md)): text-only script pass, translation of the script into the main questline (plan pass closing with a manifest of ids, then the flow tool build bounded by it), text-only situations pass and one side questline per situation; `progress` events report each stage and build round. Every stage runs alone too:
   - Story: `ScriptPass`, `SituationsPass` ([story/CONTRACT.md](story/CONTRACT.md)).
   - Translation: `QuestlineTranslator`, `TranslationPlanner`, `QuestlineBuilder` ([builder/CONTRACT.md](builder/CONTRACT.md)).
 - Browser hosts import [runtime.ts](runtime.ts) (dist/runtime.js): the flow runtime, validator, cast resolver, errors and types, with no node APIs behind them; index.ts adds creation, story and dialog, which read prompt files from disk.
@@ -28,7 +28,7 @@ Closed set, thrown as `QuestError { code, message, detail? }` ([errors.ts](error
 - `E_WRONG_STATE`: event matches no active step, questline already ended, or dialog with a dead NPC.
 - `E_UNAVAILABLE`: step acted on outside its availability (dead, absent, off duty, missing item, condition).
 - `E_CAST`: a role cannot be resolved or reserved against the simulation (cause in detail).
-- `E_LLM`: model output unusable after repair (detail: stage, raw, problems), an empty plan, or a build loop that never finishes.
+- `E_LLM`: model output unusable after repair (detail: stage, raw, problems: a script, a situations list or a plan manifest), or a build that ran out of its plan-sized round budget.
 `SimulationError` from the port passes through untouched, except cast resolution, which wraps its no-match and reserve conflicts into `E_CAST`.
 
 ## Invariants

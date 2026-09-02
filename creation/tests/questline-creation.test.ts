@@ -6,6 +6,7 @@
 
 import { describe, expect, it } from 'vitest';
 import type { AgentPort, AgentToolCall, LLMPort } from '../../ports/llm.js';
+import type { CreationProgress } from '../schema.js';
 import { loadFixtureStory } from '../../story/fixtures.js';
 import { loadFixtureWorld, StubSimulation } from '../../world/index.js';
 import { QuestlineCreation } from '../QuestlineCreation.js';
@@ -24,14 +25,14 @@ function textPort(responses: string[]) {
   return { port, calls };
 }
 
-/** Plans by echoing the assignment title, so every build can be traced to its arc. */
+/** Plans by echoing the assignment title, so every build can be traced to its arc; the manifest matches the scripted build. */
 function planPort() {
   const calls: { system: string; prompt: string }[] = [];
   const port: LLMPort = {
     complete: async (request) => {
       calls.push(request);
       const title = /^Title: (.+)$/m.exec(request.prompt)?.[1] ?? 'untitled';
-      return `Plan for ${title}: the barista tells where the chip is; the chip is picked up.`;
+      return `Plan for ${title}: the barista tells where the chip is; the chip is picked up.\n\n## Manifest\nroles: barista\nitems: tip (information), chip (device)\nacts: a1\nendings: e1\nsteps: s1 (talk), s2 (pickup)`;
     },
   };
   return { port, calls };
@@ -100,12 +101,14 @@ function setup(scriptResponses: string[]) {
 describe('QuestlineCreation', () => {
   it('runs script, main translation, situations and side translations from one prompt', async () => {
     const deps = setup([FIXTURE.script]);
+    const events: CreationProgress[] = [];
     const result = await new QuestlineCreation().run({
       prompt: 'create a dark cynical sci fi cyberpunk story',
       world: deps.world,
       types: deps.types,
       sim: deps.sim,
       ports: deps.ports,
+      progress: (event) => events.push(event),
     });
 
     expect(deps.script.calls[0]!.prompt).toContain('Creation prompt:\ncreate a dark cynical sci fi cyberpunk story');
@@ -136,6 +139,10 @@ describe('QuestlineCreation', () => {
       expect.stringContaining("Doc Sanna's Supply Run"),
       expect.stringContaining('Noodle Saint After Hours'),
     ]);
+
+    expect(events[0]?.kind).toBe('script');
+    expect(events.filter((e) => e.kind === 'build').map((e) => e.kind === 'build' && e.build.committed)).toEqual([7, 7, 7, 7]);
+    expect(events.filter((e) => e.kind === 'questline').map((e) => e.kind === 'questline' && e.questline).sort()).toEqual(['main', 'sit_1', 'sit_2', 'sit_3']);
   });
 
   it('fails with E_LLM when the script is unusable, before any translation starts', async () => {

@@ -1,137 +1,28 @@
 /**
- * Produces a committed sample: wires QuestlineCreation to an OpenAI-compatible
- * chat endpoint (a local llama.cpp server by default) and writes every stage's
- * output under creation/samples/<name>/. The box never owns this client; it is
- * sample tooling only.
+ * Produces a committed sample: runs QuestlineCreation against an
+ * OpenAI-compatible chat endpoint and writes every stage's output under
+ * creation/samples/<name>/ the moment it lands, so a run that stops late
+ * keeps what it made. Progress goes to stderr with elapsed seconds.
  *
  *   npm run sample -- "create a dark cynical sci fi cyberpunk story" cyberpunk
  *
  * Args: "<creation prompt>" <sample name> [<named world json> <npc types json>];
  * without the two paths the neon-bay fixture is the world.
- * Env: LLM_BASE_URL (default http://localhost:8080/v1), LLM_API_KEY (bearer token for a hosted server), QUESTS_MAX_ROUNDS (builder rounds per questline, default 120), LLM_MODEL (default:
- * the first model the server lists). No output caps are sent.
+ * Env: LLM_BASE_URL (default http://localhost:8080/v1), LLM_API_KEY (bearer token
+ * for a hosted server), LLM_MODEL (default: the first model the server lists).
+ * No output caps are sent; each build's round budget comes from its plan.
  */
 
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { Agent, setGlobalDispatcher } from 'undici';
-import type { AgentPort, AgentReply, AgentTool, AgentTurn, LLMPort } from '../../ports/llm.js';
+import type { LLMPort } from '../../ports/llm.js';
 import { loadFixtureWorld, StubSimulation, type NamedWorld, type NPCTypeSet } from '../../world/index.js';
 import { QuestlineCreation } from '../QuestlineCreation.js';
-
-const BASE_URL = process.env['LLM_BASE_URL'] ?? 'http://localhost:8080/v1';
-
-/** A hosted OpenAI-compatible server wants its key; a local one ignores the header. */
-function authHeader(): Record<string, string> {
-  const key = process.env['LLM_API_KEY'];
-  return key !== undefined ? { Authorization: `Bearer ${key}` } : {};
-}
-
-// A local model can think for many minutes on one build round; the default five-minute header timeout would end the run.
-setGlobalDispatcher(new Agent({ headersTimeout: 0, bodyTimeout: 0 }));
-
-type Message =
-  | { role: 'system' | 'user'; content: string }
-  | { role: 'assistant'; content: string; tool_calls?: ToolCallMessage[] }
-  | { role: 'tool'; tool_call_id: string; content: string };
-
-interface ToolCallMessage {
-  id: string;
-  type: 'function';
-  function: { name: string; arguments: string };
-}
-
-/** Both ports over one chat-completions endpoint; tool calls map onto the agent transcript by position. */
-class OpenAICompatibleClient implements LLMPort, AgentPort {
-  constructor(readonly model: string) {}
-
-  static async connect(): Promise<OpenAICompatibleClient> {
-    const model = process.env['LLM_MODEL'] ?? (await OpenAICompatibleClient.firstModel());
-    return new OpenAICompatibleClient(model);
-  }
-
-  async complete(request: { system: string; prompt: string }): Promise<string> {
-    const message = await this.chat([
-      { role: 'system', content: request.system },
-      { role: 'user', content: request.prompt },
-    ]);
-    return stripThinking(message.content ?? '');
-  }
-
-  async step(request: { system: string; prompt: string; tools: AgentTool[]; transcript: AgentTurn[] }): Promise<AgentReply> {
-    const messages: Message[] = [
-      { role: 'system', content: request.system },
-      { role: 'user', content: request.prompt },
-      ...toMessages(request.transcript),
-    ];
-    const tools = request.tools.map((t) => ({
-      type: 'function',
-      function: { name: t.name, description: t.description, parameters: t.inputSchema },
-    }));
-    const message = await this.chat(messages, tools);
-    const calls = message.tool_calls ?? [];
-    if (calls.length === 0) return { kind: 'done', text: stripThinking(message.content ?? '') };
-    return { kind: 'calls', calls: calls.map((c) => ({ tool: c.function.name, input: parseArguments(c.function.arguments) })) };
-  }
-
-  private async chat(messages: Message[], tools?: unknown[]): Promise<{ content?: string; tool_calls?: ToolCallMessage[] }> {
-    const response = await fetch(`${BASE_URL}/chat/completions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...authHeader() },
-      body: JSON.stringify({ model: this.model, messages, ...(tools !== undefined ? { tools } : {}) }),
-    });
-    if (!response.ok) throw new Error(`${response.status} ${response.statusText}: ${await response.text()}`);
-    const body = (await response.json()) as { choices: { message: { content?: string; tool_calls?: ToolCallMessage[] } }[] };
-    return body.choices[0]!.message;
-  }
-
-  private static async firstModel(): Promise<string> {
-    const response = await fetch(`${BASE_URL}/models`, { headers: authHeader() });
-    const body = (await response.json()) as { data: { id: string }[] };
-    const id = body.data[0]?.id;
-    if (id === undefined) throw new Error(`no model listed at ${BASE_URL}`);
-    return id;
-  }
-}
-
-function toMessages(transcript: AgentTurn[]): Message[] {
-  const messages: Message[] = [];
-  let assistantIndex = -1;
-  for (const turn of transcript) {
-    if ('text' in turn) {
-      messages.push({ role: turn.role, content: turn.text });
-    } else if (turn.role === 'assistant') {
-      assistantIndex += 1;
-      messages.push({
-        role: 'assistant',
-        content: '',
-        tool_calls: turn.calls.map((c, j) => ({
-          id: callId(assistantIndex, j),
-          type: 'function',
-          function: { name: c.tool, arguments: JSON.stringify(c.input ?? {}) },
-        })),
-      });
-    } else {
-      turn.results.forEach((r, j) => messages.push({ role: 'tool', tool_call_id: callId(assistantIndex, j), content: r.result }));
-    }
-  }
-  return messages;
-}
-
-const callId = (turn: number, index: number) => `call_${turn}_${index}`;
-
-function parseArguments(text: string): unknown {
-  try {
-    return JSON.parse(text);
-  } catch {
-    return { malformedArguments: text };
-  }
-}
-
-const stripThinking = (text: string) => text.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+import type { CreationProgress } from '../schema.js';
+import { BASE_URL, OpenAICompatibleClient } from './OpenAICompatibleClient.js';
 
 type Log = (line: string) => void;
 
-/** Progress lines per stage call, so a long run shows where it is. */
+/** One line per text-stage call, so a long run shows where it is. */
 function loggedText(stage: string, port: LLMPort, log: Log): LLMPort {
   return {
     complete: async (request) => {
@@ -143,16 +34,46 @@ function loggedText(stage: string, port: LLMPort, log: Log): LLMPort {
   };
 }
 
-function loggedAgent(stage: string, port: AgentPort, log: Log): AgentPort {
-  return {
-    step: async (request) => {
-      const started = Date.now();
-      const reply = await port.step(request);
-      const what = reply.kind === 'calls' ? reply.calls.map((c) => c.tool).join(', ') : 'done';
-      log(`${stage} round ${request.transcript.length / 2 + 1}: ${what} in ${Math.round((Date.now() - started) / 1000)}s`);
-      return reply;
-    },
-  };
+class SampleWriter {
+  private readonly dir: URL;
+
+  constructor(name: string) {
+    this.dir = new URL(`./${name}/`, import.meta.url);
+    mkdirSync(this.dir, { recursive: true });
+  }
+
+  get path(): string {
+    return this.dir.pathname;
+  }
+
+  write(file: string, text: string): void {
+    writeFileSync(new URL(file, this.dir), text);
+  }
+
+  /** Every stage lands on disk as it completes. */
+  onProgress(event: CreationProgress, log: Log): void {
+    switch (event.kind) {
+      case 'script':
+        this.write('script.md', event.result.raw);
+        return;
+      case 'situations':
+        this.write('situations.md', event.result.raw);
+        return;
+      case 'build': {
+        const b = event.build;
+        log(`build ${event.questline} round ${b.round}/${b.maxRounds}: ${b.note} (${b.committed}/${b.planned} planned pieces)`);
+        return;
+      }
+      case 'questline': {
+        const label = event.questline === 'main' ? 'main' : `side-${event.questline}`;
+        const { definition, cast } = event.result;
+        this.write(`${label}.plan.md`, event.result.plan);
+        this.write(`${label}.questline.json`, JSON.stringify({ definition, cast }, null, 2) + '\n');
+        log(`questline ${event.questline} "${definition.title}": ${definition.steps.length} steps, ${definition.roles.length} roles, ${definition.items.length} items, ${definition.endings.length} endings`);
+        return;
+      }
+    }
+  }
 }
 
 async function main(): Promise<void> {
@@ -168,37 +89,26 @@ async function main(): Promise<void> {
   const sim = new StubSimulation({ seed: `sample-${name}`, world, types });
   const started = Date.now();
   const log: Log = (line) => console.error(`[${Math.round((Date.now() - started) / 1000)}s] ${line}`);
+  const writer = new SampleWriter(name);
 
-  log(`model ${client.model} at ${BASE_URL}`);
+  log(`model ${client.model} at ${BASE_URL}, world ${worldPath ?? 'neon-bay'} (${world.parcels.length} parcels, ${types.types.length} types)`);
   const result = await new QuestlineCreation().run({
     prompt,
     world,
     types,
     sim,
-    // One tool call per round: a long main line with its roles, items, facts, acts and endings runs past 40.
-    maxRounds: Number(process.env['QUESTS_MAX_ROUNDS'] ?? 120),
     warn: log,
+    progress: (event) => writer.onProgress(event, log),
     ports: {
       script: loggedText('script', client, log),
       situations: loggedText('situations', client, log),
       plan: loggedText('plan', client, log),
-      build: loggedAgent('build', client, log),
+      build: client,
     },
   });
 
-  const dir = new URL(`./${name}/`, import.meta.url);
-  mkdirSync(dir, { recursive: true });
-  const write = (file: string, text: string) => writeFileSync(new URL(file, dir), text);
-  write('meta.json', JSON.stringify({ prompt, model: client.model, world: worldPath ?? 'neon-bay', ranAt: new Date().toISOString() }, null, 2) + '\n');
-  write('script.md', result.script.raw);
-  write('situations.md', result.situations.raw);
-  write('main.plan.md', result.main.plan);
-  write('main.questline.json', JSON.stringify({ definition: result.main.definition, cast: result.main.cast }, null, 2) + '\n');
-  for (const side of result.side) {
-    write(`side-${side.situationId}.plan.md`, side.plan);
-    write(`side-${side.situationId}.questline.json`, JSON.stringify({ definition: side.definition, cast: side.cast }, null, 2) + '\n');
-  }
-  log(`done: ${result.script.script.characters.length} characters, ${result.side.length} side quests, written to ${dir.pathname}`);
+  writer.write('meta.json', JSON.stringify({ prompt, model: client.model, world: worldPath ?? 'neon-bay', ranAt: new Date().toISOString() }, null, 2) + '\n');
+  log(`done: ${result.script.script.characters.length} characters, ${result.side.length} of ${result.situations.situations.length} side quests, written to ${writer.path}`);
 }
 
 main().catch((error: unknown) => {

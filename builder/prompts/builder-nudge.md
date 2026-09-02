@@ -1,1 +1,2 @@
-The questline is not finished: nothing has been committed until finish_questline is called. Answer with tool calls only. If the plan still has roles, items, facts, acts, steps or endings to add, add them now; when everything in the plan is in, call finish_questline. If finish_questline reported errors, fix them with the tools and call it again.
+The questline is not finished: nothing is committed until finish_questline succeeds. Answer with tool calls only.
+{{missing}}
