@@ -8,7 +8,7 @@
  *
  * Args: "<creation prompt>" <sample name> [<named world json> <npc types json>];
  * without the two paths the neon-bay fixture is the world.
- * Env: LLM_BASE_URL (default http://localhost:8080/v1), LLM_MODEL (default:
+ * Env: LLM_BASE_URL (default http://localhost:8080/v1), QUESTS_MAX_ROUNDS (builder rounds per questline, default 120), LLM_MODEL (default:
  * the first model the server lists). No output caps are sent.
  */
 
@@ -167,6 +167,8 @@ async function main(): Promise<void> {
     world,
     types,
     sim,
+    // One tool call per round: a long main line with its roles, items, facts, acts and endings runs past 40.
+    maxRounds: Number(process.env['QUESTS_MAX_ROUNDS'] ?? 120),
     ports: {
       script: loggedText('script', client, log),
       situations: loggedText('situations', client, log),
