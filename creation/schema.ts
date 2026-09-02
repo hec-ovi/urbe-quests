@@ -28,6 +28,8 @@ export interface CreationInput {
   minimums?: { script?: Partial<ScriptMinimums>; situations?: Partial<SituationMinimums> };
   referenceTimeMin?: number;
   maxRounds?: number;
+  /** Told about a side quest that failed to build and was dropped. */
+  warn?: (message: string) => void;
 }
 
 export interface SideQuest extends TranslationResult {

@@ -44,12 +44,18 @@ export class QuestlineCreation {
         llm: ports.situations,
         ...(input.minimums?.situations !== undefined ? { minimums: input.minimums.situations } : {}),
       });
-      const side = await Promise.all(
+      // A side quest that fails to build is dropped with a word to the caller; the main line is the product.
+      const settled = await Promise.allSettled(
         situations.situations.map(async (situation) => ({
           situationId: situation.situationId,
           ...(await translate(assignments.situation(situation))),
         })),
       );
+      const side: SideQuest[] = [];
+      settled.forEach((outcome, i) => {
+        if (outcome.status === 'fulfilled') side.push(outcome.value);
+        else input.warn?.(`side quest ${situations.situations[i]!.situationId} dropped: ${String(outcome.reason)}`);
+      });
       return { situations, side };
     };
 

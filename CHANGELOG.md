@@ -1,5 +1,6 @@
 # Changelog
 
+0.2.5: the builder answers a text-only reply with a nudge back to the tools (three times, prompts/builder-nudge.md; transcripts carry text turns); creation drops a side quest that fails to build and reports it through `warn`.
 0.2.4: runtime.ts, the browser-safe entry (flow runtime, validator, cast resolver, errors, types) with no node APIs behind it.
 0.2.3: `attachQuestline` replaces a runtime of the same questline id instead of stacking it.
 0.2.2: `CastResolver` exported for hosts that cast a questline against their own simulation; the local-model creation sample takes a named world and type set as paths.

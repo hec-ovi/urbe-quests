@@ -39,6 +39,8 @@ export interface BuildResult {
 
 const DEFAULT_REFERENCE_TIME = 1 * 1440 + 600;
 const DEFAULT_MAX_ROUNDS = 40;
+/** How many times a text-only reply is answered with a nudge back to the tools before the build fails. */
+const MAX_NUDGES = 3;
 
 const prompt = promptLoader(new URL('./prompts/', import.meta.url));
 
@@ -51,10 +53,16 @@ export class QuestlineBuilder {
     const maxRounds = input.maxRounds ?? DEFAULT_MAX_ROUNDS;
 
     let definition: QuestlineDefinition | undefined;
+    let nudges = 0;
     for (let round = 0; round < maxRounds && definition === undefined; round++) {
       const reply = await input.agent.step({ system, prompt: userPrompt, tools: BUILDER_TOOLS, transcript });
       if (reply.kind === 'done') {
-        throw new QuestError('E_LLM', 'builder agent stopped without finishing the questline');
+        // Words instead of tools: a model summarizing what it thinks it did. Send it back to the tools a few times before giving up.
+        if (nudges >= MAX_NUDGES) throw new QuestError('E_LLM', 'builder agent stopped without finishing the questline');
+        nudges += 1;
+        transcript.push({ role: 'assistant', text: reply.text });
+        transcript.push({ role: 'user', text: prompt('builder-nudge.md') });
+        continue;
       }
       transcript.push({ role: 'assistant', calls: reply.calls });
       const results: { tool: string; result: string }[] = [];

@@ -114,6 +114,25 @@ function fixtureDeps() {
 }
 
 describe('QuestlineBuilder', () => {
+  it('answers a text-only reply with a nudge back to the tools and goes on', async () => {
+    const { agent, requests } = scriptedAgent([{ kind: 'done', text: 'I have added everything.' }, ...FULL_BUILD]);
+    const deps = fixtureDeps();
+    const { definition } = await new QuestlineBuilder().build({ assignment: ASSIGNMENT, plan: PLAN, agent, ...deps });
+
+    expect(definition.steps.length).toBeGreaterThan(0);
+    expect(requests).toHaveLength(2);
+    const turns = requests[1]!.transcript;
+    expect(turns[0]).toEqual({ role: 'assistant', text: 'I have added everything.' });
+    expect(turns[1]?.role).toBe('user');
+    expect('text' in turns[1]! && turns[1].text).toContain('finish_questline');
+  });
+
+  it('gives up after three text-only replies', async () => {
+    const { agent } = scriptedAgent([]);
+    const deps = fixtureDeps();
+    await expect(new QuestlineBuilder().build({ assignment: ASSIGNMENT, plan: PLAN, agent, ...deps })).rejects.toThrow(/without finishing/);
+  });
+
   it('drafts from the plan through the tools, corrects a validation failure from feedback, and resolves the cast', async () => {
     const { agent, requests } = scriptedAgent([
       { kind: 'calls', calls: SETUP_CALLS },

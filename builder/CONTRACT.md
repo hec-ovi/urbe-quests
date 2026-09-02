@@ -16,7 +16,7 @@ The halves run alone: `new TranslationPlanner().plan({ assignment, world, types,
 Agent-facing surface: `BUILDER_TOOLS` ([tools.ts](tools.ts)) with narrative-first schemas: items carry a kind (device, weapon, document, key, substance, valuable, information); steps carry wantedByRoleId, a stake, gives and needs. Validation problems return as tool results the agent corrects, never as aborts.
 
 ## Errors
-- `E_LLM`: empty plan, agent stopped without finishing, or exceeded `maxRounds`.
+- `E_LLM`: empty plan, agent answered in words instead of tools more than three times (each such reply is answered with [prompts/builder-nudge.md](prompts/builder-nudge.md) and the loop goes on), or exceeded `maxRounds`.
 - `E_CAST`: a role has no castable NPC (underlying simulation no-match or reserve conflict in `detail`).
 Other `SimulationError`s pass through.
 

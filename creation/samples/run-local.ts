@@ -91,7 +91,9 @@ function toMessages(transcript: AgentTurn[]): Message[] {
   const messages: Message[] = [];
   let assistantIndex = -1;
   for (const turn of transcript) {
-    if (turn.role === 'assistant') {
+    if ('text' in turn) {
+      messages.push({ role: turn.role, content: turn.text });
+    } else if (turn.role === 'assistant') {
       assistantIndex += 1;
       messages.push({
         role: 'assistant',
@@ -169,6 +171,7 @@ async function main(): Promise<void> {
     sim,
     // One tool call per round: a long main line with its roles, items, facts, acts and endings runs past 40.
     maxRounds: Number(process.env['QUESTS_MAX_ROUNDS'] ?? 120),
+    warn: log,
     ports: {
       script: loggedText('script', client, log),
       situations: loggedText('situations', client, log),

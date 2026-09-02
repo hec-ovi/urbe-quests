@@ -37,7 +37,11 @@ export interface AgentPort {
 
 export type AgentTurn =
   | { role: 'assistant'; calls: AgentToolCall[] }
-  | { role: 'tool'; results: { tool: string; result: string }[] };
+  | { role: 'tool'; results: { tool: string; result: string }[] }
+  /** The agent answered in words instead of tool calls; kept so the exchange stays whole. */
+  | { role: 'assistant'; text: string }
+  /** A line from the loop back to the agent (a nudge to finish the job with the tools). */
+  | { role: 'user'; text: string };
 
 export type AgentReply =
   | { kind: 'calls'; calls: AgentToolCall[] }
