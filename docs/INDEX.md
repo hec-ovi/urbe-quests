@@ -10,3 +10,5 @@
 - ports/: injected LLM and agent interfaces shared by story, builder, dialog. prompts.ts at the root loads every box's prompt files.
 
 Dependency edges: creation -> story, builder, world, ports; builder -> flow, world, story, ports; story -> world, ports; dialog -> world, flow, ports; flow -> world; world -> (nothing).
+
+Later version, approved and parked: NPC-initiated contact, messages and calls between NPCs and to the player.
