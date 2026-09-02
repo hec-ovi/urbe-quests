@@ -247,6 +247,21 @@ describe('QuestlineBuilder', () => {
     expect(second.cast['lender']).toBe(first.cast['lender']);
   });
 
+  it('casts a role nobody works as to someone of that type already in the world', async () => {
+    const deps = fixtureDeps();
+    // A resident type is never on duty anywhere, so the vendor query cannot serve it.
+    const neighbour = deps.sim.reserveNPC({ name: { given: 'Ada', family: 'Renn' }, type: 'sump_resident' });
+    const calls = SETUP_CALLS.map((call) =>
+      call.tool === 'add_role' && (call.input as { roleId: string }).roleId === 'lender'
+        ? { tool: 'add_role', input: { roleId: 'lender', npcType: 'sump_resident', persona: 'Keeps every debt in her head, and the interest.' } }
+        : call,
+    );
+    const { agent } = scriptedAgent([{ kind: 'calls', calls: [...calls, ...STEP_CALLS, FINAL_STEP, FINISH] }]);
+    const { cast } = await new QuestlineBuilder().build({ assignment: ASSIGNMENT, plan: PLAN, manifest: MANIFEST, agent, ...deps });
+
+    expect(cast['lender']).toBe(neighbour.npcId);
+  });
+
   it('throws E_CAST when a role type has no castable NPC', async () => {
     const manifest = parsePlanManifest('## Manifest\nroles: ghost\nitems: none\nacts: a1\nendings: e\nsteps: s1');
     const { agent } = scriptedAgent([

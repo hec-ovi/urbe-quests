@@ -1,20 +1,20 @@
 /**
  * Integration proof that the SimulationPort mirror matches the real
- * ../simulation library: questline cast resolution, routines and behavior run
- * against createSimulation instead of the stub. Skipped when the simulation
- * repo is not checked out next to this one (standalone runs stay green).
+ * ../simulation library as published: questline cast resolution, routines and
+ * behavior run against createSimulation instead of the stub. Skipped when the
+ * built library is not next to this repo (standalone runs stay green).
  */
 
 import { existsSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import type { CityBlueprint, NPCTypeSet as SimNPCTypeSet } from '../../../simulation/src/index.js';
+import type { CityBlueprint, NPCTypeSet as SimNPCTypeSet } from '../../../simulation/dist/index.js';
 import type { QuestlineDefinition } from '../../flow/schema.js';
 import { QuestlineRuntime } from '../../flow/QuestlineRuntime.js';
 import { loadFixtureWorld } from '../../world/index.js';
 import type { SimulationPort } from '../../world/types/simulation.js';
 import { CastResolver } from '../CastResolver.js';
 
-const SIM_ENTRY = new URL('../../../simulation/src/index.ts', import.meta.url);
+const SIM_ENTRY = new URL('../../../simulation/dist/index.js', import.meta.url);
 const TUE_10 = 1 * 1440 + 600;
 
 const ZERO_COUNTS = {
@@ -39,6 +39,7 @@ function miniBlueprint(): CityBlueprint {
       edges: [
         {
           id: 'e1',
+          class: 'street',
           path: [[0, 50], [300, 50]] as [number, number][],
           sidewalk: { left: 2, right: 2 },
           districtIds: ['d1', 'd2', 'd3'],
@@ -108,7 +109,7 @@ const DEF: QuestlineDefinition = {
 
 describe.skipIf(!existsSync(SIM_ENTRY))('real simulation integration', () => {
   it('resolves a questline cast against createSimulation and drives runtime availability from real routines', async () => {
-    const { createSimulation } = await import('../../../simulation/src/index.js');
+    const { createSimulation } = await import('../../../simulation/dist/index.js');
     // Direct structural assignment: tsc proves the port mirror matches the real library.
     const sim: SimulationPort = createSimulation({
       seed: 'port-proof',
