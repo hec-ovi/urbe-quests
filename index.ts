@@ -33,4 +33,5 @@ export { Assignments } from './creation/Assignments.js';
 export { QuestlineCreation } from './creation/QuestlineCreation.js';
 
 export { DialogContextService, type DialogContextServiceInput } from './dialog/DialogContextService.js';
+export { Converse, type ConverseInput } from './dialog/Converse.js';
 export type { ContextSegment, DialogContext, DialogTurn, MemorySnapshot, SegmentId } from './dialog/schema.js';

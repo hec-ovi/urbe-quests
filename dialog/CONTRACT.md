@@ -15,6 +15,8 @@ Then:
 - `recordTurn(npcId, { speaker, text, atMin })`: appends memory; folds the oldest window into a digest note through the LLM when the tail overflows.
 - `serializeMemory()` / `restoreMemory(data)`.
 
+`new Converse(llm).reply({ context, name, line }) -> string` ([Converse.ts](Converse.ts)): the NPC's spoken reply to the player's `line`, asked from the context segments joined in order as the system prompt plus [prompts/reply.md](prompts/reply.md). The only place an LLM speaks for an NPC.
+
 ## Out
 `DialogContext`: ordered `segments`, each `{ id, text, shared }`, in fixed order world, type, npc, quest, memory, turns. `shared: true` segments (world, type) are byte-stable across calls and across NPCs of a type: the engine concatenates segments in order and may place provider cache breakpoints after shared ones. The world segment carries the character-play, register and deflection rules ([prompts/dialog-system.md](prompts/dialog-system.md)); npc carries the deterministic background (home, job, shift, family, haunts) plus quest personas; quest carries facts whose gate flag is set, the active steps this NPC wants (what happens and what it means to them), and the epilogue of an ending this NPC's questline reached; turns carries the volatile now line and the verbatim tail.
 

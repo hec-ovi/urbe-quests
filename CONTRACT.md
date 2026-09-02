@@ -16,7 +16,7 @@ Status: v0.2. Built against naming v0.1 and simulation v0.1.
   - Story: `ScriptPass`, `SituationsPass` ([story/CONTRACT.md](story/CONTRACT.md)).
   - Translation: `QuestlineTranslator`, `TranslationPlanner`, `QuestlineBuilder` ([builder/CONTRACT.md](builder/CONTRACT.md)).
 - Flow runtime: `QuestlineRuntime` ([flow/CONTRACT.md](flow/CONTRACT.md)): pure code state machine over the questline DAG. Availability (schedule, liveness, held items) is evaluated on demand; flags and step history are the only persisted state; a dead NPC voids its quests.
-- Dialog context: `DialogContextService` ([dialog/CONTRACT.md](dialog/CONTRACT.md)): per-NPC-instance scoped fact store (background, persona, flag-gated quest knowledge, the steps this NPC currently wants and the endings it lived), scored memory with summarization tiers, cache-ordered context segments, deflection guidance. Facts outside the scope never enter the prompt.
+- Dialog: `Converse` ([dialog/CONTRACT.md](dialog/CONTRACT.md)) answers one player line from an NPC's context with an injected `LLMPort`; `DialogContextService` ([dialog/CONTRACT.md](dialog/CONTRACT.md)): per-NPC-instance scoped fact store (background, persona, flag-gated quest knowledge, the steps this NPC currently wants and the endings it lived), scored memory with summarization tiers, cache-ordered context segments, deflection guidance. Facts outside the scope never enter the prompt.
 
 ## Errors
 Closed set, thrown as `QuestError { code, message, detail? }` ([errors.ts](errors.ts)):

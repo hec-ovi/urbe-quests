@@ -1,11 +1,13 @@
 {
   "name": "quests",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "directories": {
     "doc": "docs"
   },
   "scripts": {
     "test": "vitest",
+    "build": "tsc -p tsconfig.build.json && node scripts/copy-prompts.mjs",
+    "watch": "npm run build && tsc -p tsconfig.build.json --watch --preserveWatchOutput",
     "typecheck": "tsc --noEmit",
     "sample": "tsx creation/samples/run-local.ts"
   },
