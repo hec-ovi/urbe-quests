@@ -30,5 +30,7 @@ The side branch never fails the run: a side quest whose translation throws is dr
 ## Sample
 `npm run sample -- "<prompt>" <name> [<named world json> <npc types json>]` ([samples/run-local.ts](samples/run-local.ts), client in [samples/OpenAICompatibleClient.ts](samples/OpenAICompatibleClient.ts)) runs one real pass against an OpenAI-compatible endpoint (`LLM_BASE_URL`, `LLM_MODEL`, `LLM_API_KEY`) and writes `samples/<name>/` as each stage lands: `script.md`, `situations.md`, `main.plan.md`, `main.questline.json`, `side-<id>.plan.md`, `side-<id>.questline.json`, then `meta.json` (prompt, model, world). Progress goes to stderr with elapsed seconds, one line per text call, build round and finished questline.
 
+`npm run replay -- <recording json> <name> [<named world json> <npc types json>]` ([samples/replay.ts](samples/replay.ts), ports in [samples/RecordedPorts.ts](samples/RecordedPorts.ts)) rebuilds a sample from a recorded run: the model's text and tool calls come from JSON (`prompt`, `model`, `script`, `situations`, `plans` and `builds` keyed by assignment title), everything else is the real workflow, so a sample is rebuilt and checked with no model present.
+
 ## Depends on
 - ../story, ../builder, ../world, ../ports

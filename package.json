@@ -1,6 +1,6 @@
 {
   "name": "quests",
-  "version": "0.2.12",
+  "version": "0.2.13",
   "directories": {
     "doc": "docs"
   },
@@ -9,7 +9,8 @@
     "build": "tsc -p tsconfig.build.json && node scripts/copy-prompts.mjs",
     "watch": "npm run build && tsc -p tsconfig.build.json --watch --preserveWatchOutput",
     "typecheck": "tsc --noEmit",
-    "sample": "tsx creation/samples/run-local.ts"
+    "sample": "tsx creation/samples/run-local.ts",
+    "replay": "tsx creation/samples/replay.ts"
   },
   "type": "module",
   "private": "true",

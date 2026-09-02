@@ -11,9 +11,10 @@ npm install
 npm test           # contract tests, no model needed (fixture story, scripted agent)
 npm run typecheck
 npm run sample -- "create a dark cynical sci fi cyberpunk story" cyberpunk
+npm run replay -- creation/samples/<name>/recording.json <name>
 ```
 
-The sample command runs one real pass against an OpenAI-compatible endpoint (`LLM_BASE_URL`, default `http://localhost:8080/v1`; `LLM_MODEL`, default the first model listed) and writes every stage's output under `creation/samples/<name>/`. Two fixture worlds, a fixture story and a stub population layer ship with the box, so everything else runs on the 2D plane with no other layer present.
+The sample command runs one real pass against an OpenAI-compatible endpoint (`LLM_BASE_URL`, default `http://localhost:8080/v1`; `LLM_MODEL`, default the first model listed) and writes every stage's output under `creation/samples/<name>/`. The replay command rebuilds the same sample from a recorded run: the model's text and tool calls come from a JSON file and everything else is the real workflow, so a sample can be rebuilt and checked with no model present. Two fixture worlds, a fixture story and a stub population layer ship with the box, so everything else runs on the 2D plane with no other layer present.
 
 ## The creation workflow
 

@@ -13,14 +13,12 @@
  * No output caps are sent; each build's round budget comes from its plan.
  */
 
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import type { LLMPort } from '../../ports/llm.js';
 import { loadFixtureWorld, StubSimulation, type NamedWorld, type NPCTypeSet } from '../../world/index.js';
 import { QuestlineCreation } from '../QuestlineCreation.js';
-import type { CreationProgress } from '../schema.js';
 import { BASE_URL, OpenAICompatibleClient } from './OpenAICompatibleClient.js';
-
-type Log = (line: string) => void;
+import { SampleWriter, type Log } from './SampleWriter.js';
 
 /** One line per text-stage call, so a long run shows where it is. */
 function loggedText(stage: string, port: LLMPort, log: Log): LLMPort {
@@ -32,48 +30,6 @@ function loggedText(stage: string, port: LLMPort, log: Log): LLMPort {
       return text;
     },
   };
-}
-
-class SampleWriter {
-  private readonly dir: URL;
-
-  constructor(name: string) {
-    this.dir = new URL(`./${name}/`, import.meta.url);
-    mkdirSync(this.dir, { recursive: true });
-  }
-
-  get path(): string {
-    return this.dir.pathname;
-  }
-
-  write(file: string, text: string): void {
-    writeFileSync(new URL(file, this.dir), text);
-  }
-
-  /** Every stage lands on disk as it completes. */
-  onProgress(event: CreationProgress, log: Log): void {
-    switch (event.kind) {
-      case 'script':
-        this.write('script.md', event.result.raw);
-        return;
-      case 'situations':
-        this.write('situations.md', event.result.raw);
-        return;
-      case 'build': {
-        const b = event.build;
-        log(`build ${event.questline} round ${b.round}/${b.maxRounds}: ${b.note} (${b.committed}/${b.planned} planned pieces)`);
-        return;
-      }
-      case 'questline': {
-        const label = event.questline === 'main' ? 'main' : `side-${event.questline}`;
-        const { definition, cast } = event.result;
-        this.write(`${label}.plan.md`, event.result.plan);
-        this.write(`${label}.questline.json`, JSON.stringify({ definition, cast }, null, 2) + '\n');
-        log(`questline ${event.questline} "${definition.title}": ${definition.steps.length} steps, ${definition.roles.length} roles, ${definition.items.length} items, ${definition.endings.length} endings`);
-        return;
-      }
-    }
-  }
 }
 
 async function main(): Promise<void> {
