@@ -8,7 +8,7 @@
  *
  * Args: "<creation prompt>" <sample name> [<named world json> <npc types json>];
  * without the two paths the neon-bay fixture is the world.
- * Env: LLM_BASE_URL (default http://localhost:8080/v1), QUESTS_MAX_ROUNDS (builder rounds per questline, default 120), LLM_MODEL (default:
+ * Env: LLM_BASE_URL (default http://localhost:8080/v1), LLM_API_KEY (bearer token for a hosted server), QUESTS_MAX_ROUNDS (builder rounds per questline, default 120), LLM_MODEL (default:
  * the first model the server lists). No output caps are sent.
  */
 
@@ -19,6 +19,12 @@ import { loadFixtureWorld, StubSimulation, type NamedWorld, type NPCTypeSet } fr
 import { QuestlineCreation } from '../QuestlineCreation.js';
 
 const BASE_URL = process.env['LLM_BASE_URL'] ?? 'http://localhost:8080/v1';
+
+/** A hosted OpenAI-compatible server wants its key; a local one ignores the header. */
+function authHeader(): Record<string, string> {
+  const key = process.env['LLM_API_KEY'];
+  return key !== undefined ? { Authorization: `Bearer ${key}` } : {};
+}
 
 // A local model can think for many minutes on one build round; the default five-minute header timeout would end the run.
 setGlobalDispatcher(new Agent({ headersTimeout: 0, bodyTimeout: 0 }));
@@ -70,7 +76,7 @@ class OpenAICompatibleClient implements LLMPort, AgentPort {
   private async chat(messages: Message[], tools?: unknown[]): Promise<{ content?: string; tool_calls?: ToolCallMessage[] }> {
     const response = await fetch(`${BASE_URL}/chat/completions`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
       body: JSON.stringify({ model: this.model, messages, ...(tools !== undefined ? { tools } : {}) }),
     });
     if (!response.ok) throw new Error(`${response.status} ${response.statusText}: ${await response.text()}`);
@@ -79,7 +85,7 @@ class OpenAICompatibleClient implements LLMPort, AgentPort {
   }
 
   private static async firstModel(): Promise<string> {
-    const response = await fetch(`${BASE_URL}/models`);
+    const response = await fetch(`${BASE_URL}/models`, { headers: authHeader() });
     const body = (await response.json()) as { data: { id: string }[] };
     const id = body.data[0]?.id;
     if (id === undefined) throw new Error(`no model listed at ${BASE_URL}`);

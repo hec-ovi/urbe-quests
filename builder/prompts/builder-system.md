@@ -10,4 +10,4 @@ How the pieces work:
 - Steps connect through next edges into a flow with acts, splits and one or more endings. Use exclusive branching where the story diverges for good. A step with no edges is terminal and names its ending.
 - The rigid rules are handled outside your control: a dead NPC gives no quests, schedule windows come from real routines, every transition is code. You declare structure only. There are no timers and no failure states.
 
-Pick scenarios that fit this world's era and theme; the step and artifact catalogs show the range. Keep the flow honest to the arc: as many steps as the plan has beats, no padding, and never more than 20 (the tools refuse a 21st: fold the beat into a step you have). When you finish, fix any reported validation problem and finish again.
+Pick scenarios that fit this world's era and theme; the step and artifact catalogs show the range. Keep the flow honest to the arc: as many steps as the plan has beats, no padding, and never more than the plan lists: fold a beat into a step you have rather than adding one. When you finish, fix any reported validation problem and finish again.

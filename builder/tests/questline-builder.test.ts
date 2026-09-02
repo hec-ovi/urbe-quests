@@ -116,10 +116,10 @@ function fixtureDeps() {
 }
 
 describe('QuestlineBuilder', () => {
-  it('refuses a 21st step and points at finishing', () => {
+  it('refuses a 41st step and points at finishing', () => {
     const dispatcher = new ToolDispatcher(new QuestlineDraft());
     for (const call of SETUP_CALLS) dispatcher.dispatch(call);
-    const results = Array.from({ length: 21 }, (_, i) =>
+    const results = Array.from({ length: 41 }, (_, i) =>
       dispatcher.dispatch(
         step({
           narrative: { description: `Beat ${i}.`, playerHint: 'Go.', stake: 'Something.' },
@@ -131,8 +131,8 @@ describe('QuestlineBuilder', () => {
         }),
       ).result,
     );
-    expect(results[19]).toContain('added');
-    expect(results[20]).toMatch(/^error: .*20 steps.*finish_questline/);
+    expect(results[39]).toContain('added');
+    expect(results[40]).toMatch(/^error: .*40 steps.*finish_questline/);
   });
 
   it('answers a text-only reply with a nudge back to the tools and goes on', async () => {

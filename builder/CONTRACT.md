@@ -16,7 +16,7 @@ The halves run alone: `new TranslationPlanner().plan({ assignment, world, types,
 Agent-facing surface: `BUILDER_TOOLS` ([tools.ts](tools.ts)) with narrative-first schemas: items carry a kind (device, weapon, document, key, substance, valuable, information); steps carry wantedByRoleId, a stake, gives and needs. Validation problems return as tool results the agent corrects, never as aborts.
 
 ## Errors
-- A questline carries at most 20 steps (`MAX_STEPS`): `add_step` past that returns an error that points at finishing, so a build ends in bounded rounds; the plan prompt sizes a main line at 6 to 16 steps and a side situation at 4 to 8.
+- The plan prompt sizes a main line at 6 to 16 steps and a side situation at 4 to 8; `MAX_STEPS` (40) is a safety net far above it, so a fix after validation is never refused and a runaway build still ends.
 - `E_LLM`: empty plan, agent answered in words instead of tools more than three times (each such reply is answered with [prompts/builder-nudge.md](prompts/builder-nudge.md) and the loop goes on), or exceeded `maxRounds`.
 - `E_CAST`: a role has no castable NPC (underlying simulation no-match or reserve conflict in `detail`).
 Other `SimulationError`s pass through.

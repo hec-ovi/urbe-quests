@@ -15,6 +15,6 @@ Then write the plan:
 3. Acts: in order, each with its meaning and its turn.
 4. Steps, act by act: for each, who wants it and why, what it means to them and what it costs them if it does not happen, the step kind and its target (person, place or item), what the player gains or must hold, which flags it sets, and where it leads. Name the splits and the endings with their epilogues.
 
-A questline is 6 to 16 steps in 2 to 4 acts; a side situation sits at the low end, 4 to 8 steps. Pick the beats that carry the arc and fold the rest into them: the builder refuses a 21st step.
+A questline is 6 to 16 steps in 2 to 4 acts; a side situation sits at the low end, 4 to 8 steps. Pick the beats that carry the arc and fold the rest into them.
 
 Expand and adapt; never contradict the story. Where a beat cannot be expressed with the vocabulary, drop the beat rather than invent a mechanic. Every step names a person who wants it: an objective nobody wants is an errand, and this story has no errands.

@@ -15,8 +15,8 @@ import type {
   QuestStep,
 } from '../flow/schema.js';
 
-/** A questline the player can hold in their head: the tools refuse a step past this. */
-export const MAX_STEPS = 20;
+/** A safety net well above the plan's budget (6 to 16 steps), so a fix after validation is never refused. */
+export const MAX_STEPS = 40;
 
 export class DraftError extends Error {}
 
