@@ -2,7 +2,7 @@
 
 Purpose: authors the world's story and playable questlines, runs them as deterministic typed step flows whose NPCs resolve by type through simulation queries, and assembles scoped NPC dialog context.
 
-Status: v0.6. Built against naming v0.1, simulation v0.8, engine investigation v1.1, and engine mission-assets v1.0.
+Status: v0.6.0. Built against naming v0.4.5, simulation v0.9.0, engine investigation v1.1, and engine mission-assets v1.0.
 
 ## In
 - Named world and NPC type set: shapes in [world/types/named-world.ts](world/types/named-world.ts), mirrors of ../naming/schema/world-state.schema.json and npc-types.schema.json.
