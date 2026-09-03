@@ -7,17 +7,14 @@ import { QuestError } from '../errors.js';
 import type { SimulationPort } from '../world/types/simulation.js';
 import { AvailabilityService, type AvailabilityWindow, type StepAvailability } from './availability.js';
 import type { PlayerEvent } from './events.js';
+import { guidanceFor, type StepGuidance } from './guidance.js';
 import { StepPlaces, type QuestPlace } from './places.js';
 import { PredicateEvaluator } from './predicates.js';
 import type { QuestEnding, QuestlineDefinition, QuestStep, ResolvedCast } from './schema.js';
+import { QuestlineStateValidator, type QuestlineState } from './state.js';
 import { FlowValidator } from './validate.js';
 
-export interface QuestlineState {
-  activeStepIds: string[];
-  completedStepIds: string[];
-  flags: string[];
-  endingId?: string;
-}
+export type { QuestlineState } from './state.js';
 
 export interface AdvanceResult {
   completedStepIds: string[];
@@ -60,8 +57,10 @@ export class QuestlineRuntime {
     for (const id of def.entryStepIds) this.active.add(id);
   }
 
-  static restore(def: QuestlineDefinition, cast: ResolvedCast, sim: SimulationPort, state: QuestlineState): QuestlineRuntime {
+  static restore(def: QuestlineDefinition, cast: ResolvedCast, sim: SimulationPort, state: unknown): QuestlineRuntime {
     const runtime = new QuestlineRuntime(def, cast, sim);
+    const validator: QuestlineStateValidator = new QuestlineStateValidator();
+    validator.validate(def, state);
     runtime.active.clear();
     for (const id of state.activeStepIds) runtime.requireStep(id) && runtime.active.add(id);
     for (const id of state.completedStepIds) runtime.requireStep(id) && runtime.completed.add(id);
@@ -133,6 +132,12 @@ export class QuestlineRuntime {
   /** Where the step points at that minute, for a marker on the map; undefined when there is nothing to mark. */
   stepPlace(stepId: string, timeMin: number): QuestPlace | undefined {
     return this.stepPlaces.place(this.step(stepId), timeMin);
+  }
+
+  /** Objective place projected to the route box's parcel, station, or stop destination. */
+  stepGuidance(stepId: string, timeMin: number): StepGuidance {
+    this.step(stepId);
+    return guidanceFor(this.def.id, stepId, this.stepPlace(stepId, timeMin));
   }
 
   advance(event: PlayerEvent, timeMin: number): AdvanceResult {
@@ -241,11 +246,7 @@ export class QuestlineRuntime {
       case 'listen':
         return event.kind === 'overheard' && t.roleIds.every((r) => event.npcIds.includes(this.cast[r]!));
       case 'goto':
-        return (
-          event.kind === 'arrivedAt' &&
-          (('parcelId' in t.place && t.place.parcelId === event.parcelId) ||
-            ('districtId' in t.place && t.place.districtId === event.districtId))
-        );
+        return event.kind === 'arrivedAt' && samePlace(event, t.place);
       case 'observe':
         return event.kind === 'observed' && event.districtId === t.districtId;
       case 'pickup':
@@ -254,8 +255,7 @@ export class QuestlineRuntime {
         return (
           event.kind === 'delivered' &&
           event.itemId === t.itemId &&
-          (('parcelId' in t.place && t.place.parcelId === event.parcelId) ||
-            ('districtId' in t.place && t.place.districtId === event.districtId))
+          samePlace(event, t.place)
         );
       case 'steal':
         return event.kind === 'stole' && event.itemId === t.itemId;
@@ -334,9 +334,10 @@ export class QuestlineRuntime {
 }
 
 function samePlace(left: import('./schema.js').PlaceTarget, right: import('./schema.js').PlaceTarget): boolean {
-  return 'parcelId' in left
-    ? 'parcelId' in right && left.parcelId === right.parcelId
-    : 'districtId' in right && left.districtId === right.districtId;
+  if ('parcelId' in left) return 'parcelId' in right && left.parcelId === right.parcelId;
+  if ('districtId' in left) return 'districtId' in right && left.districtId === right.districtId;
+  if ('stationId' in left) return 'stationId' in right && left.stationId === right.stationId;
+  return 'stopId' in right && left.stopId === right.stopId;
 }
 
 function sameMembers(left: string[], right: string[]): boolean {

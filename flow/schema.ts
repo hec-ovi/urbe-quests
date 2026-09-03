@@ -130,7 +130,12 @@ export type StepTarget =
       completionFlag: string;
     };
 
-export type PlaceTarget = { parcelId: string } | { districtId: string };
+/** Stable world identity accepted by authored objectives. */
+export type PlaceTarget =
+  | { parcelId: string }
+  | { districtId: string }
+  | { stationId: string }
+  | { stopId: string };
 
 export interface QuestStep {
   stepId: string;

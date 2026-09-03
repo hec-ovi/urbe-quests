@@ -9,6 +9,7 @@ Purpose: deterministic questline state machine over a condition-gated DAG of typ
 - `ResolvedCast` ([schema.ts](schema.ts)): roleId to npcId map from the builder.
 - `SimulationPort` ([../world/types/simulation.ts](../world/types/simulation.ts)) for liveness, schedules and story-consequence flags.
 - `PlayerEvent` ([schema/player-event.schema.json](schema/player-event.schema.json), TypeScript [events.ts](events.ts)) plus current time in simulation minutes. New completion events repeat the authored interaction ids, cast NPC ids, item ids, modes, and places needed to match one target without inference.
+- Authored places are exact `parcelId`, `districtId`, `stationId`, or `stopId` identities. Arrival and delivery events repeat the same identity kind and id.
 
 New mechanic completion events:
 
@@ -28,16 +29,17 @@ New mechanic completion events:
 - `activeSteps()`, `flags()`, `ending()`, `inventory()` (items held now: taken or given by completed steps, minus delivered).
 - `stepAvailability(stepId, timeMin)`: liveness, presence, held items and condition gate, computed on demand; reasons role_dead, not_present, off_duty, missing_item, condition.
 - `windows(stepId)`: weekly availability windows derived from the target NPC's routine; undefined for schedule-free steps.
-- `stepPlace(stepId, timeMin)`: where the step points, for a marker on the map: the parcel or district the target names, the parcel the item sits at, or the simulation's live place for the person it targets (parcel, street edge, stop, route). Undefined when the simulation has no place to give (the person is dead, the item is not placed); it answers where, never whether, so a host pairs it with `stepAvailability`.
+- `stepPlace(stepId, timeMin)`: where the step points, for a marker on the map: the parcel, district, station, or stop the target names, the parcel the item sits at, or the simulation's live place for the person it targets. Undefined when the simulation has no place to give.
+- `stepGuidance(stepId, timeMin)` ([schema/step-guidance.schema.json](schema/step-guidance.schema.json)): route-ready parcel, station, or stop destination. District areas, street edges, moving routes, and unavailable targets return a closed reason instead of an invalid route request. The host supplies current feet as the route origin.
 - `advance(event, timeMin)`: completes matching available steps, applies effects (quest flags, simulation flags), activates edges (parallel or exclusive branching), reports an ending on terminal steps. Talk, listen, steal, rescue, escort, and transportation with cast passengers enforce liveness and available presence at advance time; a kill event records the death in the simulation.
-- `serialize()` / `QuestlineRuntime.restore(...)`.
+- `serialize()` ([schema/questline-state.schema.json](schema/questline-state.schema.json)) / `QuestlineRuntime.restore(...)`. Restore accepts untrusted JSON only when step history, active frontier, ending, and replayed flags agree with the definition.
 
 `FlowValidator` ([validate.ts](validate.ts)): structural validation (ids, references, declared flags, DAG, reachability, terminal endings, role usage, item rules: information is never a pickup, deliver or steal target; a pickup item is placed at a parcel). Investigation stages must grant their declared information evidence. Access must need its key, information, or device credential. Transportation must need all physical cargo. Escort and transportation endpoints must differ. Every added interaction mechanic must set its declared completion flag.
 
 `QuestlineSetValidator` ([QuestlineSet.ts](QuestlineSet.ts)): validates the engine payload as one main definition followed by side definitions, with unique questline ids. Its exact JSON shape is [../creation/schema/questline-set.schema.json](../creation/schema/questline-set.schema.json).
 
 ## Errors
-`QuestError` codes used here: `E_INVALID_FLOW` (construction), `E_CAST` (missing cast entry), `E_UNKNOWN_ID`, `E_WRONG_STATE` (event matches no active step, or questline ended), `E_UNAVAILABLE` (matching step gated off). See [../errors.ts](../errors.ts).
+`QuestError` codes used here: `E_INVALID_FLOW` (definition or saved state), `E_CAST` (missing cast entry), `E_UNKNOWN_ID`, `E_WRONG_STATE` (event matches no active step, or questline ended), `E_UNAVAILABLE` (matching step gated off). See [../errors.ts](../errors.ts).
 
 ## Invariants
 - Same definition, cast, event order and times: identical state. No wall clock, no randomness, no I/O.
@@ -45,6 +47,7 @@ New mechanic completion events:
 - An exclusive branch may have one unconditional fallback only as its last edge, so a fallback cannot make a later outcome unreachable.
 - A dead NPC never satisfies presence or duty checks; availability and inventory are never stored, always derived.
 - Flags used anywhere must be declared in the definition.
+- Saved state cannot create steps, branches, flags, or endings that the completed history did not produce.
 
 ## Depends on
 - ../world (types, SimulationPort)

@@ -12,7 +12,9 @@
     {
       "oneOf": [
         { "$ref": "#/$defs/arrivedAtParcel" },
-        { "$ref": "#/$defs/arrivedAtDistrict" }
+        { "$ref": "#/$defs/arrivedAtDistrict" },
+        { "$ref": "#/$defs/arrivedAtStation" },
+        { "$ref": "#/$defs/arrivedAtStop" }
       ]
     },
     {
@@ -30,7 +32,9 @@
     {
       "oneOf": [
         { "$ref": "#/$defs/deliveredAtParcel" },
-        { "$ref": "#/$defs/deliveredAtDistrict" }
+        { "$ref": "#/$defs/deliveredAtDistrict" },
+        { "$ref": "#/$defs/deliveredAtStation" },
+        { "$ref": "#/$defs/deliveredAtStop" }
       ]
     },
     {
@@ -148,6 +152,18 @@
           "additionalProperties": false,
           "required": ["districtId"],
           "properties": { "districtId": { "$ref": "#/$defs/id" } }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["stationId"],
+          "properties": { "stationId": { "$ref": "#/$defs/id" } }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["stopId"],
+          "properties": { "stopId": { "$ref": "#/$defs/id" } }
         }
       ]
     },
@@ -163,6 +179,18 @@
       "required": ["kind", "districtId"],
       "properties": { "kind": { "const": "arrivedAt" }, "districtId": { "$ref": "#/$defs/id" } }
     },
+    "arrivedAtStation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "stationId"],
+      "properties": { "kind": { "const": "arrivedAt" }, "stationId": { "$ref": "#/$defs/id" } }
+    },
+    "arrivedAtStop": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "stopId"],
+      "properties": { "kind": { "const": "arrivedAt" }, "stopId": { "$ref": "#/$defs/id" } }
+    },
     "deliveredAtParcel": {
       "type": "object",
       "additionalProperties": false,
@@ -174,6 +202,18 @@
       "additionalProperties": false,
       "required": ["kind", "itemId", "districtId"],
       "properties": { "kind": { "const": "delivered" }, "itemId": { "$ref": "#/$defs/id" }, "districtId": { "$ref": "#/$defs/id" } }
+    },
+    "deliveredAtStation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "itemId", "stationId"],
+      "properties": { "kind": { "const": "delivered" }, "itemId": { "$ref": "#/$defs/id" }, "stationId": { "$ref": "#/$defs/id" } }
+    },
+    "deliveredAtStop": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "itemId", "stopId"],
+      "properties": { "kind": { "const": "delivered" }, "itemId": { "$ref": "#/$defs/id" }, "stopId": { "$ref": "#/$defs/id" } }
     }
   }
 }

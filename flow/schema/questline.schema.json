@@ -93,6 +93,18 @@
           "additionalProperties": false,
           "required": ["districtId"],
           "properties": { "districtId": { "$ref": "#/$defs/id" } }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["stationId"],
+          "properties": { "stationId": { "$ref": "#/$defs/id" } }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["stopId"],
+          "properties": { "stopId": { "$ref": "#/$defs/id" } }
         }
       ]
     },

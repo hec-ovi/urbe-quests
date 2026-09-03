@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://urbe.local/quests/flow/schema/questline-state.schema.json",
+  "title": "QuestlineState",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["activeStepIds", "completedStepIds", "flags"],
+  "properties": {
+    "activeStepIds": { "$ref": "#/$defs/ids" },
+    "completedStepIds": { "$ref": "#/$defs/ids" },
+    "flags": { "$ref": "#/$defs/ids" },
+    "endingId": { "$ref": "#/$defs/id" }
+  },
+  "$defs": {
+    "id": { "type": "string", "minLength": 1 },
+    "ids": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/id" } }
+  }
+}

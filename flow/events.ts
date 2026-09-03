@@ -4,10 +4,10 @@ import type { PlaceTarget } from './schema.js';
 
 export type PlayerEvent =
   | { kind: 'talkedTo'; npcId: string }
-  | { kind: 'arrivedAt'; parcelId?: string; districtId?: string }
+  | ({ kind: 'arrivedAt' } & PlaceTarget)
   | { kind: 'observed'; districtId: string }
   | { kind: 'pickedUp'; itemId: string }
-  | { kind: 'delivered'; itemId: string; parcelId?: string; districtId?: string }
+  | ({ kind: 'delivered'; itemId: string } & PlaceTarget)
   | { kind: 'overheard'; npcIds: string[] }
   | { kind: 'stole'; itemId: string }
   | { kind: 'killed'; npcId: string }

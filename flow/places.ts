@@ -9,8 +9,8 @@ import { QuestError } from '../errors.js';
 import type { PlaceRef, SimulationPort } from '../world/types/simulation.js';
 import type { PlaceTarget, QuestItem, QuestStep, ResolvedCast } from './schema.js';
 
-/** A parcel, a district, or whatever the simulation reports for a person (parcel, street edge, stop, route). */
-export type QuestPlace = PlaceRef | { kind: 'district'; id: string };
+/** An authored place or whatever the simulation reports for a person. */
+export type QuestPlace = PlaceRef | { kind: 'district'; id: string } | { kind: 'station'; id: string };
 
 export class StepPlaces {
   private readonly items: Map<string, QuestItem>;
@@ -65,5 +65,9 @@ export class StepPlaces {
   }
 }
 
-const fromPlaceTarget = (place: PlaceTarget): QuestPlace =>
-  'parcelId' in place ? { kind: 'parcel', id: place.parcelId } : { kind: 'district', id: place.districtId };
+const fromPlaceTarget = (place: PlaceTarget): QuestPlace => {
+  if ('parcelId' in place) return { kind: 'parcel', id: place.parcelId };
+  if ('districtId' in place) return { kind: 'district', id: place.districtId };
+  if ('stationId' in place) return { kind: 'station', id: place.stationId };
+  return { kind: 'stop', id: place.stopId };
+};

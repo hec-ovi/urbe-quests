@@ -15,8 +15,10 @@ export {
   type QuestlineState,
   type QuestlineStatus,
 } from './flow/QuestlineRuntime.js';
+export { QuestlineStateValidator } from './flow/state.js';
 export type { AvailabilityWindow, StepAvailability, UnavailableReason } from './flow/availability.js';
 export type { QuestPlace } from './flow/places.js';
+export { guidanceFor, type GuidanceReason, type RouteDestination, type StepGuidance } from './flow/guidance.js';
 
 export * from './story/schema.js';
 export { ScriptPass, DEFAULT_SCRIPT_MINIMUMS, type ScriptPassInput } from './story/ScriptPass.js';

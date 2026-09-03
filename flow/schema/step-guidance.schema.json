@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://urbe.local/quests/flow/schema/step-guidance.schema.json",
+  "title": "StepGuidance",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["questId", "stepId", "place", "destination"],
+      "properties": {
+        "questId": { "$ref": "#/$defs/id" },
+        "stepId": { "$ref": "#/$defs/id" },
+        "place": { "$ref": "#/$defs/place" },
+        "destination": { "$ref": "#/$defs/destination" }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["questId", "stepId", "reason"],
+      "properties": {
+        "questId": { "$ref": "#/$defs/id" },
+        "stepId": { "$ref": "#/$defs/id" },
+        "place": { "$ref": "#/$defs/place" },
+        "reason": { "enum": ["target-unavailable", "district-area", "street-edge", "moving-route"] }
+      }
+    }
+  ],
+  "$defs": {
+    "id": { "type": "string", "minLength": 1 },
+    "place": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "id"],
+      "properties": {
+        "kind": { "enum": ["parcel", "district", "station", "stop", "edge", "route"] },
+        "id": { "$ref": "#/$defs/id" }
+      }
+    },
+    "destination": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "id"],
+      "properties": {
+        "kind": { "enum": ["parcel", "station", "stop"] },
+        "id": { "$ref": "#/$defs/id" }
+      }
+    }
+  }
+}

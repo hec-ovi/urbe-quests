@@ -6,7 +6,7 @@
 
 import { QuestError } from '../errors.js';
 import type { NPCInstance, SimulationPort } from '../world/types/simulation.js';
-import type { QuestStep, ResolvedCast } from './schema.js';
+import type { PlaceTarget, QuestStep, ResolvedCast } from './schema.js';
 
 export type UnavailableReason = 'role_dead' | 'not_present' | 'off_duty' | 'missing_item' | 'condition';
 
@@ -106,12 +106,27 @@ export class AvailabilityService {
     return undefined;
   }
 
-  private presenceAt(roleId: string, timeMin: number, place: { parcelId: string } | { districtId: string }): StepAvailability {
-    return this.presence(roleId, timeMin, 'parcelId' in place ? place.parcelId : undefined);
+  private presenceAt(roleId: string, timeMin: number, place: PlaceTarget): StepAvailability {
+    const npc = this.npc(roleId);
+    if (npc.flags.dead) return { available: false, reason: 'role_dead' };
+    const behavior = this.sim.behaviorAt(npc.npcId, timeMin);
+    if (!APPROACHABLE.has(behavior.activity)) return { available: false, reason: 'not_present' };
+    if ('parcelId' in place && (behavior.place.kind !== 'parcel' || behavior.place.id !== place.parcelId)) {
+      return { available: false, reason: 'off_duty' };
+    }
+    if ('stopId' in place && (behavior.place.kind !== 'stop' || behavior.place.id !== place.stopId)) {
+      return { available: false, reason: 'off_duty' };
+    }
+    return { available: true };
   }
 
-  private roleWindowsAt(roleId: string, place: { parcelId: string } | { districtId: string }): AvailabilityWindow[] {
-    return this.roleWindows(roleId, 'parcelId' in place ? place.parcelId : undefined);
+  private roleWindowsAt(roleId: string, place: PlaceTarget): AvailabilityWindow[] {
+    const windows = this.roleWindows(roleId, 'parcelId' in place ? place.parcelId : undefined);
+    if (!('stopId' in place)) return windows;
+    return this.npc(roleId).routine
+      .filter((entry) => APPROACHABLE.has(entry.activity))
+      .filter((entry) => entry.place.kind === 'stop' && entry.place.id === place.stopId)
+      .map((entry) => ({ days: [...entry.days], startMin: entry.startMin, endMin: entry.endMin }));
   }
 
   private presence(roleId: string, timeMin: number, atParcelId: string | undefined): StepAvailability {

@@ -1,7 +1,7 @@
 /** Structural validation of a QuestlineDefinition. Throws E_INVALID_FLOW. */
 
 import { QuestError } from '../errors.js';
-import type { Predicate, QuestItem, QuestlineDefinition, QuestStep } from './schema.js';
+import type { PlaceTarget, Predicate, QuestItem, QuestlineDefinition, QuestStep } from './schema.js';
 
 export class FlowValidator {
   validate(def: QuestlineDefinition): void {
@@ -106,6 +106,13 @@ export class FlowValidator {
       if (item.kind === 'information') fail(`step ${step.stepId}: ${t.kind} on information item ${itemId}`);
       return item;
     };
+    const requirePlace = (place: PlaceTarget): void => {
+      const entries = Object.entries(place);
+      const allowed = new Set(['parcelId', 'districtId', 'stationId', 'stopId']);
+      if (entries.length !== 1 || !allowed.has(entries[0]?.[0] ?? '') || typeof entries[0]?.[1] !== 'string' || entries[0][1].length === 0) {
+        fail(`step ${step.stepId}: ${t.kind} has an invalid place`);
+      }
+    };
     switch (t.kind) {
       case 'talk':
         requireRole(t.roleId);
@@ -121,6 +128,7 @@ export class FlowValidator {
         return;
       case 'deliver':
         requirePhysicalItem(t.itemId);
+        requirePlace(t.place);
         return;
       case 'steal':
         requirePhysicalItem(t.itemId);
@@ -130,6 +138,7 @@ export class FlowValidator {
         requireRole(t.roleId);
         return;
       case 'investigation': {
+        requirePlace(t.place);
         const evidence = items.get(t.evidenceItemId);
         if (evidence === undefined) fail(`step ${step.stepId}: unknown evidence item ${t.evidenceItemId}`);
         else if (evidence.kind !== 'information') fail(`step ${step.stepId}: evidence item ${t.evidenceItemId} is not information`);
@@ -140,14 +149,18 @@ export class FlowValidator {
       }
       case 'rescue':
         requireRole(t.roleId);
+        requirePlace(t.place);
         this.requireCompletionEffect(step, t.completionFlag, fail);
         return;
       case 'escort':
         requireRole(t.roleId);
+        requirePlace(t.from);
+        requirePlace(t.to);
         if (samePlace(t.from, t.to)) fail(`step ${step.stepId}: escort route starts and ends at the same place`);
         this.requireCompletionEffect(step, t.completionFlag, fail);
         return;
       case 'access': {
+        requirePlace(t.place);
         const credential = items.get(t.credentialItemId);
         if (credential === undefined) fail(`step ${step.stepId}: unknown credential item ${t.credentialItemId}`);
         else if (!['key', 'information', 'device'].includes(credential.kind)) {
@@ -159,9 +172,12 @@ export class FlowValidator {
       }
       case 'hacking':
       case 'sabotage':
+        requirePlace(t.place);
         this.requireCompletionEffect(step, t.completionFlag, fail);
         return;
       case 'transportation':
+        requirePlace(t.from);
+        requirePlace(t.to);
         t.passengerRoleIds.forEach(requireRole);
         for (const itemId of t.cargoItemIds) {
           requirePhysicalItem(itemId);
@@ -171,6 +187,8 @@ export class FlowValidator {
         this.requireCompletionEffect(step, t.completionFlag, fail);
         return;
       case 'goto':
+        requirePlace(t.place);
+        return;
       case 'observe':
       case 'work':
         return;
@@ -246,7 +264,8 @@ export class FlowValidator {
 }
 
 function samePlace(left: import('./schema.js').PlaceTarget, right: import('./schema.js').PlaceTarget): boolean {
-  return 'parcelId' in left
-    ? 'parcelId' in right && left.parcelId === right.parcelId
-    : 'districtId' in right && left.districtId === right.districtId;
+  if ('parcelId' in left) return 'parcelId' in right && left.parcelId === right.parcelId;
+  if ('districtId' in left) return 'districtId' in right && left.districtId === right.districtId;
+  if ('stationId' in left) return 'stationId' in right && left.stationId === right.stationId;
+  return 'stopId' in right && left.stopId === right.stopId;
 }
