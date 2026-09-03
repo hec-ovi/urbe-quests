@@ -57,7 +57,7 @@ Materialize and bundle write this file set beside the requested questlines path:
 
 The handoff input uses [handoff/schema/handoff-input.schema.json](handoff/schema/handoff-input.schema.json); [handoff/fixtures/engine-public-transit.input.json](handoff/fixtures/engine-public-transit.input.json) is a complete fixed-target example. Missing catalogs are written as empty arrays. An investigation or fixed mechanic step without its exact binding fails. A transportation step whose mode is absent from the host profile also fails.
 
-Animation begins only after the engine accepts an exact quest action. Speaker, listeners, TTS, STT, and conversation start, end, or interruption come from the live conversation. They are not persisted in quest definitions.
+Quests supplies scoped NPC context and one text reply for each typed player line, and it can serialize dialog memory. Engine keeps the exact visible NPC in place, pauses and resumes its routine as conversation opens and closes, and coordinates standing or seated speaker and listener gestures. Quest action animation begins only after Engine accepts the exact action; Engine owns completion, interruption, and routine resumption. Quest definitions and objective projections contain none of that transient presentation state.
 
 ## Contracts
 

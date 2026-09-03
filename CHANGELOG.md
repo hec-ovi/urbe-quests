@@ -1,5 +1,7 @@
 # Changelog
 
+0.8.1: NPC dialogue is typed text. Quests supplies scoped context, text replies, and serializable verbatim-tail memory with summarized digests. Engine owns conversation actor lifecycle and accepted-action animation.
+
 0.8.0: quest plans use depth floors with open step, act and branch counts. Tool execution keeps a plan-sized safety round budget. The package test command runs once, runtime Ajv validation is a production dependency, and the simulation contract is v0.9.1.
 
 0.7.0: engine bundle v1.1 maps rescue, access, hacking and sabotage targets to fixed mission assets and exact interaction anchors. Host capability declarations gate transportation modes. The writer includes mechanic target bindings and the validated host profile.

@@ -37,7 +37,7 @@ The CLI writer emits `questlines.json`, `objectives.json`, `investigations.json`
 - Investigation assets embedded in scene props are not also quest item bindings.
 - Every rescue, access, hacking, and sabotage step has exactly one binding, unique by `(questId, stepId)`. Assassination, escort, investigation, and transportation do not use this mapping.
 - Host transportation support is declared, never inferred. Authoring may use all five flow modes; a bundle admits only declared modes.
-- Objective projection contains no animation or speech state. Engine derives action animation only after accepting the exact action. Live conversation owns speaker, listeners, TTS, STT, start, end, and interruption.
+- Objective projection contains no conversation or animation state. Engine starts animation only after accepting the exact action and owns completion, interruption, routine resumption, conversation open and close, and speaker and listener gestures.
 - Output order follows the input questline and step order. The same input produces byte-identical JSON files.
 
 ## Depends on

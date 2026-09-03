@@ -2,7 +2,7 @@
 
 Purpose: authors the world's story and playable questlines, runs them as deterministic typed step flows whose NPCs resolve by type through simulation queries, and assembles scoped NPC dialog context.
 
-Status: v0.8.0. Built against naming v0.4.6, simulation v0.9.1, engine investigation v1.1, and engine mission-assets v1.0.
+Status: v0.8.1. Built against naming v0.4.6, simulation v0.9.1, engine investigation v1.1, and engine mission-assets v1.0.
 
 ## In
 - Named world and NPC type set: shapes in [world/types/named-world.ts](world/types/named-world.ts), mirrors of ../naming/schema/world-state.schema.json and npc-types.schema.json.
@@ -25,7 +25,7 @@ Status: v0.8.0. Built against naming v0.4.6, simulation v0.9.1, engine investiga
 - Browser hosts import [runtime.ts](runtime.ts) (dist/runtime.js): the flow runtime, validator, cast resolver, errors and types, with no node APIs behind them; index.ts adds creation, story and dialog, which read prompt files from disk.
 - Cast: `new CastResolver(sim).resolve(definition, timeMin) -> ResolvedCast` ([builder/CastResolver.ts](builder/CastResolver.ts)) binds every role to an NPC through the host's simulation (reserved names, else whoever is on duty by type, else anyone of that type already in the world); a host casts at load so ids are its own simulation's.
 - Flow runtime: `QuestlineRuntime` ([flow/CONTRACT.md](flow/CONTRACT.md)): pure code state machine over the questline DAG. Availability, inventory, live objective place, and parcel, station, or stop route guidance are evaluated on demand. Restore rejects a state whose history, active frontier, flags, or ending disagrees with the definition. Interaction steps repeat exact interaction, cast, item, mode, and place ids in their completion events and persist a required authored completion flag.
-- Dialog: `Converse` ([dialog/CONTRACT.md](dialog/CONTRACT.md)) answers one player line from an NPC's context with an injected `LLMPort`; `DialogContextService` ([dialog/CONTRACT.md](dialog/CONTRACT.md)): per-NPC-instance scoped fact store (background, persona, flag-gated quest knowledge, the steps this NPC currently wants and the endings it lived), scored memory with summarization tiers, cache-ordered context segments, deflection guidance. Facts outside the scope never enter the prompt.
+- Dialog: `Converse` ([dialog/CONTRACT.md](dialog/CONTRACT.md)) answers one player line from an NPC's context with an injected `LLMPort`; `DialogContextService` ([dialog/CONTRACT.md](dialog/CONTRACT.md)): per-NPC-instance scoped fact store (background, persona, flag-gated quest knowledge, the steps this NPC currently wants and the endings it lived), verbatim-tail memory with summarized digests, cache-ordered context segments, deflection guidance. Facts outside the scope never enter the prompt.
 
 ## Errors
 Closed set, thrown as `QuestError { code, message, detail? }` ([errors.ts](errors.ts)):
@@ -50,7 +50,8 @@ The authoring harness has its own closed `AuthoringError` envelope and codes in 
 - NPC knowledge is closed: a fact enters dialog context only from simulation background, persona overlay, unlocked quest grants, active steps this NPC wants, endings this NPC was part of, or recorded interaction, all decided by runtime state and the cast mapping; deflection applies to everything else.
 - Every prompt, boilerplate and few-shot set lives in its own .md file under the owning box's prompts/ folder; output length is never capped; minimums are floors, never exact counts.
 - Standalone: everything runs on the 2D plane against [world/fixtures/](world/fixtures/), [story/fixtures/](story/fixtures/) and the stub simulation, no other layer present.
-- Animation is derived by engine only after an exact quest action succeeds. Live conversation owns speaker and listener animation, TTS, STT, lifecycle, and interruption; quests persists none of that transient state.
+- Dialog is typed text: Quests supplies scoped context, one text reply, and serializable memory. Engine owns conversation open and close, stable actor identity, routine pause and resume, and speaker and listener gestures.
+- Quest objective projection contains no animation state. Engine starts animation only after accepting an exact quest action and owns completion, interruption, and routine resumption.
 
 ## Depends on
 - ../naming/CONTRACT.md (named world, NPC type set)
