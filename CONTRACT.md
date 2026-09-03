@@ -54,6 +54,7 @@ The authoring harness has its own closed `AuthoringError` envelope and codes in 
 - Quest objective projection contains no animation state. Engine starts animation only after accepting an exact quest action and owns completion, interruption, and routine resumption.
 
 ## Depends on
+- [Atlas](../atlas/CONTRACT.md): world subset accepted by `namedWorldFromAtlas` before naming.
 - ../naming/CONTRACT.md (named world, NPC type set)
 - ../simulation/CONTRACT.md (query surface, time convention, flags)
 - ../engine/src/game/investigation/CONTRACT.md (investigation v1.1 request and persistent scene state)

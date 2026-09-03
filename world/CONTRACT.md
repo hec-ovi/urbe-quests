@@ -22,4 +22,5 @@ Purpose: everything the quests layer knows about the outside world: mirror types
 - Routines cover the full week with no gaps.
 
 ## Depends on
+- [Atlas](../../atlas/CONTRACT.md): world subset consumed by `namedWorldFromAtlas`.
 - ../naming/CONTRACT.md, ../simulation/CONTRACT.md (mirrored shapes only; no code import)
