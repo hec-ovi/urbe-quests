@@ -4,6 +4,8 @@ The story layer for a generated world. From one creation prompt it writes the st
 
 Only the script, the situations, the translation plan, questline drafting and memory summarization go through a language model. Every transition, gate and availability check is plain code, so quest state is reproducible from the flags and step history alone.
 
+`AuthoringHarness` also exposes story writing and gameplay adaptation as separate agent calls. It uses a GBrain-style lightweight skill index, loads only the mechanics selected for the story, and rejects any questline whose places, mechanics, branches, story beats, or endings do not match their contracts.
+
 ## Run
 
 ```
@@ -44,8 +46,10 @@ Items are typed artifacts (a device, a weapon, a document, a key, a substance, a
 
 Each part carries its own contract: [story/CONTRACT.md](story/CONTRACT.md), [builder/CONTRACT.md](builder/CONTRACT.md), [creation/CONTRACT.md](creation/CONTRACT.md), [flow/CONTRACT.md](flow/CONTRACT.md), [dialog/CONTRACT.md](dialog/CONTRACT.md). The root `CONTRACT.md` is the surface and the closed error set.
 
+The two-stage agent and skill resolver are documented in [authoring/CONTRACT.md](authoring/CONTRACT.md). The resolver advertises only `goto`, `observe`, `talk`, `listen`, `pickup`, `deliver`, `steal`, `assassinate`, and `work`, matching the current flow schema and runtime.
+
 Every prompt, boilerplate and few-shot set lives in its own `.md` file under the owning folder's `prompts/`, and output length is never capped.
 
 ## In the urbe family
 
-It reads the named world and NPC types from [urbe-namer](../urbe-namer) and queries [urbe-population](../urbe-population) for its cast, then hands questlines and dialog context to [urbe-engine](../urbe-engine), which runs the conversation. The full picture lives in [urbe](../urbe).
+It reads the named world and NPC types from [naming](../naming) and queries [simulation](../simulation) for its cast, then hands questlines and dialog context to [engine](../engine), which runs the game. The full picture lives in the parent workspace.

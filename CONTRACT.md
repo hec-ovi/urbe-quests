@@ -1,8 +1,8 @@
 # CONTRACT: quests
 
-Purpose: creates the world's story and questlines from one creation prompt (a film script, translated into a main questline and side quests as deterministic typed step flows whose NPCs are resolved by type through simulation queries) and assembles NPC dialog context (scoped knowledge, active wants, memory, deflection) for the engine's LLM calls.
+Purpose: authors the world's story and playable questlines, runs them as deterministic typed step flows whose NPCs resolve by type through simulation queries, and assembles scoped NPC dialog context.
 
-Status: v0.3. Built against naming v0.1 and simulation v0.8.
+Status: v0.4. Built against naming v0.1 and simulation v0.8.
 
 ## In
 - Named world and NPC type set: shapes in [world/types/named-world.ts](world/types/named-world.ts), mirrors of ../naming/schema/world-state.schema.json and npc-types.schema.json.
@@ -11,9 +11,11 @@ Status: v0.3. Built against naming v0.1 and simulation v0.8.
 - Creation prompt: the user's words ("create a dark cynical sci fi cyberpunk story").
 - Creation keeps a failure local to what failed: a side quest whose build fails is dropped, and a situations pass that cannot be read drops all of them, both reported through `warn` on the input; the script or the main line failing fails the run.
 - LLM access is injected per stage, never owned: `StagePorts { script, situations, plan: LLMPort; build: AgentPort }` ([creation/schema.ts](creation/schema.ts)); dialog summarization takes its own `LLMPort`. Ports in [ports/llm.ts](ports/llm.ts). No output caps anywhere.
+- Two-stage skill authoring accepts schema-validated story and adaptation requests through [authoring/CONTRACT.md](authoring/CONTRACT.md). Its optional mechanic list is an allowlist; unsupported names fail before an agent runs.
 - At runtime: player events (talked, arrived, picked up, ...) and current time in simulation minutes.
 
 ## Out
+- Agent authoring: `AuthoringHarness` ([authoring/CONTRACT.md](authoring/CONTRACT.md)) exposes a lightweight GBrain-style skill index and separate `writeStory` and `adaptGameplay` calls. The adaptation output carries a validated questline plus the exact story-beat, mechanic, transition, and ending trace.
 - Creation: `new QuestlineCreation().run(input) -> CreationResult` ([creation/CONTRACT.md](creation/CONTRACT.md)): text-only script pass, translation of the script into the main questline (plan pass closing with a manifest of ids, then the flow tool build bounded by it), text-only situations pass and one side questline per situation; `progress` events report each stage and build round. Every stage runs alone too:
   - Story: `ScriptPass`, `SituationsPass` ([story/CONTRACT.md](story/CONTRACT.md)).
   - Translation: `QuestlineTranslator`, `TranslationPlanner`, `QuestlineBuilder` ([builder/CONTRACT.md](builder/CONTRACT.md)).
@@ -32,9 +34,11 @@ Closed set, thrown as `QuestError { code, message, detail? }` ([errors.ts](error
 - `E_CAST`: a role cannot be resolved or reserved against the simulation (cause in detail).
 - `E_LLM`: model output unusable after repair (detail: stage, raw, problems: a script, a situations list or a plan manifest), or a build that ran out of its plan-sized round budget.
 `SimulationError` from the port passes through untouched, except cast resolution, which wraps its no-match and reserve conflicts into `E_CAST`.
+The authoring harness has its own closed `AuthoringError` envelope and codes in [authoring/schema/authoring-error.schema.json](authoring/schema/authoring-error.schema.json).
 
 ## Invariants
 - No LLM inside generation-state or flow-state code paths: only the script, the situations, the translation plan, questline drafting and memory summarization are creative; every transition, gate and availability check is deterministic code.
+- The authoring resolver sends a lightweight skill index first and loads only the selected skill bodies. Structured agent responses still pass deterministic schema, world, flow, and cause-effect checks.
 - Authority is split: the script owns plot, character and voice; the simulation owns who people are, where they live and work and when; the closed step and item vocabulary owns what is playable.
 - The builder never places NPCs by id or coordinates: steps bind roles, roles resolve by type through the SimulationPort; one story character is one NPC across questlines.
 - NPC knowledge is closed: a fact enters dialog context only from simulation background, persona overlay, unlocked quest grants, active steps this NPC wants, endings this NPC was part of, or recorded interaction, all decided by runtime state and the cast mapping; deflection applies to everything else.

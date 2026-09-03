@@ -1,4 +1,4 @@
-/** Copies every prompts/*.md beside its compiled module in dist/, so promptLoader finds them at runtime. */
+/** Copies Markdown runtime assets beside compiled modules in dist/. */
 import { cpSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -9,7 +9,9 @@ function walk(dir) {
     if (SKIP.has(entry)) continue;
     const path = join(dir, entry);
     if (!statSync(path).isDirectory()) continue;
-    if (entry === 'prompts') cpSync(path, join('dist', path), { recursive: true });
+    if (entry === 'prompts' || (entry === 'skills' && dir === 'authoring')) {
+      cpSync(path, join('dist', path), { recursive: true });
+    }
     else walk(path);
   }
 }

@@ -1,5 +1,6 @@
 # Changelog
 
+0.4.0: a GBrain-style progressive skill resolver now keeps story writing and gameplay adaptation as separate schema-constrained agent stages. The gameplay stage loads only selected supported mechanics, rejects unsupported names, and audits world targets, flow structure, story beats, transitions, and distinct outcome-to-ending routes.
 0.3.0: recorded stories materialize deterministically across city sizes through semantic place and fallback role bindings; exact questline and engine-set schemas ship with ready small, medium and large bundles, and real-simulation tests cast all three. Exclusive branches reject shadowed outcomes.
 0.2.15: cast resolution reads the simulation's no-match by code, so the shift retries and the E_CAST wrap hold against any implementation of the port, and a role nobody works as (a resident, a neighbour) is cast to someone of that type already in the world; the integration proof runs against the published build of the library.
 0.2.14: the small city ships a sample questline set (samples/urbe-small): a rain-soaked harbour story, a ten-step main line in four acts with two endings, and three side quests, rebuildable from its recording.
