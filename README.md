@@ -30,6 +30,8 @@ The closed mechanic set is:
 
 Every step carries its narrative reason, player hint, stake, prerequisites, effects, transitions, and exact mechanic target. Roles bind NPC types, not instance ids. Places bind one known parcel, district, station, or stop. The authoring and builder boundaries reject unknown roles, items, interactions, places, branches, flags, and endings.
 
+Story minimums are floors. Situation, step, act, and branch totals stay open, and model responses carry no token, word, or character cap. The tool loop alone has a plan-sized safety round budget.
+
 The authoring vocabulary supports five transportation modes. A runnable engine bundle accepts only modes declared by its host capability profile. The current Engine fixture declares `public-transit`.
 
 `AuthoringHarness.writeStory` returns story only. `AuthoringHarness.adaptGameplay` receives that completed story unchanged, selects compatible mechanic skills, and returns a questline with cause-effect traces. Full inputs and outputs are in [authoring/CONTRACT.md](authoring/CONTRACT.md).

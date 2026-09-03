@@ -7,7 +7,7 @@ What the quests box builds on. Full sourced findings live outside the repo; this
 - Two-tier generation: the whole story backbone (main line plus side premises) in one focused call, then each questline elaborated separately. Generating the backbone at once is what keeps quests consistent with each other.
 - Persist raw LLM text before validation; repair with a follow-up call instead of regenerating.
 - Narrative fields come before structural fields in every output schema (premise and motivation before steps and flags): key order decides whether the model plans before committing. Prompt-level format pressure hurts creativity more than real constrained decoding does.
-- Never demand exact counts from the model, give ranges: quota pressure causes format overfitting at the cost of story quality.
+- Use minimum floors for story depth and let the arc determine the total. Upper quotas cause format pressure at the cost of story quality.
 
 ## Quest flow
 - Representation: condition-gated DAG of typed step nodes (the Godot Questify and Skyrim stage pattern), grouped in acts, with exclusive branches for diverging endings. Simplest to serialize, no LLM anywhere in it.

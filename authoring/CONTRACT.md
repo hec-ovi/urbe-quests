@@ -62,7 +62,7 @@ The shared named world envelope is [schema/world-context.schema.json](schema/wor
 - Investigation is staged as one exact clue per step. Each clue names its scene, evidence interaction, information item, subject cast, and place; later clues use `needs`, `conditions`, or graph edges to require earlier discoveries.
 - Rescue names one cast role and one release interaction. Reaching safety is a separate escort step with exact follow mode, route, and endpoints.
 - Access names its access point and exact credential. Hacking and sabotage name their exact target and place. Transportation names one journey, mode, endpoints, resolved passengers, and physical cargo.
-- Each added interaction target declares a completion flag and the step must set it. The target's completion event repeats its interaction, cast, item, mode, and place ids, so neither the adapter nor engine infers identity from prose.
+- Each interaction target declares a completion flag and the step must set it. The target's completion event repeats its interaction, cast, item, mode, and place ids, so neither the adapter nor engine infers identity from prose.
 - Sabotage and transportation are story-directed targets, not freeform destruction or vehicle behavior. Assassination remains available only when the story authored the target and the adaptation traces the consequences.
 - Every story beat reaches at least one quest step. Every story decision outcome reaches a distinct quest ending.
 - Every quest step has exactly one matching mechanic record and an ordered trace of all outgoing edges.

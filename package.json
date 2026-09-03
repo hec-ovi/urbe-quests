@@ -1,11 +1,11 @@
 {
   "name": "quests",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "directories": {
     "doc": "docs"
   },
   "scripts": {
-    "test": "vitest",
+    "test": "vitest run",
     "build": "tsc -p tsconfig.build.json && node scripts/copy-prompts.mjs",
     "watch": "npm run build && tsc -p tsconfig.build.json --watch --preserveWatchOutput",
     "typecheck": "tsc --noEmit",
@@ -15,10 +15,12 @@
     "materialize": "tsx creation/samples/materialize.ts"
   },
   "type": "module",
-  "private": "true",
+  "private": true,
+  "dependencies": {
+    "ajv": "^8.20.0"
+  },
   "devDependencies": {
     "@types/node": "^26.4.0",
-    "ajv": "^8.20.0",
     "tsx": "^4.23.13",
     "typescript": "^7.0.2",
     "undici": "^8.10.1",

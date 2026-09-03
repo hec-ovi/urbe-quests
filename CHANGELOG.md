@@ -1,25 +1,45 @@
 # Changelog
 
-0.7.0: engine bundle v1.1 maps every rescue, access, hacking, and sabotage target to one fixed mission asset and its exact interaction anchor. Host capability declarations gate authored transportation modes. The stable writer includes mechanic target bindings and the validated host capability profile.
-0.6.0: transit identities flow from named worlds into exact quest targets and route-ready guidance. Saved states validate their history, active frontier, flags, and ending before restore. Builder and two-stage authoring reject unknown world targets. Engine handoff writes questlines, exact objective actions, investigation requests, mission asset requests, quest-item asset bindings, and a manifest; investigation and mission references fail closed.
-0.5.0: the closed quest vocabulary adds staged investigation evidence, rescue and escort, credentialed access, hacking, sabotage, and story-directed transportation including ride-hail. Each added interaction names exact cast, target, place, prerequisites, completion event fields, and a persisted consequence flag. Flow and authoring schemas, fat skills, world and graph audits, deterministic restore tests, and alternate endings cover the additions.
-0.4.0: a GBrain-style progressive skill resolver now keeps story writing and gameplay adaptation as separate schema-constrained agent stages. The gameplay stage loads only selected supported mechanics, rejects unsupported names, and audits world targets, flow structure, story beats, transitions, and distinct outcome-to-ending routes.
-0.3.0: recorded stories materialize deterministically across city sizes through semantic place and fallback role bindings; exact questline and engine-set schemas ship with ready small, medium and large bundles, and real-simulation tests cast all three. Exclusive branches reject shadowed outcomes.
-0.2.15: cast resolution reads the simulation's no-match by code, so the shift retries and the E_CAST wrap hold against any implementation of the port, and a role nobody works as (a resident, a neighbour) is cast to someone of that type already in the world; the integration proof runs against the published build of the library.
-0.2.14: the small city ships a sample questline set (samples/urbe-small): a rain-soaked harbour story, a ten-step main line in four acts with two endings, and three side quests, rebuildable from its recording.
-0.2.13: a recorded run (script, situations, plans and tool calls as JSON) replays through the real workflow with `npm run replay`, so a sample is rebuilt, checked and changed with no model present.
-0.2.12: the runtime answers where a step points (`stepPlace`): the parcel or district it names, the parcel its item sits at, or the live place of the person it targets, so a host can mark quests on the map.
-0.2.11: the browser entry is held to its promise by a test that walks every module reachable from runtime.ts and fails on any specifier outside the box.
-0.2.10: a situations pass whose text cannot be read drops the side quests instead of the run, with a word through `warn`; the main line comes back either way.
-0.2.9: every builder tool call is checked against its own schema before it reaches the draft, so a half-written step is answered with the fields it needs instead of throwing out of the build loop.
-0.2.8: the plan closes with a manifest of ids that bounds the build: the draft accepts only planned ids and names the planned list on a refusal, checks every reference the moment it is made, reports the planned pieces still missing on finish and in every nudge, and the round budget is two per planned piece plus eight; creation reports progress events per stage and build round, and the sample writes each stage as it lands.
-0.2.7: the step cap is a 40-step safety net above the plan's budget, so a fix after validation is never refused; the creation sample sends LLM_API_KEY as a bearer token for hosted servers.
-0.2.6: a questline carries at most 20 steps (the tools refuse a 21st and point at finishing); the plan prompt sizes a main line at 6 to 16 steps, a side situation at 4 to 8.
-0.2.5: the builder answers a text-only reply with a nudge back to the tools (three times, prompts/builder-nudge.md; transcripts carry text turns); creation drops a side quest that fails to build and reports it through `warn`.
-0.2.4: runtime.ts, the browser-safe entry (flow runtime, validator, cast resolver, errors, types) with no node APIs behind it.
-0.2.3: `attachQuestline` replaces a runtime of the same questline id instead of stacking it.
-0.2.2: `CastResolver` exported for hosts that cast a questline against their own simulation; the local-model creation sample takes a named world and type set as paths.
-0.2.1: `Converse` turns one player line into the NPC's spoken reply from its dialog context layers (prompt in dialog/prompts/reply.md, no output caps); `npm run build` emits dist/ for consumers, prompts copied beside it.
-0.2: questline creation workflow from one prompt: a text-only film script with enforced minimums (characters, passages per movement), translation as a text-only plan pass followed by the flow tool build, side situations (each with its own presentation, development, conflict and resolution) translated the same way, one injected port per stage. Items are typed artifacts (device, weapon, document, key, substance, valuable, information); steps carry gives and needs and the runtime derives the inventory; every step names who wants it and its stake, and NPC dialog context carries the giver's active wants and ending reactions. Committed fixture story and a local-model sample; 42 tests.
-0.1: contract v0.1 against naming v0.1 and simulation v0.1. Story pass (backbone call, repair round), questline builder (agent tool loop, era step catalog, cast by type), deterministic flow runtime (typed step DAG, schedule-gated availability, flags, endings), dialog context service (cache-ordered layers, flag-gated knowledge, tiered memory). Two fixture worlds and a stub simulation; 30 tests.
-0.0: scaffold, contract pending.
+0.8.0: quest plans use depth floors with open step, act and branch counts. Tool execution keeps a plan-sized safety round budget. The package test command runs once, runtime Ajv validation is a production dependency, and the simulation contract is v0.9.1.
+
+0.7.0: engine bundle v1.1 maps rescue, access, hacking and sabotage targets to fixed mission assets and exact interaction anchors. Host capability declarations gate transportation modes. The writer includes mechanic target bindings and the validated host profile.
+
+0.6.0: named-world transit identities flow into exact quest targets and route-ready guidance. Saved states validate history, active frontier, flags and ending. Engine handoff emits questlines, objectives, investigations, mission assets, item bindings and its manifest.
+
+0.5.0: the closed quest vocabulary covers staged investigation, rescue, escort, access, hacking, sabotage and story-directed transportation. Each interaction carries exact cast, target, place, prerequisite, completion and consequence identities.
+
+0.4.0: progressive skill resolution keeps story writing and gameplay adaptation in separate schema-constrained stages. Gameplay loads only selected supported mechanic skills and audits world targets, flow structure, story beats, transitions and ending routes.
+
+0.3.0: recorded stories materialize deterministically across city sizes through semantic place and fallback role bindings. Small, medium and large bundles pass real-simulation casting and exclusive-branch validation.
+
+0.2.15: cast resolution branches on simulation error codes, retries work shifts and resolves non-worker roles from existing people of the requested type.
+
+0.2.14: the small-city sample contains a ten-step main line in four acts with two endings and three side quests.
+
+0.2.13: `npm run replay` feeds recorded text and tool calls through the creation workflow with no model connection.
+
+0.2.12: `stepPlace` returns the authored parcel or district, an item's parcel, or a targeted NPC's live place.
+
+0.2.11: the browser-entry audit rejects runtime imports that leave the box.
+
+0.2.10: an unreadable situations pass returns an empty side set through `warn`; the main questline remains available.
+
+0.2.9: every builder tool call passes its own schema before reaching the draft, and invalid calls return the missing fields as tool results.
+
+0.2.8: each plan closes with a manifest that bounds ids and references. Build execution uses two rounds per planned piece plus eight and reports progress after each round.
+
+0.2.7: the creation sample sends `LLM_API_KEY` as bearer authentication when configured.
+
+0.2.5: text-only builder replies receive a tool-use nudge that names remaining manifest work. Side quest build failures are reported through `warn`.
+
+0.2.4: `runtime.ts` exposes the browser-safe flow runtime, validator, cast resolver, errors and types.
+
+0.2.3: dialog context holds one attached runtime per questline id.
+
+0.2.2: `CastResolver` is public, and the creation sample accepts named-world and NPC-type paths.
+
+0.2.1: `Converse` produces one NPC reply from ordered dialog context. Build output includes consumer modules and their prompt files.
+
+0.2.0: creation runs script, main translation, situations and side translations from one prompt with one injected port per stage. Typed items, step prerequisites and effects drive runtime inventory and dialog wants.
+
+0.1.0: story and repair passes, tool-driven questline building, cast-by-type resolution, deterministic flow, scoped dialog context, fixture worlds and stub simulation.
