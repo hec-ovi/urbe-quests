@@ -12,6 +12,8 @@ import type { InvestigationSceneRequest, MissionAssetCreateRequest } from '../sc
 import assetRequestSchema from '../schema/mission-asset-request.schema.json' with { type: 'json' };
 import assetRequestsSchema from '../schema/mission-asset-requests.schema.json' with { type: 'json' };
 import bindingsSchema from '../schema/mission-item-bindings.schema.json' with { type: 'json' };
+import capabilitiesSchema from '../schema/host-capabilities.schema.json' with { type: 'json' };
+import mechanicBindingsSchema from '../schema/mechanic-target-bindings.schema.json' with { type: 'json' };
 import objectivesSchema from '../schema/objectives.schema.json' with { type: 'json' };
 import bundleSchema from '../schema/quest-bundle.schema.json' with { type: 'json' };
 import handoffInputSchema from '../schema/handoff-input.schema.json' with { type: 'json' };
@@ -90,7 +92,9 @@ describe('EngineHandoff', () => {
     })));
     expect(bundle.objectives).toEqual(expected);
     expect(bundle.investigations).toEqual([]);
+    expect(bundle.mechanicTargetBindings).toEqual([]);
     expect(bundle.missionAssetRequests).toEqual([]);
+    expect(bundle.hostCapabilities).toEqual({ transportationModes: [] });
 
     const ajv = new Ajv2020({ strict: true });
     ajv.addSchema(questlineSchema);
@@ -111,6 +115,8 @@ describe('EngineHandoff', () => {
     ajv.addSchema(assetRequestSchema);
     ajv.addSchema(assetRequestsSchema);
     ajv.addSchema(bindingsSchema);
+    ajv.addSchema(capabilitiesSchema);
+    ajv.addSchema(mechanicBindingsSchema);
     ajv.addSchema(investigationSliceSchema);
     const validateRequests = ajv.getSchema(assetRequestsSchema.$id)!;
     const validateBindings = ajv.getSchema(bindingsSchema.$id)!;
@@ -119,6 +125,8 @@ describe('EngineHandoff', () => {
     const validateInput = ajv.compile(handoffInputSchema);
     expect(validateInput({
       investigations: bundle.investigations,
+      hostCapabilities: bundle.hostCapabilities,
+      mechanicTargetBindings: bundle.mechanicTargetBindings,
       missionAssetRequests: bundle.missionAssetRequests,
       missionItemBindings: bundle.missionItemBindings,
     }), JSON.stringify(validateInput.errors)).toBe(true);
@@ -131,8 +139,10 @@ describe('EngineHandoff', () => {
     const validate = new Ajv2020({ strict: true }).compile(bundleSchema);
     expect(validate(manifest), JSON.stringify(validate.errors)).toBe(true);
     expect(JSON.parse(readFileSync(join(outputDir, HANDOFF_FILES.investigations), 'utf8'))).toEqual([]);
+    expect(JSON.parse(readFileSync(join(outputDir, HANDOFF_FILES.mechanicTargetBindings), 'utf8'))).toEqual([]);
     expect(JSON.parse(readFileSync(join(outputDir, HANDOFF_FILES.missionAssetRequests), 'utf8'))).toEqual([]);
     expect(JSON.parse(readFileSync(join(outputDir, HANDOFF_FILES.missionItemBindings), 'utf8'))).toEqual([]);
+    expect(JSON.parse(readFileSync(join(outputDir, HANDOFF_FILES.hostCapabilities), 'utf8'))).toEqual({ transportationModes: [] });
     expect(JSON.parse(readFileSync(join(outputDir, HANDOFF_FILES.objectives), 'utf8'))).toHaveLength(manifest.counts.objectives);
     expect(JSON.parse(readFileSync(join(outputDir, HANDOFF_FILES.manifest), 'utf8'))).toEqual(manifest);
   });
@@ -168,4 +178,5 @@ describe('EngineHandoff', () => {
       missionItemBindings: [{ questId: 'q_archive_scene', itemId: 'paper_log', assetId: 'missing.asset' }],
     })).toThrowError(/unknown asset/);
   });
+
 });

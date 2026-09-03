@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://urbe.local/quests/handoff/schema/host-capabilities.schema.json",
+  "title": "Quest gameplay host capabilities",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["transportationModes"],
+  "properties": {
+    "transportationModes": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "enum": ["ride-hail", "public-transit", "vehicle", "animal", "aircraft"] }
+    }
+  }
+}

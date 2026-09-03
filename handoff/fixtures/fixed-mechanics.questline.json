@@ -1,0 +1,117 @@
+{
+  "id": "q_fixed_mechanics",
+  "title": "Archive escape",
+  "premise": "Open an archive, release its witness, disable the alarm, and take public transit to safety.",
+  "roles": [
+    { "roleId": "witness", "npcType": "cafe_barista", "persona": "Knows the archive alarm sequence." }
+  ],
+  "items": [
+    { "itemId": "entry_code", "name": "Entry code", "description": "Credential recovered from the archive index.", "kind": "information" }
+  ],
+  "facts": [],
+  "acts": [
+    { "actId": "a_escape", "title": "Escape", "summary": "Complete every measured fixed interaction and leave." }
+  ],
+  "steps": [
+    {
+      "stepId": "s_hack",
+      "actId": "a_escape",
+      "narrative": {
+        "description": "Recover the entry code from the archive index.",
+        "playerHint": "Use the archive index terminal.",
+        "stake": "The witness remains sealed inside without the code."
+      },
+      "wantedByRoleId": "witness",
+      "target": { "kind": "hacking", "targetId": "archive_index", "place": { "parcelId": "p4" }, "completionFlag": "archive_hacked" },
+      "gives": ["entry_code"],
+      "needs": [],
+      "conditions": [],
+      "effects": [{ "kind": "setFlag", "flag": "archive_hacked" }],
+      "next": [{ "toStepId": "s_access", "when": [] }],
+      "branching": "parallel"
+    },
+    {
+      "stepId": "s_access",
+      "actId": "a_escape",
+      "narrative": {
+        "description": "Enter the code at the archive door.",
+        "playerHint": "Use the archive door access terminal.",
+        "stake": "The witness remains trapped if the door stays locked."
+      },
+      "wantedByRoleId": "witness",
+      "target": { "kind": "access", "accessPointId": "archive_door", "credentialItemId": "entry_code", "place": { "parcelId": "p4" }, "completionFlag": "archive_open" },
+      "gives": [],
+      "needs": ["entry_code"],
+      "conditions": [],
+      "effects": [{ "kind": "setFlag", "flag": "archive_open" }],
+      "next": [{ "toStepId": "s_rescue", "when": [] }],
+      "branching": "parallel"
+    },
+    {
+      "stepId": "s_rescue",
+      "actId": "a_escape",
+      "narrative": {
+        "description": "Release the witness at the console.",
+        "playerHint": "Use the witness release console.",
+        "stake": "The witness cannot leave while the restraint remains active."
+      },
+      "wantedByRoleId": "witness",
+      "target": { "kind": "rescue", "roleId": "witness", "releaseTargetId": "witness_release_console", "place": { "parcelId": "p4" }, "completionFlag": "witness_released" },
+      "gives": [],
+      "needs": [],
+      "conditions": [],
+      "effects": [{ "kind": "setFlag", "flag": "witness_released" }],
+      "next": [{ "toStepId": "s_sabotage", "when": [] }],
+      "branching": "parallel"
+    },
+    {
+      "stepId": "s_sabotage",
+      "actId": "a_escape",
+      "narrative": {
+        "description": "Disable the alarm relay before leaving.",
+        "playerHint": "Use the alarm relay terminal.",
+        "stake": "A live alarm reveals the witness's route."
+      },
+      "wantedByRoleId": "witness",
+      "target": { "kind": "sabotage", "targetId": "alarm_relay", "place": { "parcelId": "p4" }, "completionFlag": "alarm_disabled" },
+      "gives": [],
+      "needs": [],
+      "conditions": [],
+      "effects": [{ "kind": "setFlag", "flag": "alarm_disabled" }],
+      "next": [{ "toStepId": "s_transport", "when": [] }],
+      "branching": "parallel"
+    },
+    {
+      "stepId": "s_transport",
+      "actId": "a_escape",
+      "narrative": {
+        "description": "Take public transit with the witness to the market.",
+        "playerHint": "Complete the authored transit journey.",
+        "stake": "The witness reaches safety only if the journey completes."
+      },
+      "wantedByRoleId": "witness",
+      "target": {
+        "kind": "transportation",
+        "journeyId": "archive_to_market",
+        "mode": "public-transit",
+        "from": { "parcelId": "p4" },
+        "to": { "parcelId": "p7" },
+        "passengerRoleIds": ["witness"],
+        "cargoItemIds": [],
+        "completionFlag": "journey_complete"
+      },
+      "gives": [],
+      "needs": [],
+      "conditions": [],
+      "effects": [{ "kind": "setFlag", "flag": "journey_complete" }],
+      "next": [],
+      "branching": "parallel",
+      "endingId": "e_safe"
+    }
+  ],
+  "endings": [
+    { "endingId": "e_safe", "title": "Safe arrival", "epilogue": "The witness reaches the market." }
+  ],
+  "flags": ["archive_hacked", "archive_open", "witness_released", "alarm_disabled", "journey_complete"],
+  "entryStepIds": ["s_hack"]
+}

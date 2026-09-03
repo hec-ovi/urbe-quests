@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://urbe.local/quests/handoff/schema/mechanic-target-bindings.schema.json",
+  "title": "Quest mechanic target to mission asset anchor bindings",
+  "type": "array",
+  "items": {
+    "oneOf": [
+      {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["questId", "stepId", "releaseTargetId", "assetId", "interactionId"],
+        "properties": {
+          "questId": { "$ref": "#/$defs/id" },
+          "stepId": { "$ref": "#/$defs/id" },
+          "releaseTargetId": { "$ref": "#/$defs/id" },
+          "assetId": { "$ref": "#/$defs/assetId" },
+          "interactionId": { "enum": ["open", "use"] }
+        }
+      },
+      {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["questId", "stepId", "accessPointId", "assetId", "interactionId"],
+        "properties": {
+          "questId": { "$ref": "#/$defs/id" },
+          "stepId": { "$ref": "#/$defs/id" },
+          "accessPointId": { "$ref": "#/$defs/id" },
+          "assetId": { "$ref": "#/$defs/assetId" },
+          "interactionId": { "const": "access" }
+        }
+      },
+      {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["questId", "stepId", "targetId", "assetId", "interactionId"],
+        "properties": {
+          "questId": { "$ref": "#/$defs/id" },
+          "stepId": { "$ref": "#/$defs/id" },
+          "targetId": { "$ref": "#/$defs/id" },
+          "assetId": { "$ref": "#/$defs/assetId" },
+          "interactionId": { "enum": ["hack", "sabotage"] }
+        }
+      }
+    ]
+  },
+  "$defs": {
+    "id": { "type": "string", "minLength": 1 },
+    "assetId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._:-]{1,95}$" }
+  }
+}

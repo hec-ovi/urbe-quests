@@ -30,6 +30,8 @@ The closed mechanic set is:
 
 Every step carries its narrative reason, player hint, stake, prerequisites, effects, transitions, and exact mechanic target. Roles bind NPC types, not instance ids. Places bind one known parcel, district, station, or stop. The authoring and builder boundaries reject unknown roles, items, interactions, places, branches, flags, and endings.
 
+The authoring vocabulary supports five transportation modes. A runnable engine bundle accepts only modes declared by its host capability profile. The current Engine fixture declares `public-transit`.
+
 `AuthoringHarness.writeStory` returns story only. `AuthoringHarness.adaptGameplay` receives that completed story unchanged, selects compatible mechanic skills, and returns a questline with cause-effect traces. Full inputs and outputs are in [authoring/CONTRACT.md](authoring/CONTRACT.md).
 
 ## Runtime
@@ -45,11 +47,13 @@ Materialize and bundle write this file set beside the requested questlines path:
 - `questlines.json`: main quest first, then side quests.
 - `objectives.json`: ordered `{ questId, stepId, action }` projections. `action` is the exact typed target.
 - `investigations.json`: engine investigation v1.1 scene requests.
+- `mechanic-target-bindings.json`: rescue, access, hacking, and sabotage target ids mapped to fixed mission assets and exact interaction anchors.
 - `mission-assets.json`: engine mission asset v1.0 create requests.
 - `mission-item-bindings.json`: explicit `{ questId, itemId, assetId }` associations.
+- `host-capabilities.json`: transportation modes the target host can run.
 - `quest-bundle.json`: filenames and counts.
 
-The optional handoff input uses [handoff/schema/handoff-input.schema.json](handoff/schema/handoff-input.schema.json). Missing catalogs are written as empty arrays. An investigation step without one exact quest, step, scene, evidence, information item, place, and completion-action binding fails. Mission requests and item bindings also fail on incompatible or unknown references.
+The handoff input uses [handoff/schema/handoff-input.schema.json](handoff/schema/handoff-input.schema.json); [handoff/fixtures/engine-public-transit.input.json](handoff/fixtures/engine-public-transit.input.json) is a complete fixed-target example. Missing catalogs are written as empty arrays. An investigation or fixed mechanic step without its exact binding fails. A transportation step whose mode is absent from the host profile also fails.
 
 Animation begins only after the engine accepts an exact quest action. Speaker, listeners, TTS, STT, and conversation start, end, or interruption come from the live conversation. They are not persisted in quest definitions.
 

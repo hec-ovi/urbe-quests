@@ -5,9 +5,15 @@
   "type": "object",
   "additionalProperties": false,
   "properties": {
+    "hostCapabilities": {
+      "$ref": "https://urbe.local/quests/handoff/schema/host-capabilities.schema.json"
+    },
     "investigations": {
       "type": "array",
       "items": { "$ref": "https://urbe.local/quests/handoff/schema/investigation-binding-slice.schema.json" }
+    },
+    "mechanicTargetBindings": {
+      "$ref": "https://urbe.local/quests/handoff/schema/mechanic-target-bindings.schema.json"
     },
     "missionAssetRequests": {
       "$ref": "https://urbe.local/quests/handoff/schema/mission-asset-requests.schema.json"

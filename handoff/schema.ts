@@ -33,6 +33,17 @@ export interface MissionItemBinding {
   assetId: string;
 }
 
+export type MechanicTargetBinding =
+  | { questId: string; stepId: string; releaseTargetId: string; assetId: string; interactionId: 'open' | 'use' }
+  | { questId: string; stepId: string; accessPointId: string; assetId: string; interactionId: 'access' }
+  | { questId: string; stepId: string; targetId: string; assetId: string; interactionId: 'hack' | 'sabotage' };
+
+export type TransportationMode = Extract<StepTarget, { kind: 'transportation' }>['mode'];
+
+export interface HostCapabilities {
+  transportationModes: TransportationMode[];
+}
+
 export interface InvestigationQuestBinding {
   stepId: string;
   evidenceId: string;
@@ -52,15 +63,19 @@ export interface InvestigationSceneRequest extends Record<string, unknown> {
 }
 
 export interface HandoffInput {
+  hostCapabilities?: HostCapabilities;
   investigations?: InvestigationSceneRequest[];
+  mechanicTargetBindings?: MechanicTargetBinding[];
   missionAssetRequests?: MissionAssetCreateRequest[];
   missionItemBindings?: MissionItemBinding[];
 }
 
 export interface HandoffBundle {
+  hostCapabilities: HostCapabilities;
   questlines: QuestlineDefinition[];
   objectives: ObjectiveProjection[];
   investigations: InvestigationSceneRequest[];
+  mechanicTargetBindings: MechanicTargetBinding[];
   missionAssetRequests: MissionAssetCreateRequest[];
   missionItemBindings: MissionItemBinding[];
 }

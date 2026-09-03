@@ -7,7 +7,7 @@
 - story/: text-only story passes: the film script from the creation prompt (characters, four movements of passages, enforced minimums) and the side situations written from it. Fixture story. Depends on world, ports.
 - builder/: translation of a story arc into a questline: text plan with an id manifest, agent tool build over all 16 mechanics, immediate world-target checks, and cast resolution by type. Depends on flow, world, story, ports.
 - creation/: the creation workflow: script, main translation, situations and side translations from one prompt with one port per stage; progress events per stage and build round. Sample harness, deterministic materialization, and stable engine handoff files. Depends on story, builder, world, ports, handoff.
-- handoff/: validates investigation bindings and mission asset requests/item bindings, projects every exact objective action, and writes the stable engine creation file set. Depends on flow, engine investigation v1.1, engine mission-assets v1.0.
+- handoff/: validates investigation, mission item, fixed mechanic asset-anchor, and host transport capability bindings; projects every exact objective action; writes engine bundle v1.1. Depends on flow, engine investigation v1.1, engine mission-assets v1.0.
 - dialog/: NPC dialog context: scoped fact store, flag-gated quest knowledge, active wants and ending reactions, scored memory with summarization, cache-ordered context segments, deflection. Depends on world, flow, ports.
 - ports/: injected LLM and agent interfaces shared by story, builder, dialog. prompts.ts at the root loads every box's prompt files.
 

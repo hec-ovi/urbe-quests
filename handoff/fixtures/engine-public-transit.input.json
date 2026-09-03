@@ -1,0 +1,65 @@
+{
+  "hostCapabilities": {
+    "transportationModes": ["public-transit"]
+  },
+  "mechanicTargetBindings": [
+    {
+      "questId": "q_fixed_mechanics",
+      "stepId": "s_rescue",
+      "releaseTargetId": "witness_release_console",
+      "assetId": "quest.fixed.release-console",
+      "interactionId": "use"
+    },
+    {
+      "questId": "q_fixed_mechanics",
+      "stepId": "s_access",
+      "accessPointId": "archive_door",
+      "assetId": "quest.fixed.terminal",
+      "interactionId": "access"
+    },
+    {
+      "questId": "q_fixed_mechanics",
+      "stepId": "s_hack",
+      "targetId": "archive_index",
+      "assetId": "quest.fixed.terminal",
+      "interactionId": "hack"
+    },
+    {
+      "questId": "q_fixed_mechanics",
+      "stepId": "s_sabotage",
+      "targetId": "alarm_relay",
+      "assetId": "quest.fixed.terminal",
+      "interactionId": "sabotage"
+    }
+  ],
+  "missionAssetRequests": [
+    {
+      "contractVersion": "1.0",
+      "assetId": "quest.fixed.release-console",
+      "purpose": "Fixed release console for the authored rescue",
+      "family": "control-terminal",
+      "dimensions": { "width": 0.55, "height": 1.1, "depth": 0.35 },
+      "materials": [
+        { "slot": "surface", "key": "cyberpunk/metal/mid", "variantId": "paint" },
+        { "slot": "display", "key": "cyberpunk/ad-screen/mid", "variantId": "noir-cyan" }
+      ],
+      "requiredInteractions": ["use"],
+      "clearance": { "approachDepth": 0.75, "sideMargin": 0.2, "overhead": 0.1 },
+      "seed": 71
+    },
+    {
+      "contractVersion": "1.0",
+      "assetId": "quest.fixed.terminal",
+      "purpose": "Fixed terminal assembly for authored access, hacking, and sabotage targets",
+      "family": "control-terminal",
+      "dimensions": { "width": 0.9, "height": 1.35, "depth": 0.55 },
+      "materials": [
+        { "slot": "surface", "key": "cyberpunk/metal/mid", "variantId": "paint" },
+        { "slot": "display", "key": "cyberpunk/ad-screen/mid", "variantId": "noir-cyan" }
+      ],
+      "requiredInteractions": ["access", "hack", "sabotage"],
+      "clearance": { "approachDepth": 0.75, "sideMargin": 0.2, "overhead": 0.1 },
+      "seed": 72
+    }
+  ]
+}
