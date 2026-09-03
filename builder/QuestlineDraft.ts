@@ -180,6 +180,16 @@ export class QuestlineDraft {
     if (t.kind === 'listen') t.roleIds.forEach((r) => this.reference('roles', r, problems));
     if (t.kind === 'pickup' || t.kind === 'deliver' || t.kind === 'steal') this.reference('items', t.itemId, problems);
     if (t.kind === 'steal') this.reference('roles', t.fromRoleId, problems);
+    if (t.kind === 'investigation') {
+      this.reference('items', t.evidenceItemId, problems);
+      t.subjectRoleIds.forEach((roleId) => this.reference('roles', roleId, problems));
+    }
+    if (t.kind === 'rescue' || t.kind === 'escort') this.reference('roles', t.roleId, problems);
+    if (t.kind === 'access') this.reference('items', t.credentialItemId, problems);
+    if (t.kind === 'transportation') {
+      t.passengerRoleIds.forEach((roleId) => this.reference('roles', roleId, problems));
+      t.cargoItemIds.forEach((itemId) => this.reference('items', itemId, problems));
+    }
     for (const itemId of [...step.gives, ...step.needs]) this.reference('items', itemId, problems);
     for (const edge of step.next) this.reference('steps', edge.toStepId, problems);
     if (step.endingId !== undefined) this.reference('endings', step.endingId, problems);

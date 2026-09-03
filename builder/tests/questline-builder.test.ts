@@ -16,6 +16,7 @@ import { QuestlineDraft } from '../QuestlineDraft.js';
 import { QuestlineBuilder } from '../QuestlineBuilder.js';
 import { QuestlineTranslator } from '../QuestlineTranslator.js';
 import type { BuildProgress, QuestAssignment } from '../schema.js';
+import { BUILDER_TOOLS } from '../tools.js';
 
 const ASSIGNMENT: QuestAssignment = {
   title: 'The Kettle Debt',
@@ -138,6 +139,44 @@ describe('PlanManifest', () => {
 });
 
 describe('QuestlineDraft through the tools', () => {
+  it('publishes and builds the full runtime mechanic catalog', () => {
+    const addStep = BUILDER_TOOLS.find((tool) => tool.name === 'add_step');
+    const target = (addStep?.inputSchema['properties'] as Record<string, Record<string, unknown>> | undefined)?.['target'];
+    const kinds = ((target?.['properties'] as Record<string, Record<string, unknown>> | undefined)?.['kind']?.['enum']);
+    expect(kinds).toEqual([
+      'goto', 'observe', 'talk', 'listen', 'pickup', 'deliver', 'steal', 'assassinate', 'work',
+      'investigation', 'rescue', 'escort', 'access', 'hacking', 'sabotage', 'transportation',
+    ]);
+
+    const manifest = parsePlanManifest('## Manifest\nroles: witness\nitems: clue\nacts: a1\nendings: e1\nsteps: inspect_clue');
+    const dispatcher = new ToolDispatcher(new QuestlineDraft(manifest));
+    const calls: AgentToolCall[] = [
+      { tool: 'create_questline', input: { id: 'q_scene', title: 'The Scene', premise: 'One clue changes the witness account.' } },
+      { tool: 'add_role', input: { roleId: 'witness', npcType: 'cafe_barista', persona: 'Remembers the direction of every mark.' } },
+      { tool: 'add_item', input: { itemId: 'clue', name: 'Burn direction', description: 'The fixed trace that establishes where the fire began.', kind: 'information' } },
+      { tool: 'add_act', input: { actId: 'a1', title: 'Read the room', summary: 'Inspect the fixed evidence.' } },
+      { tool: 'add_ending', input: { endingId: 'e1', title: 'Origin found', epilogue: 'The witness account has a physical origin.' } },
+      step({
+        narrative: { description: 'The burn runs away from the locked relay.', playerHint: 'Inspect the wall burn.', stake: 'The witness is blamed if the trace disappears.' },
+        wantedByRoleId: 'witness',
+        stepId: 'inspect_clue',
+        actId: 'a1',
+        target: {
+          kind: 'investigation', sceneId: 'scene_relay', evidenceId: 'wall_burn', evidenceItemId: 'clue',
+          subjectRoleIds: ['witness'], place: { parcelId: 'p4' }, completionFlag: 'clue_found',
+        },
+        gives: ['clue'],
+        effects: [{ kind: 'setFlag', flag: 'clue_found' }],
+        next: [],
+        endingId: 'e1',
+        entry: true,
+      }),
+      FINISH,
+    ];
+    const outcomes = calls.map((call) => dispatcher.dispatch(call));
+    expect(outcomes.at(-1)?.finished?.steps[0]?.target.kind).toBe('investigation');
+  });
+
   it('accepts only the ids the plan lists and names the planned ones', () => {
     const dispatcher = new ToolDispatcher(new QuestlineDraft(MANIFEST));
     for (const call of SETUP_CALLS) dispatcher.dispatch(call);

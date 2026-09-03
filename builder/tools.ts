@@ -36,6 +36,25 @@ const place = {
   properties: { parcelId: { type: 'string' }, districtId: { type: 'string' } },
 };
 
+const stepKinds = [
+  'goto',
+  'observe',
+  'talk',
+  'listen',
+  'pickup',
+  'deliver',
+  'steal',
+  'assassinate',
+  'work',
+  'investigation',
+  'rescue',
+  'escort',
+  'access',
+  'hacking',
+  'sabotage',
+  'transportation',
+] as const;
+
 export const BUILDER_TOOLS: AgentTool[] = [
   {
     name: 'create_questline',
@@ -152,11 +171,9 @@ export const BUILDER_TOOLS: AgentTool[] = [
         target: {
           type: 'object',
           description:
-            'The typed objective. kinds: goto {place}, observe {districtId}, talk {roleId, atParcelId?}, listen {roleIds: [two], atParcelId}, pickup {itemId}, deliver {itemId, place}, steal {itemId, fromRoleId}, assassinate {roleId}, work {atParcelId, role}',
+            'The typed objective. Use the exact fields in the step catalog. Investigation, rescue, escort, access, hacking, sabotage, and transportation require a completionFlag set by the step effects.',
           properties: {
-            kind: {
-              enum: ['goto', 'observe', 'talk', 'listen', 'pickup', 'deliver', 'steal', 'assassinate', 'work'],
-            },
+            kind: { enum: stepKinds },
             place,
             districtId: { type: 'string' },
             roleId: { type: 'string' },
@@ -165,6 +182,24 @@ export const BUILDER_TOOLS: AgentTool[] = [
             itemId: { type: 'string' },
             fromRoleId: { type: 'string' },
             role: { type: 'string' },
+            sceneId: { type: 'string' },
+            evidenceId: { type: 'string' },
+            evidenceItemId: { type: 'string' },
+            subjectRoleIds: { type: 'array', items: { type: 'string' } },
+            completionFlag: { type: 'string' },
+            releaseTargetId: { type: 'string' },
+            routeId: { type: 'string' },
+            mode: {
+              enum: ['follow-player', 'lead-player', 'ride-hail', 'public-transit', 'vehicle', 'animal', 'aircraft'],
+            },
+            from: place,
+            to: place,
+            accessPointId: { type: 'string' },
+            credentialItemId: { type: 'string' },
+            targetId: { type: 'string' },
+            journeyId: { type: 'string' },
+            passengerRoleIds: { type: 'array', items: { type: 'string' } },
+            cargoItemIds: { type: 'array', items: { type: 'string' } },
           },
           required: ['kind'],
         },
