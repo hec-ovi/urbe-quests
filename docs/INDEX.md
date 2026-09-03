@@ -1,6 +1,6 @@
 # Box map
 
-- root: CONTRACT.md, the coupling surface for ../engine.
+- root: CONTRACT.md, the coupling surface for Engine. Depends on Naming, Simulation, and Engine investigation and mission-asset contracts.
 - authoring/: GBrain-style progressive skill resolver and separate story-writing and gameplay-adaptation stages. Loads a lightweight index first, then selected mechanic skills; validates exact cast, parcel, district, station, stop, interaction, prerequisite, consequence, flow, and cause-effect references.
 - world/: consumed dependency surface: mirror types of naming and simulation contracts, including transit identities without geometry; fixture named worlds (two eras), deterministic stub simulation.
 - flow/: questline schema and deterministic runtime: typed step DAG, branches, endings, validated saved state, exact mechanic completion events, and route-ready parcel, station, or stop guidance. No LLM.
