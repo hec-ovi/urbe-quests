@@ -39,7 +39,6 @@ function miniBlueprint(): CityBlueprint {
       edges: [
         {
           id: 'e1',
-          class: 'street',
           path: [[0, 50], [300, 50]] as [number, number][],
           sidewalk: { left: 2, right: 2 },
           districtIds: ['d1', 'd2', 'd3'],
