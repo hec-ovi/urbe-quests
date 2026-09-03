@@ -32,6 +32,15 @@ export class StepPlaces {
         return fromPlaceTarget(t.place);
       case 'observe':
         return { kind: 'district', id: t.districtId };
+      case 'investigation':
+      case 'rescue':
+      case 'access':
+      case 'hacking':
+      case 'sabotage':
+        return fromPlaceTarget(t.place);
+      case 'escort':
+      case 'transportation':
+        return fromPlaceTarget(t.from);
       case 'listen':
       case 'work':
         return { kind: 'parcel', id: t.atParcelId };

@@ -89,7 +89,46 @@ export type StepTarget =
   | { kind: 'deliver'; itemId: string; place: PlaceTarget }
   | { kind: 'steal'; itemId: string; fromRoleId: string }
   | { kind: 'assassinate'; roleId: string }
-  | { kind: 'work'; atParcelId: string; role: string };
+  | { kind: 'work'; atParcelId: string; role: string }
+  /** One fixed clue in an authored incident. Ordered clue stages are separate DAG steps. */
+  | {
+      kind: 'investigation';
+      sceneId: string;
+      evidenceId: string;
+      evidenceItemId: string;
+      subjectRoleIds: string[];
+      place: PlaceTarget;
+      completionFlag: string;
+    }
+  /** Release one cast character through one authored restraint or release interaction. */
+  | { kind: 'rescue'; roleId: string; releaseTargetId: string; place: PlaceTarget; completionFlag: string }
+  /** Keep one cast character with the player along one authored route. */
+  | {
+      kind: 'escort';
+      roleId: string;
+      routeId: string;
+      mode: 'follow-player' | 'lead-player';
+      from: PlaceTarget;
+      to: PlaceTarget;
+      completionFlag: string;
+    }
+  /** Use a declared credential at one authored access point. */
+  | { kind: 'access'; accessPointId: string; credentialItemId: string; place: PlaceTarget; completionFlag: string }
+  /** Complete one authored intrusion against a target at a known place. */
+  | { kind: 'hacking'; targetId: string; place: PlaceTarget; completionFlag: string }
+  /** Complete one authored state change against a target at a known place. */
+  | { kind: 'sabotage'; targetId: string; place: PlaceTarget; completionFlag: string }
+  /** Complete one authored journey. The player is implicit; other passengers and cargo are exact. */
+  | {
+      kind: 'transportation';
+      journeyId: string;
+      mode: 'ride-hail' | 'public-transit' | 'vehicle' | 'animal' | 'aircraft';
+      from: PlaceTarget;
+      to: PlaceTarget;
+      passengerRoleIds: string[];
+      cargoItemIds: string[];
+      completionFlag: string;
+    };
 
 export type PlaceTarget = { parcelId: string } | { districtId: string };
 

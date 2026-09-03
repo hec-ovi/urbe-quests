@@ -60,11 +60,26 @@ export class AvailabilityService {
         if (!this.isRoleAlive(t.fromRoleId)) return { available: false, reason: 'role_dead' };
         return { available: true };
       }
+      case 'rescue':
+        return this.presenceAt(t.roleId, timeMin, t.place);
+      case 'escort':
+        return this.presenceAt(t.roleId, timeMin, t.from);
+      case 'transportation': {
+        for (const roleId of t.passengerRoleIds) {
+          const each = this.presenceAt(roleId, timeMin, t.from);
+          if (!each.available) return each;
+        }
+        return { available: true };
+      }
       case 'goto':
       case 'observe':
       case 'pickup':
       case 'deliver':
       case 'work':
+      case 'investigation':
+      case 'access':
+      case 'hacking':
+      case 'sabotage':
         return { available: true };
     }
   }
@@ -81,7 +96,22 @@ export class AvailabilityService {
       const [a, b] = t.roleIds;
       return intersectWindows(this.roleWindows(a, t.atParcelId), this.roleWindows(b, t.atParcelId));
     }
+    if (t.kind === 'rescue') return this.roleWindowsAt(t.roleId, t.place);
+    if (t.kind === 'escort') return this.roleWindowsAt(t.roleId, t.from);
+    if (t.kind === 'transportation' && t.passengerRoleIds.length > 0) {
+      return t.passengerRoleIds
+        .map((roleId) => this.roleWindowsAt(roleId, t.from))
+        .reduce((overlap, windows) => intersectWindows(overlap, windows));
+    }
     return undefined;
+  }
+
+  private presenceAt(roleId: string, timeMin: number, place: { parcelId: string } | { districtId: string }): StepAvailability {
+    return this.presence(roleId, timeMin, 'parcelId' in place ? place.parcelId : undefined);
+  }
+
+  private roleWindowsAt(roleId: string, place: { parcelId: string } | { districtId: string }): AvailabilityWindow[] {
+    return this.roleWindows(roleId, 'parcelId' in place ? place.parcelId : undefined);
   }
 
   private presence(roleId: string, timeMin: number, atParcelId: string | undefined): StepAvailability {

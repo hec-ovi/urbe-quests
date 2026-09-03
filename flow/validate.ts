@@ -129,10 +129,57 @@ export class FlowValidator {
       case 'assassinate':
         requireRole(t.roleId);
         return;
+      case 'investigation': {
+        const evidence = items.get(t.evidenceItemId);
+        if (evidence === undefined) fail(`step ${step.stepId}: unknown evidence item ${t.evidenceItemId}`);
+        else if (evidence.kind !== 'information') fail(`step ${step.stepId}: evidence item ${t.evidenceItemId} is not information`);
+        if (!step.gives.includes(t.evidenceItemId)) fail(`step ${step.stepId}: investigation does not give evidence item ${t.evidenceItemId}`);
+        t.subjectRoleIds.forEach(requireRole);
+        this.requireCompletionEffect(step, t.completionFlag, fail);
+        return;
+      }
+      case 'rescue':
+        requireRole(t.roleId);
+        this.requireCompletionEffect(step, t.completionFlag, fail);
+        return;
+      case 'escort':
+        requireRole(t.roleId);
+        if (samePlace(t.from, t.to)) fail(`step ${step.stepId}: escort route starts and ends at the same place`);
+        this.requireCompletionEffect(step, t.completionFlag, fail);
+        return;
+      case 'access': {
+        const credential = items.get(t.credentialItemId);
+        if (credential === undefined) fail(`step ${step.stepId}: unknown credential item ${t.credentialItemId}`);
+        else if (!['key', 'information', 'device'].includes(credential.kind)) {
+          fail(`step ${step.stepId}: access credential ${t.credentialItemId} has ineligible kind ${credential.kind}`);
+        }
+        if (!step.needs.includes(t.credentialItemId)) fail(`step ${step.stepId}: access does not need credential item ${t.credentialItemId}`);
+        this.requireCompletionEffect(step, t.completionFlag, fail);
+        return;
+      }
+      case 'hacking':
+      case 'sabotage':
+        this.requireCompletionEffect(step, t.completionFlag, fail);
+        return;
+      case 'transportation':
+        t.passengerRoleIds.forEach(requireRole);
+        for (const itemId of t.cargoItemIds) {
+          requirePhysicalItem(itemId);
+          if (!step.needs.includes(itemId)) fail(`step ${step.stepId}: transportation does not need cargo item ${itemId}`);
+        }
+        if (samePlace(t.from, t.to)) fail(`step ${step.stepId}: transportation starts and ends at the same place`);
+        this.requireCompletionEffect(step, t.completionFlag, fail);
+        return;
       case 'goto':
       case 'observe':
       case 'work':
         return;
+    }
+  }
+
+  private requireCompletionEffect(step: QuestStep, completionFlag: string, fail: (m: string) => never): void {
+    if (!step.effects.some((effect) => effect.kind === 'setFlag' && effect.flag === completionFlag)) {
+      fail(`step ${step.stepId}: ${step.target.kind} completion flag ${completionFlag} is not set by its effects`);
     }
   }
 
@@ -164,9 +211,11 @@ export class FlowValidator {
     for (const step of def.steps) {
       const t = step.target;
       if (step.wantedByRoleId !== undefined) used.add(step.wantedByRoleId);
-      if (t.kind === 'talk' || t.kind === 'assassinate') used.add(t.roleId);
+      if (t.kind === 'talk' || t.kind === 'assassinate' || t.kind === 'rescue' || t.kind === 'escort') used.add(t.roleId);
       if (t.kind === 'listen') t.roleIds.forEach((r) => used.add(r));
       if (t.kind === 'steal') used.add(t.fromRoleId);
+      if (t.kind === 'investigation') t.subjectRoleIds.forEach((r) => used.add(r));
+      if (t.kind === 'transportation') t.passengerRoleIds.forEach((r) => used.add(r));
       for (const p of [...step.conditions, ...step.next.flatMap((e) => e.when)]) {
         if (p.kind === 'roleAlive' || p.kind === 'roleOnDuty') used.add(p.roleId);
       }
@@ -194,4 +243,10 @@ export class FlowValidator {
       if (!state.has(step.stepId)) fail(`step ${step.stepId} unreachable from entry`);
     }
   }
+}
+
+function samePlace(left: import('./schema.js').PlaceTarget, right: import('./schema.js').PlaceTarget): boolean {
+  return 'parcelId' in left
+    ? 'parcelId' in right && left.parcelId === right.parcelId
+    : 'districtId' in right && left.districtId === right.districtId;
 }

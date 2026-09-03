@@ -3,10 +3,12 @@
 Purpose: deterministic questline state machine over a condition-gated DAG of typed steps; no LLM anywhere.
 
 ## In
-- `QuestlineDefinition` ([schema.ts](schema.ts), exact JSON [schema/questline.schema.json](schema/questline.schema.json)): narrative-first questline document: premise, roles (bound by NPC type, never id), typed items (device, weapon, document, key, substance, valuable, information), flag-gated facts, acts, typed steps (goto, observe, talk, listen, pickup, deliver, steal, assassinate, work) each with its narrative and stake, the role that wants it, the items it gives and needs, predicates on edges, effects, endings, declared flags, entry steps.
+- `QuestlineDefinition` ([schema.ts](schema.ts), exact JSON [schema/questline.schema.json](schema/questline.schema.json)): narrative-first questline document: premise, roles (bound by NPC type, never id), typed items (device, weapon, document, key, substance, valuable, information), flag-gated facts, acts, typed steps, each with its narrative and stake, the role that wants it, the items it gives and needs, predicates on edges, effects, endings, declared flags, entry steps.
+- The closed step vocabulary is `goto`, `observe`, `talk`, `listen`, `pickup`, `deliver`, `steal`, `assassinate`, `work`, `investigation`, `rescue`, `escort`, `access`, `hacking`, `sabotage`, and `transportation`.
+- New interaction targets are fully authored. Investigation names a scene, clue, information item, subject cast, and place. Rescue names the cast role and release target. Escort names the cast role, follow mode, route, and endpoints. Access names the access point and credential. Hacking and sabotage name their interaction target. Transportation names the journey, mode, endpoints, exact cast passengers, and cargo. Each names a declared completion flag which its step must set.
 - `ResolvedCast` ([schema.ts](schema.ts)): roleId to npcId map from the builder.
 - `SimulationPort` ([../world/types/simulation.ts](../world/types/simulation.ts)) for liveness, schedules and story-consequence flags.
-- `PlayerEvent` ([events.ts](events.ts)) plus current time in simulation minutes.
+- `PlayerEvent` ([events.ts](events.ts)) plus current time in simulation minutes. New completion events repeat the authored interaction ids, cast NPC ids, item ids, modes, and places needed to match one target without inference.
 
 ## Out
 `QuestlineRuntime` ([QuestlineRuntime.ts](QuestlineRuntime.ts)):
@@ -15,10 +17,10 @@ Purpose: deterministic questline state machine over a condition-gated DAG of typ
 - `stepAvailability(stepId, timeMin)`: liveness, presence, held items and condition gate, computed on demand; reasons role_dead, not_present, off_duty, missing_item, condition.
 - `windows(stepId)`: weekly availability windows derived from the target NPC's routine; undefined for schedule-free steps.
 - `stepPlace(stepId, timeMin)`: where the step points, for a marker on the map: the parcel or district the target names, the parcel the item sits at, or the simulation's live place for the person it targets (parcel, street edge, stop, route). Undefined when the simulation has no place to give (the person is dead, the item is not placed); it answers where, never whether, so a host pairs it with `stepAvailability`.
-- `advance(event, timeMin)`: completes matching available steps, applies effects (quest flags, simulation flags), activates edges (parallel or exclusive branching), reports an ending on terminal steps. Talk, listen and steal enforce presence at advance time; a kill event records the death in the simulation.
+- `advance(event, timeMin)`: completes matching available steps, applies effects (quest flags, simulation flags), activates edges (parallel or exclusive branching), reports an ending on terminal steps. Talk, listen, steal, rescue, escort, and transportation with cast passengers enforce liveness and available presence at advance time; a kill event records the death in the simulation.
 - `serialize()` / `QuestlineRuntime.restore(...)`.
 
-`FlowValidator` ([validate.ts](validate.ts)): structural validation (ids, references, declared flags, DAG, reachability, terminal endings, role usage, item rules: information is never a pickup, deliver or steal target; a pickup item is placed at a parcel).
+`FlowValidator` ([validate.ts](validate.ts)): structural validation (ids, references, declared flags, DAG, reachability, terminal endings, role usage, item rules: information is never a pickup, deliver or steal target; a pickup item is placed at a parcel). Investigation stages must grant their declared information evidence. Access must need its key, information, or device credential. Transportation must need all physical cargo. Escort and transportation endpoints must differ. Every added interaction mechanic must set its declared completion flag.
 
 `QuestlineSetValidator` ([QuestlineSet.ts](QuestlineSet.ts)): validates the engine payload as one main definition followed by side definitions, with unique questline ids. Its exact JSON shape is [../creation/schema/questline-set.schema.json](../creation/schema/questline-set.schema.json).
 
@@ -27,6 +29,7 @@ Purpose: deterministic questline state machine over a condition-gated DAG of typ
 
 ## Invariants
 - Same definition, cast, event order and times: identical state. No wall clock, no randomness, no I/O.
+- Completed evidence and interaction flags survive serialization, so revisiting cannot duplicate a reward or reopen a finished stage.
 - An exclusive branch may have one unconditional fallback only as its last edge, so a fallback cannot make a later outcome unreachable.
 - A dead NPC never satisfies presence or duty checks; availability and inventory are never stored, always derived.
 - Flags used anywhere must be declared in the definition.

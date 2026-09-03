@@ -173,7 +173,14 @@ export class QuestlineRuntime {
   private advanceGate(step: QuestStep, timeMin: number): StepAvailability {
     const state = this.stateGate(step, timeMin);
     if (!state.available) return state;
-    if (step.target.kind === 'talk' || step.target.kind === 'listen' || step.target.kind === 'steal') {
+    if (
+      step.target.kind === 'talk' ||
+      step.target.kind === 'listen' ||
+      step.target.kind === 'steal' ||
+      step.target.kind === 'rescue' ||
+      step.target.kind === 'escort' ||
+      step.target.kind === 'transportation'
+    ) {
       return this.availabilityService.targetAvailability(step, timeMin);
     }
     return { available: true };
@@ -256,14 +263,61 @@ export class QuestlineRuntime {
         return event.kind === 'killed' && event.npcId === this.cast[t.roleId];
       case 'work':
         return event.kind === 'workedShift' && event.parcelId === t.atParcelId;
+      case 'investigation':
+        return (
+          event.kind === 'investigated' &&
+          event.sceneId === t.sceneId &&
+          event.evidenceId === t.evidenceId &&
+          samePlace(event.place, t.place)
+        );
+      case 'rescue':
+        return (
+          event.kind === 'released' &&
+          event.npcId === this.cast[t.roleId] &&
+          event.releaseTargetId === t.releaseTargetId &&
+          samePlace(event.place, t.place)
+        );
+      case 'escort':
+        return (
+          event.kind === 'escorted' &&
+          event.npcId === this.cast[t.roleId] &&
+          event.routeId === t.routeId &&
+          event.mode === t.mode &&
+          samePlace(event.from, t.from) &&
+          samePlace(event.to, t.to)
+        );
+      case 'access':
+        return (
+          event.kind === 'accessed' &&
+          event.accessPointId === t.accessPointId &&
+          event.credentialItemId === t.credentialItemId &&
+          samePlace(event.place, t.place)
+        );
+      case 'hacking':
+        return event.kind === 'hacked' && event.targetId === t.targetId && samePlace(event.place, t.place);
+      case 'sabotage':
+        return event.kind === 'sabotaged' && event.targetId === t.targetId && samePlace(event.place, t.place);
+      case 'transportation':
+        return (
+          event.kind === 'transported' &&
+          event.journeyId === t.journeyId &&
+          event.mode === t.mode &&
+          samePlace(event.from, t.from) &&
+          samePlace(event.to, t.to) &&
+          sameMembers(event.passengerNpcIds, t.passengerRoleIds.map((roleId) => this.cast[roleId]!)) &&
+          sameMembers(event.cargoItemIds, t.cargoItemIds)
+        );
     }
   }
 
   private targetRole(step: QuestStep): string | undefined {
     const t = step.target;
-    if (t.kind === 'talk' || t.kind === 'assassinate') return t.roleId;
+    if (t.kind === 'talk' || t.kind === 'assassinate' || t.kind === 'rescue' || t.kind === 'escort') return t.roleId;
     if (t.kind === 'steal') return t.fromRoleId;
     if (t.kind === 'listen') return t.roleIds.find((r) => !this.availabilityService.isRoleAlive(r)) ?? t.roleIds[0];
+    if (t.kind === 'transportation') {
+      return t.passengerRoleIds.find((r) => !this.availabilityService.isRoleAlive(r)) ?? t.passengerRoleIds[0];
+    }
     return undefined;
   }
 
@@ -277,4 +331,15 @@ export class QuestlineRuntime {
     this.step(stepId);
     return true;
   }
+}
+
+function samePlace(left: import('./schema.js').PlaceTarget, right: import('./schema.js').PlaceTarget): boolean {
+  return 'parcelId' in left
+    ? 'parcelId' in right && left.parcelId === right.parcelId
+    : 'districtId' in right && left.districtId === right.districtId;
+}
+
+function sameMembers(left: string[], right: string[]): boolean {
+  if (left.length !== right.length) return false;
+  return [...left].sort().every((value, index) => value === [...right].sort()[index]);
 }

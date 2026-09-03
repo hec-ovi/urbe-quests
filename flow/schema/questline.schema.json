@@ -176,6 +176,107 @@
             "atParcelId": { "$ref": "#/$defs/id" },
             "role": { "$ref": "#/$defs/text" }
           }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "sceneId", "evidenceId", "evidenceItemId", "subjectRoleIds", "place", "completionFlag"],
+          "properties": {
+            "kind": { "const": "investigation" },
+            "sceneId": { "$ref": "#/$defs/id" },
+            "evidenceId": { "$ref": "#/$defs/id" },
+            "evidenceItemId": { "$ref": "#/$defs/id" },
+            "subjectRoleIds": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": { "$ref": "#/$defs/id" }
+            },
+            "place": { "$ref": "#/$defs/place" },
+            "completionFlag": { "$ref": "#/$defs/id" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "roleId", "releaseTargetId", "place", "completionFlag"],
+          "properties": {
+            "kind": { "const": "rescue" },
+            "roleId": { "$ref": "#/$defs/id" },
+            "releaseTargetId": { "$ref": "#/$defs/id" },
+            "place": { "$ref": "#/$defs/place" },
+            "completionFlag": { "$ref": "#/$defs/id" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "roleId", "routeId", "mode", "from", "to", "completionFlag"],
+          "properties": {
+            "kind": { "const": "escort" },
+            "roleId": { "$ref": "#/$defs/id" },
+            "routeId": { "$ref": "#/$defs/id" },
+            "mode": { "enum": ["follow-player", "lead-player"] },
+            "from": { "$ref": "#/$defs/place" },
+            "to": { "$ref": "#/$defs/place" },
+            "completionFlag": { "$ref": "#/$defs/id" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "accessPointId", "credentialItemId", "place", "completionFlag"],
+          "properties": {
+            "kind": { "const": "access" },
+            "accessPointId": { "$ref": "#/$defs/id" },
+            "credentialItemId": { "$ref": "#/$defs/id" },
+            "place": { "$ref": "#/$defs/place" },
+            "completionFlag": { "$ref": "#/$defs/id" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "targetId", "place", "completionFlag"],
+          "properties": {
+            "kind": { "const": "hacking" },
+            "targetId": { "$ref": "#/$defs/id" },
+            "place": { "$ref": "#/$defs/place" },
+            "completionFlag": { "$ref": "#/$defs/id" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "targetId", "place", "completionFlag"],
+          "properties": {
+            "kind": { "const": "sabotage" },
+            "targetId": { "$ref": "#/$defs/id" },
+            "place": { "$ref": "#/$defs/place" },
+            "completionFlag": { "$ref": "#/$defs/id" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "journeyId", "mode", "from", "to", "passengerRoleIds", "cargoItemIds", "completionFlag"],
+          "properties": {
+            "kind": { "const": "transportation" },
+            "journeyId": { "$ref": "#/$defs/id" },
+            "mode": { "enum": ["ride-hail", "public-transit", "vehicle", "animal", "aircraft"] },
+            "from": { "$ref": "#/$defs/place" },
+            "to": { "$ref": "#/$defs/place" },
+            "passengerRoleIds": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": { "$ref": "#/$defs/id" }
+            },
+            "cargoItemIds": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": { "$ref": "#/$defs/id" }
+            },
+            "completionFlag": { "$ref": "#/$defs/id" }
+          }
         }
       ]
     },
