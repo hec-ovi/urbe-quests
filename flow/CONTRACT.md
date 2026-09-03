@@ -8,7 +8,19 @@ Purpose: deterministic questline state machine over a condition-gated DAG of typ
 - New interaction targets are fully authored. Investigation names a scene, clue, information item, subject cast, and place. Rescue names the cast role and release target. Escort names the cast role, follow mode, route, and endpoints. Access names the access point and credential. Hacking and sabotage name their interaction target. Transportation names the journey, mode, endpoints, exact cast passengers, and cargo. Each names a declared completion flag which its step must set.
 - `ResolvedCast` ([schema.ts](schema.ts)): roleId to npcId map from the builder.
 - `SimulationPort` ([../world/types/simulation.ts](../world/types/simulation.ts)) for liveness, schedules and story-consequence flags.
-- `PlayerEvent` ([events.ts](events.ts)) plus current time in simulation minutes. New completion events repeat the authored interaction ids, cast NPC ids, item ids, modes, and places needed to match one target without inference.
+- `PlayerEvent` ([schema/player-event.schema.json](schema/player-event.schema.json), TypeScript [events.ts](events.ts)) plus current time in simulation minutes. New completion events repeat the authored interaction ids, cast NPC ids, item ids, modes, and places needed to match one target without inference.
+
+New mechanic completion events:
+
+| Step | Event | Exact match fields |
+| --- | --- | --- |
+| `investigation` | `investigated` | `sceneId`, `evidenceId`, `place` |
+| `rescue` | `released` | resolved `npcId`, `releaseTargetId`, `place` |
+| `escort` | `escorted` | resolved `npcId`, `routeId`, `mode`, `from`, `to` |
+| `access` | `accessed` | `accessPointId`, `credentialItemId`, `place` |
+| `hacking` | `hacked` | `targetId`, `place` |
+| `sabotage` | `sabotaged` | `targetId`, `place` |
+| `transportation` | `transported` | `journeyId`, `mode`, `from`, `to`, resolved `passengerNpcIds`, `cargoItemIds` |
 
 ## Out
 `QuestlineRuntime` ([QuestlineRuntime.ts](QuestlineRuntime.ts)):

@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import { Ajv2020 } from 'ajv/dist/2020.js';
 import { loadFixtureWorld, StubSimulation } from '../../world/index.js';
 import { QuestlineRuntime } from '../QuestlineRuntime.js';
 import type { QuestlineDefinition, ResolvedCast } from '../schema.js';
+import playerEventSchema from '../schema/player-event.schema.json' with { type: 'json' };
 
 const TUE_10 = 1 * 1440 + 600;
 
@@ -162,6 +164,23 @@ function runToChoice(runtime: QuestlineRuntime, witnessId: string): void {
 }
 
 describe('expanded authored mechanics', () => {
+  it('publishes a closed event schema for every new engine completion event', () => {
+    const validate = new Ajv2020({ allErrors: true, strict: true }).compile(playerEventSchema);
+    const events = [
+      { kind: 'investigated', sceneId: 'scene_blackout', evidenceId: 'wall_burn', place: { parcelId: 'p4' } },
+      { kind: 'released', npcId: 'npc_witness', releaseTargetId: 'restraint_witness_4', place: { parcelId: 'p4' } },
+      { kind: 'escorted', npcId: 'npc_witness', routeId: 'route_cafe_market', mode: 'follow-player', from: { parcelId: 'p4' }, to: { parcelId: 'p7' } },
+      { kind: 'accessed', accessPointId: 'door_service_4', credentialItemId: 'entry_code', place: { parcelId: 'p4' } },
+      { kind: 'hacked', targetId: 'terminal_service_4', place: { parcelId: 'p4' } },
+      { kind: 'sabotaged', targetId: 'relay_primary', place: { parcelId: 'p1' } },
+      { kind: 'transported', journeyId: 'ride_market_tower', mode: 'ride-hail', from: { parcelId: 'p7' }, to: { parcelId: 'p1' }, passengerNpcIds: [], cargoItemIds: [] },
+    ];
+    for (const event of events) expect(validate(event), JSON.stringify(validate.errors)).toBe(true);
+
+    expect(validate({ kind: 'hacked', place: { parcelId: 'p4' } })).toBe(false);
+    expect(validate({ kind: 'released', npcId: 'npc_witness', releaseTargetId: 'restraint_witness_4', place: { parcelId: 'p4' }, inferredSubject: 'Mara' })).toBe(false);
+  });
+
   it('runs ordered evidence, hacking, access, release, follow, ride-hail, sabotage, and a branch ending', () => {
     const { sim, cast, witnessId } = setup();
     const runtime = new QuestlineRuntime(expandedDefinition(), cast, sim);
