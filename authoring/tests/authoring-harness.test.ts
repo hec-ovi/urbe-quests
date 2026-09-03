@@ -216,6 +216,23 @@ describe('two-stage authoring harness', () => {
     });
   });
 
+  it('accepts named stations and stops and rejects unknown transit identities', async () => {
+    const stationTarget = clone(adaptation);
+    const publish = stationTarget.definition.steps.find((step) => step.stepId === 's_publish')!;
+    if (publish.target.kind !== 'deliver') throw new Error('fixture target changed');
+    publish.target.place = { stationId: 'station_harbor' };
+    await expect(new GameplayStage().adapt(adaptationRequest, fixtureGameplayPort(stationTarget))).resolves.toEqual(stationTarget);
+
+    const unknownStop = clone(stationTarget);
+    const changed = unknownStop.definition.steps.find((step) => step.stepId === 's_publish')!;
+    if (changed.target.kind !== 'deliver') throw new Error('fixture target changed');
+    changed.target.place = { stopId: 'stop_missing' };
+    await expect(new GameplayStage().adapt(adaptationRequest, fixtureGameplayPort(unknownStop))).rejects.toMatchObject({
+      code: 'E_WORLD_TARGET',
+      details: [expect.stringContaining('stop_missing')],
+    });
+  });
+
   it('rejects graph-invalid output before accepting the adaptation', async () => {
     const invalid = clone(adaptation);
     invalid.definition.steps[1]!.stepId = 's_request';

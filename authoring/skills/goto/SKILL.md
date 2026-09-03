@@ -1,6 +1,6 @@
 ---
 name: goto
-description: "Adapts a beat whose playable action is reaching a known parcel or district."
+description: "Adapts a beat whose playable action is reaching a known parcel, district, station, or stop."
 triggers:
   - "go to a place"
   - "reach a location"
@@ -12,7 +12,7 @@ mechanic: goto
 
 Use `goto` when arrival itself changes the story or unlocks the next action.
 
-- Target: exactly one existing `parcelId` or `districtId` in `target.place`.
+- Target: exactly one existing `parcelId`, `districtId`, `stationId`, or `stopId` in `target.place`.
 - Completion event: `arrivedAt` with the same place id.
 - Preconditions: graph edges, step conditions, and any `needs` items.
 - State change: completes the step, applies effects, and follows passing edges.

@@ -196,9 +196,10 @@ function collectUsedRoles(definition: QuestlineDefinition): Set<string> {
 }
 
 function samePlace(left: import('./schema.js').PlaceTarget, right: import('./schema.js').PlaceTarget): boolean {
-  return 'parcelId' in left
-    ? 'parcelId' in right && left.parcelId === right.parcelId
-    : 'districtId' in right && left.districtId === right.districtId;
+  if ('parcelId' in left) return 'parcelId' in right && left.parcelId === right.parcelId;
+  if ('districtId' in left) return 'districtId' in right && left.districtId === right.districtId;
+  if ('stationId' in left) return 'stationId' in right && left.stationId === right.stationId;
+  return 'stopId' in right && left.stopId === right.stopId;
 }
 
 function checkAcyclicAndReachable(

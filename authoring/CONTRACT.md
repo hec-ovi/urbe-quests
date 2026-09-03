@@ -25,7 +25,7 @@ Purpose: exposes story writing and gameplay adaptation as separate agent stages 
 - Gameplay-stage result: [schema/adaptation-output.schema.json](schema/adaptation-output.schema.json). Every step records its mechanic choice, story beats, narrative reason, cause, effect, and ordered transition trace. Every ending records terminal steps and story outcomes.
 - Closed error envelope: [schema/authoring-error.schema.json](schema/authoring-error.schema.json).
 
-The shared named world envelope is [schema/world-context.schema.json](schema/world-context.schema.json). Shared ids, mechanics, skill summaries, and schema bundles are [schema/values.schema.json](schema/values.schema.json).
+The shared named world envelope is [schema/world-context.schema.json](schema/world-context.schema.json). It preserves named parcel, district, station, and stop identities without geometry. Shared ids, mechanics, skill summaries, and schema bundles are [schema/values.schema.json](schema/values.schema.json).
 
 ## Events
 
@@ -41,7 +41,7 @@ The shared named world envelope is [schema/world-context.schema.json](schema/wor
 - `E_UNKNOWN_SKILL`: a full skill name cannot be resolved.
 - `E_UNSUPPORTED_MECHANIC`: the caller named a mechanic outside the runtime vocabulary.
 - `E_MECHANIC_SELECTION`: the selector chose an unsupported or disallowed mechanic.
-- `E_WORLD_TARGET`: a role type, parcel, district, mechanic target place, item placement, or promotion destination is absent from the supplied world.
+- `E_WORLD_TARGET`: a role type, parcel, district, station, stop, mechanic target place, item placement, or promotion destination is absent from the supplied world.
 - `E_CAUSE_EFFECT`: story ids, mechanic traces, graph transitions, beats, decisions, or ending routes disagree.
 - `E_INVALID_FLOW`: the finished definition fails the deterministic flow validator.
 
@@ -55,6 +55,7 @@ The shared named world envelope is [schema/world-context.schema.json](schema/wor
 
 - Story writing never emits quest mechanics, system ids, or runtime events. Its named scene places must exist in the supplied world; gameplay adaptation owns exact target ids.
 - Gameplay adaptation receives the completed story unchanged.
+- Gameplay place targets use one exact world identity: `parcelId`, `districtId`, `stationId`, or `stopId`.
 - The lightweight index is read before mechanic bodies. Only selected mechanic bodies enter the gameplay adaptation request.
 - Skill frontmatter `triggers` are the routing source of truth. `skills/RESOLVER.md` mirrors them for human scanning.
 - Supported mechanics are exactly `goto`, `observe`, `talk`, `listen`, `pickup`, `deliver`, `steal`, `assassinate`, `work`, `investigation`, `rescue`, `escort`, `access`, `hacking`, `sabotage`, and `transportation`.

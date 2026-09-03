@@ -1,7 +1,7 @@
 # Box map
 
 - root: CONTRACT.md, the coupling surface for ../engine.
-- authoring/: GBrain-style progressive skill resolver and the separate story-writing and gameplay-adaptation agent stages. Loads a lightweight index first, then only selected mechanic skills; validates structured output, exact cast and interaction targets, world places, prerequisites, completion consequences, flow, and cause-effect traces.
+- authoring/: GBrain-style progressive skill resolver and separate story-writing and gameplay-adaptation stages. Loads a lightweight index first, then selected mechanic skills; validates exact cast, parcel, district, station, stop, interaction, prerequisite, consequence, flow, and cause-effect references.
 - world/: consumed dependency surface: mirror types of naming and simulation contracts, including transit identities without geometry; fixture named worlds (two eras), deterministic stub simulation.
 - flow/: questline schema and deterministic runtime: typed step DAG, branches, endings, validated saved state, exact mechanic completion events, and route-ready parcel, station, or stop guidance. No LLM.
 - story/: text-only story passes: the film script from the creation prompt (characters, four movements of passages, enforced minimums) and the side situations written from it. Fixture story. Depends on world, ports.

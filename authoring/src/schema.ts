@@ -39,6 +39,14 @@ export interface WorldContext {
     meta: { seed: string | number; naming: { theme: string; model?: string; namedAt: string } };
     districts: { id: string; kind: 'downtown' | 'commercial' | 'residential' | 'industrial' | 'mixed'; tier: Tier; name: string }[];
     parcels: { id: string; districtId: string; type: ParcelType; tier: Tier; name?: string }[];
+    transit?: {
+      busStops: TransitEntity[];
+      busRoutes: TransitEntity[];
+      trainStations: TransitEntity[];
+      trainLines: TransitEntity[];
+      subwayStations: TransitEntity[];
+      subwayLines: TransitEntity[];
+    };
   };
   types: {
     meta: { theme: string; worldSeed: string | number; createdAt: string; model?: string };
@@ -55,7 +63,17 @@ export interface WorldContext {
   };
 }
 
-export type PlaceTarget = { parcelId: string } | { districtId: string };
+export interface TransitEntity {
+  id: string;
+  districtId?: string;
+  name?: string;
+}
+
+export type PlaceTarget =
+  | { parcelId: string }
+  | { districtId: string }
+  | { stationId: string }
+  | { stopId: string };
 export type StepTarget =
   | { kind: 'goto'; place: PlaceTarget }
   | { kind: 'observe'; districtId: string }

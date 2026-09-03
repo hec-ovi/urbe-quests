@@ -12,7 +12,7 @@ mechanic: deliver
 
 Use `deliver` when transferring a physical item at a destination is the consequential action.
 
-- Target: one declared non-information `itemId` and one existing parcel or district in `target.place`.
+- Target: one declared non-information `itemId` and one existing parcel, district, station, or stop in `target.place`.
 - Completion event: `delivered` with the same item and place id.
 - Preconditions: the item is held, the destination matches, and all graph conditions pass.
 - State change: removes the delivered item from runtime inventory, applies effects, and follows the next edges.
