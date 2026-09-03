@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://urbe.local/quests/handoff/schema/handoff-input.schema.json",
+  "title": "Optional authored engine handoff input",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "investigations": {
+      "type": "array",
+      "items": { "$ref": "https://urbe.local/quests/handoff/schema/investigation-binding-slice.schema.json" }
+    },
+    "missionAssetRequests": {
+      "$ref": "https://urbe.local/quests/handoff/schema/mission-asset-requests.schema.json"
+    },
+    "missionItemBindings": {
+      "$ref": "https://urbe.local/quests/handoff/schema/mission-item-bindings.schema.json"
+    }
+  }
+}

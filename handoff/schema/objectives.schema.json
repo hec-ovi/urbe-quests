@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://urbe.local/quests/handoff/schema/objectives.schema.json",
+  "title": "Quest objective projections",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["questId", "stepId", "action"],
+    "properties": {
+      "questId": { "type": "string", "minLength": 1 },
+      "stepId": { "type": "string", "minLength": 1 },
+      "action": { "$ref": "https://urbe.local/quests/flow/schema/questline.schema.json#/$defs/target" }
+    }
+  }
+}

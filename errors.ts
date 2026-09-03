@@ -6,7 +6,8 @@ export type QuestErrorCode =
   | 'E_WRONG_STATE'
   | 'E_UNAVAILABLE'
   | 'E_CAST'
-  | 'E_LLM';
+  | 'E_LLM'
+  | 'E_HANDOFF';
 
 export class QuestError extends Error {
   constructor(

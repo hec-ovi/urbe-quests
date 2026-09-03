@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://urbe.local/quests/handoff/schema/mission-asset-requests.schema.json",
+  "title": "Mission asset create requests",
+  "type": "array",
+  "items": { "$ref": "https://urbe.local/quests/handoff/schema/mission-asset-request.schema.json" }
+}

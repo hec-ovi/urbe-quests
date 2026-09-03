@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://urbe.local/quests/handoff/schema/mission-asset-request.schema.json",
+  "title": "Consumed mission asset create request v1.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contractVersion", "assetId", "purpose", "family", "dimensions", "materials", "requiredInteractions", "clearance", "seed"],
+  "properties": {
+    "contractVersion": { "const": "1.0" },
+    "assetId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._:-]{1,95}$" },
+    "purpose": { "type": "string", "minLength": 1, "maxLength": 240 },
+    "family": { "enum": ["document", "data-drive", "evidence-container", "tool", "control-terminal", "package", "table", "chair", "shelf", "cabinet"] },
+    "dimensions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["width", "height", "depth"],
+      "properties": {
+        "width": { "type": "number", "minimum": 0.001, "maximum": 12 },
+        "height": { "type": "number", "minimum": 0.001, "maximum": 12 },
+        "depth": { "type": "number", "minimum": 0.001, "maximum": 12 }
+      }
+    },
+    "materials": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 6,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["slot", "key", "variantId"],
+        "properties": {
+          "slot": { "enum": ["surface", "accent", "display", "upholstery", "grip", "seal"] },
+          "key": { "type": "string", "pattern": "^[a-z0-9_-]+/[a-z0-9_-]+/[a-z0-9_-]+$" },
+          "variantId": { "type": "string", "pattern": "^[a-z0-9_-]+(:[a-z0-9_-]+)?$" }
+        }
+      }
+    },
+    "requiredInteractions": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "enum": ["inspect", "read", "take", "use", "open", "close", "store", "place-item", "sit", "access", "hack", "sabotage"] }
+    },
+    "clearance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["approachDepth", "sideMargin", "overhead"],
+      "properties": {
+        "approachDepth": { "type": "number", "minimum": 0.5, "maximum": 4 },
+        "sideMargin": { "type": "number", "minimum": 0.1, "maximum": 2 },
+        "overhead": { "type": "number", "minimum": 0.05, "maximum": 3 }
+      }
+    },
+    "seed": { "type": "integer", "minimum": 0, "maximum": 4294967295 }
+  }
+}

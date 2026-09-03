@@ -43,3 +43,4 @@ export { Converse, type ConverseInput } from './dialog/Converse.js';
 export type { ContextSegment, DialogContext, DialogTurn, MemorySnapshot, SegmentId } from './dialog/schema.js';
 
 export * from './authoring/index.js';
+export * from './handoff/index.js';

@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://urbe.local/quests/handoff/schema/mission-item-bindings.schema.json",
+  "title": "Quest item to mission asset bindings",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["questId", "itemId", "assetId"],
+    "properties": {
+      "questId": { "type": "string", "minLength": 1 },
+      "itemId": { "type": "string", "minLength": 1 },
+      "assetId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._:-]{1,95}$" }
+    }
+  }
+}
