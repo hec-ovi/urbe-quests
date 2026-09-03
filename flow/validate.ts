@@ -51,6 +51,12 @@ export class FlowValidator {
         if (!stepIds.has(edge.toStepId)) fail(`step ${step.stepId}: edge to unknown step ${edge.toStepId}`);
         if (edge.toStepId === step.stepId) fail(`step ${step.stepId}: edge to itself`);
       }
+      if (step.branching === 'exclusive') {
+        const fallback = step.next.findIndex((edge) => edge.when.length === 0);
+        if (fallback >= 0 && fallback !== step.next.length - 1) {
+          fail(`step ${step.stepId}: unconditional exclusive edge shadows every edge after it`);
+        }
+      }
       if (step.next.length === 0) {
         const endingId = step.endingId;
         if (endingId === undefined) fail(`terminal step ${step.stepId} has no ending`);

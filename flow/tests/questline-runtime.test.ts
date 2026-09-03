@@ -138,6 +138,13 @@ describe('FlowValidator via runtime construction', () => {
       expect.objectContaining({ code: 'E_CAST' }),
     );
   });
+
+  it('rejects an exclusive branch whose unconditional fallback shadows a later outcome', () => {
+    const bad = definition();
+    bad.steps[2]!.next.reverse();
+    const { sim, cast } = setup();
+    expect(() => new QuestlineRuntime(bad, cast, sim)).toThrowError(/unconditional exclusive edge shadows/);
+  });
 });
 
 describe('QuestlineRuntime', () => {
