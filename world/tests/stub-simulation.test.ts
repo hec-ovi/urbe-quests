@@ -38,6 +38,29 @@ describe('fixtures', () => {
     expect(world.meta.naming).toEqual({ theme: 'noir city', namedAt: 'derived-from-atlas' });
     expect(world.districts[0]!.name).toBe('downtown d0');
   });
+
+  it('preserves transit identities for quest destinations without copying geometry into the quest contract', () => {
+    const world = namedWorldFromAtlas(
+      {
+        meta: { seed: 'transit-atlas' },
+        districts: [{ id: 'd0', kind: 'downtown', tier: 'rich' }],
+        parcels: [],
+        transit: {
+          busStops: [{ id: 'stop_1', districtId: 'd0' }],
+          busRoutes: [{ id: 'bus_1', name: 'Night Loop' }],
+          trainStations: [{ id: 'train_1', districtId: 'd0', name: 'Central Rail' }],
+          trainLines: [{ id: 'rail_1', name: 'Harbor Line' }],
+          subwayStations: [{ id: 'subway_1', districtId: 'd0', name: 'Central Below' }],
+          subwayLines: [{ id: 'metro_1', name: 'Flood Line' }],
+        },
+      },
+      'noir transit city',
+    );
+
+    expect(world.transit?.busStops).toEqual([{ id: 'stop_1', districtId: 'd0' }]);
+    expect(world.transit?.trainStations[0]?.name).toBe('Central Rail');
+    expect(world.transit?.subwayStations[0]?.id).toBe('subway_1');
+  });
 });
 
 describe('StubSimulation', () => {

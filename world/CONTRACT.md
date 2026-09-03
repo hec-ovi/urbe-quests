@@ -11,7 +11,7 @@ Purpose: everything the quests layer knows about the outside world: mirror types
 - `FixtureWorld { world: NamedWorld, types: NPCTypeSet }`: shapes in [types/named-world.ts](types/named-world.ts), mirrors of ../naming's world-state and npc-types schemas.
 - `SimulationPort` and its value types ([types/simulation.ts](types/simulation.ts)): mirror of the consumed ../simulation slice, including the minutes-since-Monday time convention and `SimulationError`.
 - `StubSimulation implements SimulationPort`: lazy deterministic instantiation, vendor staffing on a day shift (Mon-Sat 08:00-16:00) and an evening shift (daily 16:00-23:30), full-week routines, liveness and flag semantics per the simulation contract. Stub limits: shifts never span midnight; no crowd layer.
-- `namedWorldFromAtlas` returns the exact `NamedWorld` shape. Existing names pass through; missing district names become `<kind> <id>` and `namedAt` is the stable value `derived-from-atlas`.
+- `namedWorldFromAtlas` returns the exact `NamedWorld` shape. Existing names and transit identities pass through; transit geometry stays in Atlas and Connections. Missing district names become `<kind> <id>` and `namedAt` is the stable value `derived-from-atlas`.
 
 ## Errors
 `SimulationError { code }` with the simulation contract's closed set (E_INVALID_INPUT, E_UNKNOWN_ID, E_STALE_HANDLE, E_NO_MATCH, E_DEAD, E_CONFLICT, E_TIME).

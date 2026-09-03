@@ -36,6 +36,22 @@ export interface NamedParcel {
   name?: string;
 }
 
+/** Named world's transit identities. Geometry stays in Atlas and Connections. */
+export interface NamedTransitEntity {
+  id: string;
+  districtId?: string;
+  name?: string;
+}
+
+export interface NamedTransit {
+  busStops: NamedTransitEntity[];
+  busRoutes: NamedTransitEntity[];
+  trainStations: NamedTransitEntity[];
+  trainLines: NamedTransitEntity[];
+  subwayStations: NamedTransitEntity[];
+  subwayLines: NamedTransitEntity[];
+}
+
 export interface NamedWorld {
   meta: {
     seed: string | number;
@@ -43,6 +59,8 @@ export interface NamedWorld {
   };
   districts: NamedDistrict[];
   parcels: NamedParcel[];
+  /** Optional only for compatibility with the early fixtures. Full named worlds carry it. */
+  transit?: NamedTransit;
 }
 
 export type NPCTypeCategory = 'resident' | 'worker' | 'vendor' | 'authority' | 'transit' | 'street';
