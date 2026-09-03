@@ -114,6 +114,44 @@ function checkTarget(
   else if (target.kind === 'steal') {
     requirePhysicalItem(target.itemId);
     requireRole(target.fromRoleId);
+  } else if (target.kind === 'investigation') {
+    const evidence = items.get(target.evidenceItemId);
+    if (evidence === undefined) fail(`step ${step.stepId}: unknown evidence item ${target.evidenceItemId}`);
+    else if (evidence.kind !== 'information') fail(`step ${step.stepId}: evidence item ${target.evidenceItemId} is not information`);
+    if (!step.gives.includes(target.evidenceItemId)) fail(`step ${step.stepId}: investigation does not give evidence item ${target.evidenceItemId}`);
+    target.subjectRoleIds.forEach(requireRole);
+    requireCompletionEffect(step, target.completionFlag, fail);
+  } else if (target.kind === 'rescue') {
+    requireRole(target.roleId);
+    requireCompletionEffect(step, target.completionFlag, fail);
+  } else if (target.kind === 'escort') {
+    requireRole(target.roleId);
+    if (samePlace(target.from, target.to)) fail(`step ${step.stepId}: escort route starts and ends at the same place`);
+    requireCompletionEffect(step, target.completionFlag, fail);
+  } else if (target.kind === 'access') {
+    const credential = items.get(target.credentialItemId);
+    if (credential === undefined) fail(`step ${step.stepId}: unknown credential item ${target.credentialItemId}`);
+    else if (!['key', 'information', 'device'].includes(credential.kind)) {
+      fail(`step ${step.stepId}: access credential ${target.credentialItemId} has ineligible kind ${credential.kind}`);
+    }
+    if (!step.needs.includes(target.credentialItemId)) fail(`step ${step.stepId}: access does not need credential item ${target.credentialItemId}`);
+    requireCompletionEffect(step, target.completionFlag, fail);
+  } else if (target.kind === 'hacking' || target.kind === 'sabotage') {
+    requireCompletionEffect(step, target.completionFlag, fail);
+  } else if (target.kind === 'transportation') {
+    target.passengerRoleIds.forEach(requireRole);
+    for (const itemId of target.cargoItemIds) {
+      requirePhysicalItem(itemId);
+      if (!step.needs.includes(itemId)) fail(`step ${step.stepId}: transportation does not need cargo item ${itemId}`);
+    }
+    if (samePlace(target.from, target.to)) fail(`step ${step.stepId}: transportation starts and ends at the same place`);
+    requireCompletionEffect(step, target.completionFlag, fail);
+  }
+}
+
+function requireCompletionEffect(step: QuestStep, completionFlag: string, fail: (message: string) => void): void {
+  if (!step.effects.some((effect) => effect.kind === 'setFlag' && effect.flag === completionFlag)) {
+    fail(`step ${step.stepId}: ${step.target.kind} completion flag ${completionFlag} is not set by its effects`);
   }
 }
 
@@ -139,9 +177,13 @@ function collectUsedRoles(definition: QuestlineDefinition): Set<string> {
   for (const step of definition.steps) {
     const target = step.target;
     if (step.wantedByRoleId !== undefined) used.add(step.wantedByRoleId);
-    if (target.kind === 'talk' || target.kind === 'assassinate') used.add(target.roleId);
+    if (target.kind === 'talk' || target.kind === 'assassinate' || target.kind === 'rescue' || target.kind === 'escort') {
+      used.add(target.roleId);
+    }
     if (target.kind === 'listen') target.roleIds.forEach((roleId) => used.add(roleId));
     if (target.kind === 'steal') used.add(target.fromRoleId);
+    if (target.kind === 'investigation') target.subjectRoleIds.forEach((roleId) => used.add(roleId));
+    if (target.kind === 'transportation') target.passengerRoleIds.forEach((roleId) => used.add(roleId));
     for (const predicate of [...step.conditions, ...step.next.flatMap((edge) => edge.when)]) {
       if (predicate.kind === 'roleAlive' || predicate.kind === 'roleOnDuty') used.add(predicate.roleId);
     }
@@ -151,6 +193,12 @@ function collectUsedRoles(definition: QuestlineDefinition): Set<string> {
   }
   for (const fact of definition.facts) used.add(fact.roleId);
   return used;
+}
+
+function samePlace(left: import('./schema.js').PlaceTarget, right: import('./schema.js').PlaceTarget): boolean {
+  return 'parcelId' in left
+    ? 'parcelId' in right && left.parcelId === right.parcelId
+    : 'districtId' in right && left.districtId === right.districtId;
 }
 
 function checkAcyclicAndReachable(

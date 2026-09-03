@@ -41,7 +41,7 @@ The shared named world envelope is [schema/world-context.schema.json](schema/wor
 - `E_UNKNOWN_SKILL`: a full skill name cannot be resolved.
 - `E_UNSUPPORTED_MECHANIC`: the caller named a mechanic outside the runtime vocabulary.
 - `E_MECHANIC_SELECTION`: the selector chose an unsupported or disallowed mechanic.
-- `E_WORLD_TARGET`: a role type, parcel, district, item placement, or promotion destination is absent from the supplied world.
+- `E_WORLD_TARGET`: a role type, parcel, district, mechanic target place, item placement, or promotion destination is absent from the supplied world.
 - `E_CAUSE_EFFECT`: story ids, mechanic traces, graph transitions, beats, decisions, or ending routes disagree.
 - `E_INVALID_FLOW`: the finished definition fails the deterministic flow validator.
 
@@ -57,12 +57,16 @@ The shared named world envelope is [schema/world-context.schema.json](schema/wor
 - Gameplay adaptation receives the completed story unchanged.
 - The lightweight index is read before mechanic bodies. Only selected mechanic bodies enter the gameplay adaptation request.
 - Skill frontmatter `triggers` are the routing source of truth. `skills/RESOLVER.md` mirrors them for human scanning.
-- Supported mechanics are exactly `goto`, `observe`, `talk`, `listen`, `pickup`, `deliver`, `steal`, `assassinate`, and `work`.
-- Hacking, sabotage, rescue, escort, entry codes, transportation, and staged clue investigation fail closed until the flow schema and runtime implement them.
+- Supported mechanics are exactly `goto`, `observe`, `talk`, `listen`, `pickup`, `deliver`, `steal`, `assassinate`, `work`, `investigation`, `rescue`, `escort`, `access`, `hacking`, `sabotage`, and `transportation`.
+- Investigation is staged as one exact clue per step. Each clue names its scene, evidence interaction, information item, subject cast, and place; later clues use `needs`, `conditions`, or graph edges to require earlier discoveries.
+- Rescue names one cast role and one release interaction. Reaching safety is a separate escort step with exact follow mode, route, and endpoints.
+- Access names its access point and exact credential. Hacking and sabotage name their exact target and place. Transportation names one journey, mode, endpoints, resolved passengers, and physical cargo.
+- Each added interaction target declares a completion flag and the step must set it. The target's completion event repeats its interaction, cast, item, mode, and place ids, so neither the adapter nor engine infers identity from prose.
+- Sabotage and transportation are story-directed targets, not freeform destruction or vehicle behavior. Assassination remains available only when the story authored the target and the adaptation traces the consequences.
 - Every story beat reaches at least one quest step. Every story decision outcome reaches a distinct quest ending.
 - Every quest step has exactly one matching mechanic record and an ordered trace of all outgoing edges.
 - Agent responses are constrained by the same JSON Schemas used for boundary validation. No output length cap is added.
 
 ## How to modify this blackbox safely
 
-Add a mechanic only after `flow` supports its target and player event. Add its skill, frontmatter route, resolver row, schema enum, world checks, trace tests, and fixtures together. Run the authoring contract tests, full tests, typecheck, build, and the compiled resolver smoke test.
+Add a mechanic only after `flow` supports its target and player event. Add its skill, frontmatter route, resolver row, schema enum, world checks, graph checks, exact completion event, and valid and invalid trace tests together. Run the authoring contract tests, full tests, typecheck, build, and the compiled resolver smoke test.

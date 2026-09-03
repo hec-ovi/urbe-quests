@@ -22,13 +22,23 @@ This is the compact dispatcher. Skill frontmatter triggers are authoritative. Re
 | "steal an object", "take an item from a character" | `skills/steal/SKILL.md` |
 | "assassinate a character", "kill a quest target" | `skills/assassinate/SKILL.md` |
 | "work a shift", "perform a job" | `skills/work/SKILL.md` |
+| "investigate a scene", "inspect staged evidence" | `skills/investigation/SKILL.md` |
+| "release a captive", "rescue a character" | `skills/rescue/SKILL.md` |
+| "escort a character", "follow a character" | `skills/escort/SKILL.md` |
+| "use an entry code", "open a restricted access point" | `skills/access/SKILL.md` |
+| "hack a target", "breach a terminal" | `skills/hacking/SKILL.md` |
+| "sabotage a target", "disable a system" | `skills/sabotage/SKILL.md` |
+| "take a ride", "call a ride-hail" | `skills/transportation/SKILL.md` |
 
 ## Disambiguation
 
 1. Pick the mechanic that represents the player's consequential action, not a noun in the prose.
 2. `pickup` is an unowned placed object. `steal` is a physical item held by a living character.
-3. `observe` records a district-wide observation. It cannot represent individual clues or staged evidence.
+3. `observe` records a district-wide pattern. `investigation` records one fixed clue in a staged scene; link several investigation steps for ordered evidence.
 4. `listen` needs exactly two roles at one parcel. A direct exchange is `talk`.
-5. `goto` proves arrival only. It cannot transport another person or object.
-6. Information is granted by `talk`, `listen`, or `observe`; it is never picked up, delivered, or stolen.
-7. Hacking, sabotage, rescue, escort, entry codes, and transportation are unsupported. Do not approximate or silently rename them.
+5. `rescue` ends with release. Use `escort` for a cast character following or leading to safety afterward.
+6. `access` uses an already obtained credential. `hacking` is one supported way to obtain data or change a compatible target; do not use it in an incompatible era.
+7. `goto` proves player arrival only. `transportation` completes an authored journey with exact endpoints, passengers, and cargo. `deliver` transfers a held object at the destination.
+8. Information is granted by `talk`, `listen`, `observe`, `investigation`, or `hacking`; it is never picked up, delivered, or stolen.
+9. `sabotage` changes one named target through an authored interaction. It never means random destruction or violence.
+10. `assassinate` remains available only when the story explicitly authors the fictional target and traces the consequences. Do not add a lethal objective to make a scene more eventful.

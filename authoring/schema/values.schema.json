@@ -4,7 +4,12 @@
   "$defs": {
     "id": { "type": "string", "minLength": 1 },
     "text": { "type": "string", "minLength": 1 },
-    "mechanic": { "enum": ["goto", "observe", "talk", "listen", "pickup", "deliver", "steal", "assassinate", "work"] },
+    "mechanic": {
+      "enum": [
+        "goto", "observe", "talk", "listen", "pickup", "deliver", "steal", "assassinate", "work",
+        "investigation", "rescue", "escort", "access", "hacking", "sabotage", "transportation"
+      ]
+    },
     "schemaBundle": {
       "type": "object",
       "additionalProperties": false,

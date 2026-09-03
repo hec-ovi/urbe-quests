@@ -35,12 +35,14 @@ Translate the completed story into a playable questline while preserving why eve
 
 1. Bind characters to NPC types, never NPC instance ids.
 2. Use only parcel and district ids present in the supplied world.
-3. Define physical items before a step handles them. Information is given by a completed conversation, observation, or listening step.
-4. For every step, record the story beat ids it implements, why its mechanic expresses that beat, its cause, and its resulting narrative effect.
-5. Mirror every graph edge in the step's transition trace. Explain why the transition follows and what becomes possible.
-6. Use flags, completed steps, role liveness, and duty predicates for branches the runtime can evaluate.
-7. Map every story outcome to a reachable quest ending. Record the terminal steps, cause, and consequence for every ending.
-8. Return the questline plus its complete mechanic and ending trace.
+3. Define every item before a step references it. Information is granted only by a completed talk, listen, observe, investigation, or hacking step.
+4. For investigation, rescue, escort, access, hacking, sabotage, and transportation, name every required interaction id, cast role, item, and place. Never ask the host to infer which prop, person, code, route, or journey the prose means.
+5. Give each of those interaction steps its own declared completion flag and a matching `setFlag` effect. Put prior evidence, credentials, cargo, and state in `needs` and `conditions`.
+6. For every step, record the story beat ids it implements, why its mechanic expresses that beat, its cause, and its resulting narrative effect.
+7. Mirror every graph edge in the step's transition trace. Explain why the transition follows and what becomes possible.
+8. Use flags, completed steps, role liveness, and duty predicates for branches the runtime can evaluate.
+9. Map every story outcome to a reachable quest ending. Record the terminal steps, cause, and consequence for every ending.
+10. Return the questline plus its complete mechanic and ending trace.
 
 ## Completion checks
 
@@ -50,3 +52,4 @@ Translate the completed story into a playable questline while preserving why eve
 - Every edge and ending is traced.
 - Every story decision outcome reaches an ending.
 - The deterministic flow validator accepts the graph.
+- No step introduces random violence, unrelated theft, vehicle mayhem, or an inferred hostile target. `assassinate` is available only for a death explicitly authored by the story and traced through its consequences.

@@ -14,7 +14,7 @@ describe('authoring skill resolver contract', () => {
     const resolver = new SkillResolver();
     const index = resolver.index();
 
-    expect(index.skills).toHaveLength(11);
+    expect(index.skills).toHaveLength(18);
     expect(index.skills.every((skill) => !('content' in skill) && !('path' in skill))).toBe(true);
     expect(index.skills.filter((skill) => skill.kind === 'mechanic').map((skill) => skill.mechanic).sort()).toEqual(
       [...MECHANICS].sort(),
@@ -52,13 +52,13 @@ describe('authoring skill resolver contract', () => {
 
   it('routes by authoritative frontmatter triggers and orders the most specific match first', () => {
     const resolver = new SkillResolver();
-    const route = resolver.route({ message: 'Please adapt story to gameplay, then pick up an item.' });
-    expect(route.matches.map((skill) => skill.name)).toEqual(['gameplay-adaptation', 'pickup']);
+    const route = resolver.route({ message: 'Please adapt story to gameplay, investigate a scene, then call a ride-hail.' });
+    expect(route.matches.map((skill) => skill.name)).toEqual(['gameplay-adaptation', 'investigation', 'transportation']);
   });
 
   it('fails closed for unknown names and malformed skill frontmatter', () => {
     const resolver = new SkillResolver();
-    expect(() => resolver.resolve({ names: ['hacking'] })).toThrowError(
+    expect(() => resolver.resolve({ names: ['negotiation'] })).toThrowError(
       expect.objectContaining({ code: 'E_UNKNOWN_SKILL' }),
     );
 
@@ -76,10 +76,10 @@ describe('authoring skill resolver contract', () => {
     );
 
     const unsupportedRoot = mkdtempSync(join(tmpdir(), 'urbe-authoring-skills-'));
-    mkdirSync(join(unsupportedRoot, 'hacking'));
+    mkdirSync(join(unsupportedRoot, 'negotiation'));
     writeFileSync(
-      join(unsupportedRoot, 'hacking', 'SKILL.md'),
-      validSkill.replace('name: pickup', 'name: hacking').replace('mechanic: pickup', 'mechanic: hacking'),
+      join(unsupportedRoot, 'negotiation', 'SKILL.md'),
+      validSkill.replace('name: pickup', 'name: negotiation').replace('mechanic: pickup', 'mechanic: negotiation'),
     );
     expect(() => new SkillResolver(unsupportedRoot).index()).toThrowError(
       expect.objectContaining({ code: 'E_SKILL_CONTRACT' }),
@@ -105,11 +105,11 @@ describe('authoring skill resolver contract', () => {
 
   it('serializes errors through the declared closed envelope', () => {
     const boundary = new Boundary();
-    const error = new AuthoringError('E_UNKNOWN_SKILL', 'unknown authoring skill hacking', ['hacking']);
+    const error = new AuthoringError('E_UNKNOWN_SKILL', 'unknown authoring skill negotiation', ['negotiation']);
     expect(boundary.output('authoring-error', error.toJSON())).toEqual({
       code: 'E_UNKNOWN_SKILL',
-      message: 'unknown authoring skill hacking',
-      details: ['hacking'],
+      message: 'unknown authoring skill negotiation',
+      details: ['negotiation'],
     });
   });
 });

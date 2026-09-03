@@ -70,7 +70,15 @@ export class WorldAudit {
 
   private checkTarget(step: QuestStep, parcels: Set<string>, districts: Set<string>, problems: string[]): void {
     const target = step.target;
-    if (target.kind === 'goto' || target.kind === 'deliver') {
+    if (
+      target.kind === 'goto' ||
+      target.kind === 'deliver' ||
+      target.kind === 'investigation' ||
+      target.kind === 'rescue' ||
+      target.kind === 'access' ||
+      target.kind === 'hacking' ||
+      target.kind === 'sabotage'
+    ) {
       checkPlace(step.stepId, target.place, parcels, districts, problems);
     } else if (target.kind === 'observe') {
       if (!districts.has(target.districtId)) problems.push(`step ${step.stepId} observes unknown district ${target.districtId}`);
@@ -78,6 +86,9 @@ export class WorldAudit {
       if (!parcels.has(target.atParcelId)) problems.push(`step ${step.stepId} talks at unknown parcel ${target.atParcelId}`);
     } else if (target.kind === 'listen' || target.kind === 'work') {
       if (!parcels.has(target.atParcelId)) problems.push(`step ${step.stepId} targets unknown parcel ${target.atParcelId}`);
+    } else if (target.kind === 'escort' || target.kind === 'transportation') {
+      checkPlace(step.stepId, target.from, parcels, districts, problems);
+      checkPlace(step.stepId, target.to, parcels, districts, problems);
     }
   }
 }

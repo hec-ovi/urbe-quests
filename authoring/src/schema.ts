@@ -1,4 +1,21 @@
-export const MECHANICS = ['goto', 'observe', 'talk', 'listen', 'pickup', 'deliver', 'steal', 'assassinate', 'work'] as const;
+export const MECHANICS = [
+  'goto',
+  'observe',
+  'talk',
+  'listen',
+  'pickup',
+  'deliver',
+  'steal',
+  'assassinate',
+  'work',
+  'investigation',
+  'rescue',
+  'escort',
+  'access',
+  'hacking',
+  'sabotage',
+  'transportation',
+] as const;
 export type Mechanic = (typeof MECHANICS)[number];
 
 export type Tier = 'poor' | 'mid' | 'rich' | 'high_rich';
@@ -48,7 +65,39 @@ export type StepTarget =
   | { kind: 'deliver'; itemId: string; place: PlaceTarget }
   | { kind: 'steal'; itemId: string; fromRoleId: string }
   | { kind: 'assassinate'; roleId: string }
-  | { kind: 'work'; atParcelId: string; role: string };
+  | { kind: 'work'; atParcelId: string; role: string }
+  | {
+      kind: 'investigation';
+      sceneId: string;
+      evidenceId: string;
+      evidenceItemId: string;
+      subjectRoleIds: string[];
+      place: PlaceTarget;
+      completionFlag: string;
+    }
+  | { kind: 'rescue'; roleId: string; releaseTargetId: string; place: PlaceTarget; completionFlag: string }
+  | {
+      kind: 'escort';
+      roleId: string;
+      routeId: string;
+      mode: 'follow-player' | 'lead-player';
+      from: PlaceTarget;
+      to: PlaceTarget;
+      completionFlag: string;
+    }
+  | { kind: 'access'; accessPointId: string; credentialItemId: string; place: PlaceTarget; completionFlag: string }
+  | { kind: 'hacking'; targetId: string; place: PlaceTarget; completionFlag: string }
+  | { kind: 'sabotage'; targetId: string; place: PlaceTarget; completionFlag: string }
+  | {
+      kind: 'transportation';
+      journeyId: string;
+      mode: 'ride-hail' | 'public-transit' | 'vehicle' | 'animal' | 'aircraft';
+      from: PlaceTarget;
+      to: PlaceTarget;
+      passengerRoleIds: string[];
+      cargoItemIds: string[];
+      completionFlag: string;
+    };
 export type Predicate =
   | { kind: 'flagSet'; flag: string }
   | { kind: 'flagNotSet'; flag: string }
