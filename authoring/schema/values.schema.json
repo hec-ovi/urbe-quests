@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:urbe:quests:authoring:values",
+  "$defs": {
+    "id": { "type": "string", "minLength": 1 },
+    "text": { "type": "string", "minLength": 1 },
+    "mechanic": { "enum": ["goto", "observe", "talk", "listen", "pickup", "deliver", "steal", "assassinate", "work"] },
+    "schemaBundle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rootId", "documents"],
+      "properties": {
+        "rootId": { "$ref": "#/$defs/text" },
+        "documents": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "object" }
+        }
+      }
+    },
+    "skillSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "description", "triggers", "kind"],
+      "properties": {
+        "name": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+        "description": { "$ref": "#/$defs/text" },
+        "triggers": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/text" }
+        },
+        "kind": { "enum": ["stage", "mechanic"] },
+        "mechanic": { "$ref": "#/$defs/mechanic" }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "kind": { "const": "mechanic" } },
+            "required": ["kind"]
+          },
+          "then": {
+            "properties": { "mechanic": { "$ref": "#/$defs/mechanic" } },
+            "required": ["mechanic"]
+          }
+        },
+        {
+          "if": {
+            "properties": { "kind": { "const": "stage" } },
+            "required": ["kind"]
+          },
+          "then": { "not": { "required": ["mechanic"] } }
+        }
+      ]
+    }
+  }
+}

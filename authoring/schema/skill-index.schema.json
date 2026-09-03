@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:urbe:quests:authoring:skill-index",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["skills"],
+  "properties": {
+    "skills": {
+      "type": "array",
+      "items": { "$ref": "urn:urbe:quests:authoring:values#/$defs/skillSummary" }
+    }
+  }
+}

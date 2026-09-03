@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:urbe:quests:authoring:adaptation-output",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["definition", "mechanicChoices", "endingRoutes"],
+  "properties": {
+    "definition": { "$ref": "https://urbe.local/quests/flow/schema/questline.schema.json" },
+    "mechanicChoices": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["stepId", "mechanic", "storyBeatIds", "narrativeReason", "cause", "effect", "transitions"],
+        "properties": {
+          "stepId": { "$ref": "urn:urbe:quests:authoring:values#/$defs/id" },
+          "mechanic": { "$ref": "urn:urbe:quests:authoring:values#/$defs/mechanic" },
+          "storyBeatIds": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": { "$ref": "urn:urbe:quests:authoring:values#/$defs/id" }
+          },
+          "narrativeReason": { "$ref": "urn:urbe:quests:authoring:values#/$defs/text" },
+          "cause": { "$ref": "urn:urbe:quests:authoring:values#/$defs/text" },
+          "effect": { "$ref": "urn:urbe:quests:authoring:values#/$defs/text" },
+          "transitions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["toStepId", "narrativeCause", "consequence"],
+              "properties": {
+                "toStepId": { "$ref": "urn:urbe:quests:authoring:values#/$defs/id" },
+                "narrativeCause": { "$ref": "urn:urbe:quests:authoring:values#/$defs/text" },
+                "consequence": { "$ref": "urn:urbe:quests:authoring:values#/$defs/text" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "endingRoutes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["endingId", "terminalStepIds", "storyOutcomeIds", "cause", "consequence"],
+        "properties": {
+          "endingId": { "$ref": "urn:urbe:quests:authoring:values#/$defs/id" },
+          "terminalStepIds": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": { "$ref": "urn:urbe:quests:authoring:values#/$defs/id" }
+          },
+          "storyOutcomeIds": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": { "$ref": "urn:urbe:quests:authoring:values#/$defs/id" }
+          },
+          "cause": { "$ref": "urn:urbe:quests:authoring:values#/$defs/text" },
+          "consequence": { "$ref": "urn:urbe:quests:authoring:values#/$defs/text" }
+        }
+      }
+    }
+  }
+}

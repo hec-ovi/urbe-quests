@@ -1,0 +1,110 @@
+{
+  "storyId": "story_manifest",
+  "prompt": "Write a harbor mystery about a hidden cargo manifest.",
+  "title": "The Last Manifest",
+  "logline": "A dock clerk asks an outsider to recover a manifest and decide whether truth or family safety should own it.",
+  "setting": {
+    "summary": "Harbor Ward survives on diverted cargo, night inspections, and favors traded beneath the sodium lamps. Low Tide Cafe is Mara's public workplace and private dead drop; Harbor Archive is the only institution able to publish a signed shipping record.",
+    "placeNames": ["Harbor Ward", "Low Tide Cafe", "Harbor Archive"]
+  },
+  "characters": [
+    {
+      "characterId": "mara",
+      "name": "Mara Voss",
+      "role": "dock clerk",
+      "background": "Mara has recorded every diverted shipment since her brother disappeared on the night shift.",
+      "want": "She wants the manifest made public without exposing her remaining family.",
+      "voice": "She speaks in clipped inventory terms until grief breaks the list apart."
+    }
+  ],
+  "movements": {
+    "presentation": [
+      {
+        "beatId": "b_request",
+        "heading": "A missing line",
+        "scene": {
+          "placeName": "Low Tide Cafe",
+          "time": "After the night shift",
+          "description": "Mara closes the till while inspectors cross the wet loading yard outside. She leaves one invoice open between them, its seventh line cut away."
+        },
+        "action": "Mara explains that one cargo line vanished with her brother.",
+        "dialogue": [
+          {
+            "speakerCharacterId": "mara",
+            "line": "Six crates arrived. The ledger says five. My brother was standing where the missing one should be."
+          }
+        ],
+        "consequence": "The player knows the manifest can name who ordered the diversion.",
+        "characterIds": ["mara"]
+      }
+    ],
+    "development": [
+      {
+        "beatId": "b_recovery",
+        "heading": "Under the counter",
+        "scene": {
+          "placeName": "Low Tide Cafe",
+          "time": "Minutes before inspection",
+          "description": "A loose panel beneath the service counter hides a folded manifest stamped with the harbor authority's seal and signed in fresh blue ink."
+        },
+        "action": "The player finds the signed manifest where Mara hid it during the raid.",
+        "dialogue": [],
+        "consequence": "Possession makes the evidence usable and puts Mara at risk.",
+        "characterIds": ["mara"]
+      }
+    ],
+    "conflict": [
+      {
+        "beatId": "b_choice",
+        "heading": "Who owns the truth",
+        "scene": {
+          "placeName": "Harbor Ward",
+          "time": "Before dawn",
+          "description": "Freight sirens cover Mara's warning while the archive lights burn across the canal. Both destinations remain reachable, but only until the shift changes."
+        },
+        "action": "Mara admits the archive will publish the evidence but a quiet return will protect her family.",
+        "dialogue": [
+          {
+            "speakerCharacterId": "mara",
+            "line": "Give them the page and they print his name. Give it back and my mother sees morning."
+          }
+        ],
+        "consequence": "The player must choose public accountability or immediate safety.",
+        "characterIds": ["mara"]
+      }
+    ],
+    "ending": [
+      {
+        "beatId": "b_result",
+        "heading": "The next tide",
+        "scene": {
+          "placeName": "Harbor Archive",
+          "time": "At the shift change",
+          "description": "The archive shutters rise as Mara waits across the canal. The manifest can enter public record or disappear into her private ledger, and each act closes the other route."
+        },
+        "action": "The destination chosen for the manifest determines Mara's future.",
+        "dialogue": [],
+        "consequence": "One ending exposes the diversion; the other preserves the family and buries the record.",
+        "characterIds": ["mara"]
+      }
+    ]
+  },
+  "decisions": [
+    {
+      "decisionId": "d_manifest",
+      "setup": "The recovered manifest can go to the public archive or back to Mara.",
+      "options": [
+        {
+          "outcomeId": "o_publish",
+          "choice": "Deliver it to the archive.",
+          "consequence": "The diversion becomes public and Mara must leave the harbor."
+        },
+        {
+          "outcomeId": "o_protect",
+          "choice": "Return to Mara and keep it quiet.",
+          "consequence": "Her family stays safe while the diversion remains hidden."
+        }
+      ]
+    }
+  ]
+}

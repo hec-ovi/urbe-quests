@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:urbe:quests:authoring:skill-resolve-query",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["names"],
+  "properties": {
+    "names": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "urn:urbe:quests:authoring:values#/$defs/id" }
+    }
+  }
+}

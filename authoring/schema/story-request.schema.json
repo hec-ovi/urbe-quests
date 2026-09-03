@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:urbe:quests:authoring:story-request",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["prompt", "world", "types"],
+  "properties": {
+    "prompt": { "$ref": "urn:urbe:quests:authoring:values#/$defs/text" },
+    "world": { "$ref": "urn:urbe:quests:authoring:world-context#/properties/world" },
+    "types": { "$ref": "urn:urbe:quests:authoring:world-context#/properties/types" },
+    "requirements": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "urn:urbe:quests:authoring:values#/$defs/text" }
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:urbe:quests:authoring:story-agent-request",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["stage", "skills", "input", "outputSchema"],
+  "properties": {
+    "stage": { "const": "story" },
+    "skills": { "$ref": "urn:urbe:quests:authoring:resolved-skills" },
+    "input": { "$ref": "urn:urbe:quests:authoring:story-request" },
+    "outputSchema": { "$ref": "urn:urbe:quests:authoring:values#/$defs/schemaBundle" }
+  }
+}

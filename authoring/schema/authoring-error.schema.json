@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:urbe:quests:authoring:authoring-error",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["code", "message", "details"],
+  "properties": {
+    "code": {
+      "enum": [
+        "E_AUTHORING_INPUT",
+        "E_AUTHORING_OUTPUT",
+        "E_SKILL_CONTRACT",
+        "E_UNKNOWN_SKILL",
+        "E_UNSUPPORTED_MECHANIC",
+        "E_MECHANIC_SELECTION",
+        "E_WORLD_TARGET",
+        "E_CAUSE_EFFECT",
+        "E_INVALID_FLOW"
+      ]
+    },
+    "message": { "$ref": "urn:urbe:quests:authoring:values#/$defs/text" },
+    "details": {
+      "type": "array",
+      "items": { "$ref": "urn:urbe:quests:authoring:values#/$defs/text" }
+    }
+  }
+}

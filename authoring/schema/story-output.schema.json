@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:urbe:quests:authoring:story-output",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["storyId", "prompt", "title", "logline", "setting", "characters", "movements", "decisions"],
+  "properties": {
+    "storyId": { "$ref": "urn:urbe:quests:authoring:values#/$defs/id" },
+    "prompt": { "$ref": "urn:urbe:quests:authoring:values#/$defs/text" },
+    "title": { "$ref": "urn:urbe:quests:authoring:values#/$defs/text" },
+    "logline": { "$ref": "urn:urbe:quests:authoring:values#/$defs/text" },
+    "setting": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["summary", "placeNames"],
+      "properties": {
+        "summary": { "$ref": "urn:urbe:quests:authoring:values#/$defs/text" },
+        "placeNames": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "urn:urbe:quests:authoring:values#/$defs/text" }
+        }
+      }
+    },
+    "characters": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["characterId", "name", "role", "background", "want", "voice"],
+        "properties": {
+          "characterId": { "$ref": "urn:urbe:quests:authoring:values#/$defs/id" },
+          "name": { "$ref": "urn:urbe:quests:authoring:values#/$defs/text" },
+          "role": { "$ref": "urn:urbe:quests:authoring:values#/$defs/text" },
+          "background": { "$ref": "urn:urbe:quests:authoring:values#/$defs/text" },
+          "want": { "$ref": "urn:urbe:quests:authoring:values#/$defs/text" },
+          "voice": { "$ref": "urn:urbe:quests:authoring:values#/$defs/text" }
+        }
+      }
+    },
+    "movements": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["presentation", "development", "conflict", "ending"],
+      "properties": {
+        "presentation": { "$ref": "#/$defs/beats" },
+        "development": { "$ref": "#/$defs/beats" },
+        "conflict": { "$ref": "#/$defs/beats" },
+        "ending": { "$ref": "#/$defs/beats" }
+      }
+    },
+    "decisions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["decisionId", "setup", "options"],
+        "properties": {
+          "decisionId": { "$ref": "urn:urbe:quests:authoring:values#/$defs/id" },
+          "setup": { "$ref": "urn:urbe:quests:authoring:values#/$defs/text" },
+          "options": {
+            "type": "array",
+            "minItems": 2,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["outcomeId", "choice", "consequence"],
+              "properties": {
+                "outcomeId": { "$ref": "urn:urbe:quests:authoring:values#/$defs/id" },
+                "choice": { "$ref": "urn:urbe:quests:authoring:values#/$defs/text" },
+                "consequence": { "$ref": "urn:urbe:quests:authoring:values#/$defs/text" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "beats": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["beatId", "heading", "scene", "action", "dialogue", "consequence", "characterIds"],
+        "properties": {
+          "beatId": { "$ref": "urn:urbe:quests:authoring:values#/$defs/id" },
+          "heading": { "$ref": "urn:urbe:quests:authoring:values#/$defs/text" },
+          "scene": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["placeName", "time", "description"],
+            "properties": {
+              "placeName": { "$ref": "urn:urbe:quests:authoring:values#/$defs/text" },
+              "time": { "$ref": "urn:urbe:quests:authoring:values#/$defs/text" },
+              "description": { "$ref": "urn:urbe:quests:authoring:values#/$defs/text" }
+            }
+          },
+          "action": { "$ref": "urn:urbe:quests:authoring:values#/$defs/text" },
+          "dialogue": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["speakerCharacterId", "line"],
+              "properties": {
+                "speakerCharacterId": { "$ref": "urn:urbe:quests:authoring:values#/$defs/id" },
+                "line": { "$ref": "urn:urbe:quests:authoring:values#/$defs/text" }
+              }
+            }
+          },
+          "consequence": { "$ref": "urn:urbe:quests:authoring:values#/$defs/text" },
+          "characterIds": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": { "$ref": "urn:urbe:quests:authoring:values#/$defs/id" }
+          }
+        }
+      }
+    }
+  }
+}

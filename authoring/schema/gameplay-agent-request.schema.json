@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:urbe:quests:authoring:gameplay-agent-request",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["stage", "skills", "input", "selection", "outputSchema"],
+  "properties": {
+    "stage": { "const": "gameplay-adaptation" },
+    "skills": { "$ref": "urn:urbe:quests:authoring:resolved-skills" },
+    "input": { "$ref": "urn:urbe:quests:authoring:adaptation-request" },
+    "selection": { "$ref": "urn:urbe:quests:authoring:mechanic-selection" },
+    "outputSchema": { "$ref": "urn:urbe:quests:authoring:values#/$defs/schemaBundle" }
+  }
+}

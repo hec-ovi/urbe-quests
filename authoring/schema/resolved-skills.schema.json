@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:urbe:quests:authoring:resolved-skills",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["skills"],
+  "properties": {
+    "skills": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "description", "triggers", "kind", "path", "content"],
+        "properties": {
+          "name": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+          "description": { "$ref": "urn:urbe:quests:authoring:values#/$defs/text" },
+          "triggers": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": { "$ref": "urn:urbe:quests:authoring:values#/$defs/text" }
+          },
+          "kind": { "enum": ["stage", "mechanic"] },
+          "mechanic": { "$ref": "urn:urbe:quests:authoring:values#/$defs/mechanic" },
+          "path": { "type": "string", "pattern": "^skills/[a-z0-9-]+/SKILL\\.md$" },
+          "content": { "$ref": "urn:urbe:quests:authoring:values#/$defs/text" }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": { "kind": { "const": "mechanic" } },
+              "required": ["kind"]
+            },
+            "then": {
+              "properties": { "mechanic": { "$ref": "urn:urbe:quests:authoring:values#/$defs/mechanic" } },
+              "required": ["mechanic"]
+            }
+          },
+          {
+            "if": {
+              "properties": { "kind": { "const": "stage" } },
+              "required": ["kind"]
+            },
+            "then": { "not": { "required": ["mechanic"] } }
+          }
+        ]
+      }
+    }
+  }
+}

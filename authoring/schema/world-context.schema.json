@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:urbe:quests:authoring:world-context",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["world", "types"],
+  "properties": {
+    "world": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["meta", "districts", "parcels"],
+      "properties": {
+        "meta": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["seed", "naming"],
+          "properties": {
+            "seed": { "anyOf": [{ "type": "string" }, { "type": "number" }] },
+            "naming": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["theme", "namedAt"],
+              "properties": {
+                "theme": { "$ref": "urn:urbe:quests:authoring:values#/$defs/text" },
+                "model": { "$ref": "urn:urbe:quests:authoring:values#/$defs/text" },
+                "namedAt": { "$ref": "urn:urbe:quests:authoring:values#/$defs/text" }
+              }
+            }
+          }
+        },
+        "districts": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "kind", "tier", "name"],
+            "properties": {
+              "id": { "$ref": "urn:urbe:quests:authoring:values#/$defs/id" },
+              "kind": { "enum": ["downtown", "commercial", "residential", "industrial", "mixed"] },
+              "tier": { "enum": ["poor", "mid", "rich", "high_rich"] },
+              "name": { "$ref": "urn:urbe:quests:authoring:values#/$defs/text" }
+            }
+          }
+        },
+        "parcels": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "districtId", "type", "tier"],
+            "properties": {
+              "id": { "$ref": "urn:urbe:quests:authoring:values#/$defs/id" },
+              "districtId": { "$ref": "urn:urbe:quests:authoring:values#/$defs/id" },
+              "type": { "enum": ["residential", "hotel", "offices", "corpo", "hospital", "clinic", "police", "military", "factory", "commerce", "mall", "restaurant", "coffee_shop"] },
+              "tier": { "enum": ["poor", "mid", "rich", "high_rich"] },
+              "name": { "$ref": "urn:urbe:quests:authoring:values#/$defs/text" }
+            }
+          }
+        }
+      }
+    },
+    "types": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["meta", "types", "namePool"],
+      "properties": {
+        "meta": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["theme", "worldSeed", "createdAt"],
+          "properties": {
+            "theme": { "$ref": "urn:urbe:quests:authoring:values#/$defs/text" },
+            "worldSeed": { "anyOf": [{ "type": "string" }, { "type": "number" }] },
+            "createdAt": { "$ref": "urn:urbe:quests:authoring:values#/$defs/text" },
+            "model": { "$ref": "urn:urbe:quests:authoring:values#/$defs/text" }
+          }
+        },
+        "types": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["type", "label", "category", "boilerplate", "grounding", "weight"],
+            "properties": {
+              "type": { "$ref": "urn:urbe:quests:authoring:values#/$defs/id" },
+              "label": { "$ref": "urn:urbe:quests:authoring:values#/$defs/text" },
+              "category": { "enum": ["resident", "worker", "vendor", "authority", "transit", "street"] },
+              "boilerplate": { "$ref": "urn:urbe:quests:authoring:values#/$defs/text" },
+              "examples": { "type": "array", "items": { "$ref": "urn:urbe:quests:authoring:values#/$defs/text" } },
+              "grounding": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "districts": { "type": "array", "items": { "$ref": "urn:urbe:quests:authoring:values#/$defs/id" } },
+                  "parcelTypes": { "type": "array", "items": { "enum": ["residential", "hotel", "offices", "corpo", "hospital", "clinic", "police", "military", "factory", "commerce", "mall", "restaurant", "coffee_shop"] } },
+                  "tiers": { "type": "array", "items": { "enum": ["poor", "mid", "rich", "high_rich"] } }
+                }
+              },
+              "weight": { "type": "number", "exclusiveMinimum": 0 }
+            }
+          }
+        },
+        "namePool": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["given", "family"],
+          "properties": {
+            "given": { "type": "array", "minItems": 1, "items": { "$ref": "urn:urbe:quests:authoring:values#/$defs/text" } },
+            "family": { "type": "array", "minItems": 1, "items": { "$ref": "urn:urbe:quests:authoring:values#/$defs/text" } }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "world": {
+    "meta": {
+      "seed": "authoring-fixture",
+      "naming": {
+        "theme": "rain-darkened industrial city",
+        "namedAt": "fixture"
+      }
+    },
+    "districts": [
+      {
+        "id": "d_harbor",
+        "kind": "industrial",
+        "tier": "poor",
+        "name": "Harbor Ward"
+      }
+    ],
+    "parcels": [
+      {
+        "id": "p_cafe",
+        "districtId": "d_harbor",
+        "type": "coffee_shop",
+        "tier": "poor",
+        "name": "Low Tide Cafe"
+      },
+      {
+        "id": "p_archive",
+        "districtId": "d_harbor",
+        "type": "offices",
+        "tier": "mid",
+        "name": "Harbor Archive"
+      }
+    ]
+  },
+  "types": {
+    "meta": {
+      "theme": "rain-darkened industrial city",
+      "worldSeed": "authoring-fixture",
+      "createdAt": "fixture"
+    },
+    "types": [
+      {
+        "type": "quest_vendor",
+        "label": "Quest vendor",
+        "category": "vendor",
+        "boilerplate": "A local worker with a public routine and a private stake.",
+        "grounding": {
+          "districts": ["d_harbor"],
+          "parcelTypes": ["coffee_shop", "offices"],
+          "tiers": ["poor", "mid"]
+        },
+        "weight": 1
+      }
+    ],
+    "namePool": {
+      "given": ["Mara"],
+      "family": ["Voss"]
+    }
+  }
+}

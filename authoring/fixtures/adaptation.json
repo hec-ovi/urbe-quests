@@ -1,0 +1,224 @@
+{
+  "definition": {
+    "id": "q_last_manifest",
+    "title": "The Last Manifest",
+    "premise": "Recover the record of a fatal harbor diversion, then decide whether accountability or one family's safety should own it.",
+    "roles": [
+      {
+        "roleId": "r_mara",
+        "npcType": "quest_vendor",
+        "persona": "Mara speaks in clipped inventory terms, wants the diversion exposed, and fears what exposure will do to her family."
+      }
+    ],
+    "items": [
+      {
+        "itemId": "i_manifest",
+        "name": "signed cargo manifest",
+        "description": "Mara's record of the diversion and the last paper her brother handled.",
+        "kind": "document",
+        "atParcelId": "p_cafe"
+      }
+    ],
+    "facts": [],
+    "acts": [
+      {
+        "actId": "a_recovery",
+        "title": "The missing line",
+        "summary": "Mara's request leads to the hidden evidence."
+      },
+      {
+        "actId": "a_decision",
+        "title": "Who owns the truth",
+        "summary": "The player chooses the consequence by choosing the destination."
+      }
+    ],
+    "steps": [
+      {
+        "stepId": "s_request",
+        "actId": "a_recovery",
+        "narrative": {
+          "description": "Mara names the missing cargo line and where she hid its last surviving record.",
+          "playerHint": "Talk to Mara at Low Tide Cafe.",
+          "stake": "Without the record, her brother remains an accounting error."
+        },
+        "wantedByRoleId": "r_mara",
+        "target": {
+          "kind": "talk",
+          "roleId": "r_mara",
+          "atParcelId": "p_cafe"
+        },
+        "gives": [],
+        "needs": [],
+        "conditions": [],
+        "effects": [],
+        "next": [
+          {
+            "toStepId": "s_recover",
+            "when": []
+          }
+        ],
+        "branching": "parallel"
+      },
+      {
+        "stepId": "s_recover",
+        "actId": "a_recovery",
+        "narrative": {
+          "description": "The signed manifest is still under the cafe counter where Mara left it.",
+          "playerHint": "Take the signed manifest.",
+          "stake": "Leaving it means the evidence disappears in the next inspection."
+        },
+        "wantedByRoleId": "r_mara",
+        "target": {
+          "kind": "pickup",
+          "itemId": "i_manifest"
+        },
+        "gives": ["i_manifest"],
+        "needs": [],
+        "conditions": [],
+        "effects": [],
+        "next": [
+          {
+            "toStepId": "s_publish",
+            "when": []
+          },
+          {
+            "toStepId": "s_protect",
+            "when": []
+          }
+        ],
+        "branching": "parallel"
+      },
+      {
+        "stepId": "s_publish",
+        "actId": "a_decision",
+        "narrative": {
+          "description": "The archive clerk logs the signature and the diversion becomes a public record.",
+          "playerHint": "Deliver the manifest to Harbor Archive.",
+          "stake": "Publication exposes the diversion and exposes Mara with it."
+        },
+        "wantedByRoleId": "r_mara",
+        "target": {
+          "kind": "deliver",
+          "itemId": "i_manifest",
+          "place": {
+            "parcelId": "p_archive"
+          }
+        },
+        "gives": [],
+        "needs": ["i_manifest"],
+        "conditions": [],
+        "effects": [],
+        "next": [],
+        "branching": "parallel",
+        "endingId": "e_publish"
+      },
+      {
+        "stepId": "s_protect",
+        "actId": "a_decision",
+        "narrative": {
+          "description": "Mara takes the manifest back and seals it with the rest of her private ledger.",
+          "playerHint": "Return to Mara with the manifest.",
+          "stake": "Her family stays safe because the public never learns why."
+        },
+        "wantedByRoleId": "r_mara",
+        "target": {
+          "kind": "talk",
+          "roleId": "r_mara",
+          "atParcelId": "p_cafe"
+        },
+        "gives": [],
+        "needs": ["i_manifest"],
+        "conditions": [],
+        "effects": [],
+        "next": [],
+        "branching": "parallel",
+        "endingId": "e_protect"
+      }
+    ],
+    "endings": [
+      {
+        "endingId": "e_publish",
+        "title": "Public record",
+        "epilogue": "The diversion is exposed and Mara leaves before the company can answer."
+      },
+      {
+        "endingId": "e_protect",
+        "title": "Private ledger",
+        "epilogue": "Mara's family stays safe and her brother remains absent from the official record."
+      }
+    ],
+    "flags": [],
+    "entryStepIds": ["s_request"]
+  },
+  "mechanicChoices": [
+    {
+      "stepId": "s_request",
+      "mechanic": "talk",
+      "storyBeatIds": ["b_request"],
+      "narrativeReason": "A direct exchange lets Mara's grief and request establish the player's responsibility.",
+      "cause": "Mara has exhausted official channels and trusts an outsider with the missing line.",
+      "effect": "The player learns where the manifest is hidden and why it matters.",
+      "transitions": [
+        {
+          "toStepId": "s_recover",
+          "narrativeCause": "Mara identifies the hiding place.",
+          "consequence": "The manifest becomes the next reachable objective."
+        }
+      ]
+    },
+    {
+      "stepId": "s_recover",
+      "mechanic": "pickup",
+      "storyBeatIds": ["b_recovery"],
+      "narrativeReason": "Physically holding the record makes possession and later delivery part of the decision.",
+      "cause": "Mara disclosed the hiding place before the next inspection.",
+      "effect": "The player holds the evidence and both destinations become possible.",
+      "transitions": [
+        {
+          "toStepId": "s_publish",
+          "narrativeCause": "The manifest can now be submitted as evidence.",
+          "consequence": "The archive route opens."
+        },
+        {
+          "toStepId": "s_protect",
+          "narrativeCause": "The manifest can instead be returned to Mara.",
+          "consequence": "The private route opens at the same time."
+        }
+      ]
+    },
+    {
+      "stepId": "s_publish",
+      "mechanic": "deliver",
+      "storyBeatIds": ["b_choice", "b_result"],
+      "narrativeReason": "Delivery makes publication an enacted choice that consumes the evidence.",
+      "cause": "The player chooses the public archive as the manifest's destination.",
+      "effect": "The diversion enters the public record and Mara must leave.",
+      "transitions": []
+    },
+    {
+      "stepId": "s_protect",
+      "mechanic": "talk",
+      "storyBeatIds": ["b_choice", "b_result"],
+      "narrativeReason": "Returning to Mara makes protection a direct personal choice rather than silent inaction.",
+      "cause": "The player chooses Mara over the archive while still holding the manifest.",
+      "effect": "Mara seals the record and her family remains safe.",
+      "transitions": []
+    }
+  ],
+  "endingRoutes": [
+    {
+      "endingId": "e_publish",
+      "terminalStepIds": ["s_publish"],
+      "storyOutcomeIds": ["o_publish"],
+      "cause": "The player delivers the only signed copy to the archive.",
+      "consequence": "The diversion becomes public and Mara leaves the harbor."
+    },
+    {
+      "endingId": "e_protect",
+      "terminalStepIds": ["s_protect"],
+      "storyOutcomeIds": ["o_protect"],
+      "cause": "The player returns to Mara instead of publishing the copy.",
+      "consequence": "Her family stays safe and the diversion remains hidden."
+    }
+  ]
+}
