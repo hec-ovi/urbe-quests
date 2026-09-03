@@ -17,6 +17,7 @@ import { QuestlineBuilder } from '../QuestlineBuilder.js';
 import { QuestlineTranslator } from '../QuestlineTranslator.js';
 import type { BuildProgress, QuestAssignment } from '../schema.js';
 import { BUILDER_TOOLS } from '../tools.js';
+import { WorldTargetAudit } from '../WorldTargetAudit.js';
 
 const ASSIGNMENT: QuestAssignment = {
   title: 'The Kettle Debt',
@@ -147,6 +148,10 @@ describe('QuestlineDraft through the tools', () => {
       'goto', 'observe', 'talk', 'listen', 'pickup', 'deliver', 'steal', 'assassinate', 'work',
       'investigation', 'rescue', 'escort', 'access', 'hacking', 'sabotage', 'transportation',
     ]);
+    const place = (target?.['properties'] as Record<string, Record<string, unknown>> | undefined)?.['place'];
+    expect(Object.keys((place?.['properties'] as Record<string, unknown>) ?? {})).toEqual([
+      'parcelId', 'districtId', 'stationId', 'stopId',
+    ]);
 
     const manifest = parsePlanManifest('## Manifest\nroles: witness\nitems: clue\nacts: a1\nendings: e1\nsteps: inspect_clue');
     const dispatcher = new ToolDispatcher(new QuestlineDraft(manifest));
@@ -175,6 +180,30 @@ describe('QuestlineDraft through the tools', () => {
     ];
     const outcomes = calls.map((call) => dispatcher.dispatch(call));
     expect(outcomes.at(-1)?.finished?.steps[0]?.target.kind).toBe('investigation');
+  });
+
+  it('refuses unknown world targets before committing a step and accepts catalog transit places', () => {
+    const { world, types } = fixtureDeps();
+    world.transit = {
+      busStops: [{ id: 'stop_market', name: 'Market Stop' }],
+      busRoutes: [],
+      trainStations: [{ id: 'station_central', name: 'Central Station' }],
+      trainLines: [],
+      subwayStations: [],
+      subwayLines: [],
+    };
+    const dispatcher = new ToolDispatcher(new QuestlineDraft(MANIFEST, new WorldTargetAudit(world, types)));
+    for (const call of [...SETUP_CALLS, ...STEP_CALLS]) dispatcher.dispatch(call);
+    const unknown = dispatcher.dispatch(step({
+      ...(FINAL_STEP.input as object),
+      target: { kind: 'deliver', itemId: 'ledger', place: { stopId: 'stop_missing' } },
+    }));
+    expect(unknown.result).toContain('unknown stop stop_missing');
+    const accepted = dispatcher.dispatch(step({
+      ...(FINAL_STEP.input as object),
+      target: { kind: 'deliver', itemId: 'ledger', place: { stationId: 'station_central' } },
+    }));
+    expect(accepted.result).toContain('step s_pay added');
   });
 
   it('accepts only the ids the plan lists and names the planned ones', () => {

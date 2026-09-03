@@ -19,6 +19,12 @@ import type {
 } from '../flow/schema.js';
 import { MANIFEST_KINDS, manifestSize, type ManifestKind, type PlanManifest } from './PlanManifest.js';
 
+export interface DraftAudit {
+  roleProblems(role: QuestRole): string[];
+  itemProblems(item: QuestItem): string[];
+  stepProblems(step: QuestStep): string[];
+}
+
 export class DraftError extends Error {}
 
 const SINGULAR: Record<ManifestKind, string> = { roles: 'role', items: 'item', acts: 'act', endings: 'ending', steps: 'step' };
@@ -26,7 +32,10 @@ const SINGULAR: Record<ManifestKind, string> = { roles: 'role', items: 'item', a
 export class QuestlineDraft {
   private def: QuestlineDefinition | undefined;
 
-  constructor(private readonly manifest: PlanManifest) {}
+  constructor(
+    private readonly manifest: PlanManifest,
+    private readonly audit?: DraftAudit,
+  ) {}
 
   create(args: { id: string; title: string; premise: string }): string {
     if (this.def !== undefined) throw new DraftError('questline already created');
@@ -49,6 +58,7 @@ export class QuestlineDraft {
   addRole(role: QuestRole): string {
     const def = this.current();
     this.accept('roles', role.roleId, def.roles.map((r) => r.roleId));
+    this.rejectAudit(this.audit?.roleProblems(role) ?? []);
     def.roles.push(role);
     return `role ${role.roleId} added; ${this.status()}`;
   }
@@ -56,6 +66,7 @@ export class QuestlineDraft {
   addItem(item: QuestItem): string {
     const def = this.current();
     this.accept('items', item.itemId, def.items.map((i) => i.itemId));
+    this.rejectAudit(this.audit?.itemProblems(item) ?? []);
     def.items.push(item);
     return `item ${item.itemId} added; ${this.status()}`;
   }
@@ -89,7 +100,7 @@ export class QuestlineDraft {
     const def = this.current();
     this.accept('steps', step.stepId, def.steps.map((s) => s.stepId));
     const { entry, ...rest } = step;
-    const problems = this.stepProblems(rest);
+    const problems = [...this.stepProblems(rest), ...(this.audit?.stepProblems(rest) ?? [])];
     if (problems.length > 0) throw new DraftError(`step ${rest.stepId} not added: ${problems.join('; ')}`);
     for (const p of [...rest.conditions, ...rest.next.flatMap((e) => e.when)]) {
       if (p.kind === 'flagSet' || p.kind === 'flagNotSet') this.declareFlag(p.flag);
@@ -147,6 +158,10 @@ export class QuestlineDraft {
   private current(): QuestlineDefinition {
     if (this.def === undefined) throw new DraftError('create the questline first');
     return this.def;
+  }
+
+  private rejectAudit(problems: string[]): void {
+    if (problems.length > 0) throw new DraftError(problems.join('; '));
   }
 
   private status(): string {

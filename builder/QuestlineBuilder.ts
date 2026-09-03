@@ -21,6 +21,7 @@ import type { BuildProgress, QuestAssignment } from './schema.js';
 import { ToolDispatcher } from './ToolDispatcher.js';
 import { BUILDER_TOOLS } from './tools.js';
 import { WorldCatalog } from './WorldCatalog.js';
+import { WorldTargetAudit } from './WorldTargetAudit.js';
 
 export interface BuildInput {
   assignment: QuestAssignment;
@@ -55,7 +56,7 @@ export class QuestlineBuilder {
   async build(input: BuildInput): Promise<BuildResult> {
     const system = [prompt('builder-system.md'), prompt('step-catalog.md'), prompt('artifact-catalog.md')].join('\n\n');
     const userPrompt = this.renderPrompt(input);
-    const draft = new QuestlineDraft(input.manifest);
+    const draft = new QuestlineDraft(input.manifest, new WorldTargetAudit(input.world, input.types));
     const dispatcher = new ToolDispatcher(draft);
     const transcript: AgentTurn[] = [];
     const title = input.assignment.title;

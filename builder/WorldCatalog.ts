@@ -20,6 +20,14 @@ export class WorldCatalog {
         lines.push(`  - ${name} [parcelId ${parcel.id}] (${parcel.type.replace('_', ' ')})`);
       }
     }
+    const transit = this.world.transit;
+    if (transit !== undefined) {
+      lines.push('', 'Transit places (use these ids):');
+      for (const stop of transit.busStops) lines.push(`- ${stop.name ?? 'bus stop'} [stopId ${stop.id}]`);
+      for (const station of [...transit.trainStations, ...transit.subwayStations]) {
+        lines.push(`- ${station.name ?? 'station'} [stationId ${station.id}]`);
+      }
+    }
     lines.push('', 'NPC types (bind roles to these, never to ids or coordinates):');
     for (const type of this.types.types) {
       lines.push(`- ${type.type} (${type.label}, ${type.category}): ${type.boilerplate}`);

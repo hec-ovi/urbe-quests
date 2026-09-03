@@ -2,7 +2,7 @@
 
 Sixteen step kinds. Use only the ones the story needs and the world supports. Every example reads want, cost, change, then the step.
 
-## goto (reach a place)
+## goto (reach a parcel, district, station, or stop)
 - Cyberpunk: a medic wants someone she trusts to see the flooded dock warehouse before the corpo cleaners do; if nobody sees it, the drowned stay unlisted. Reaching it makes the player a witness. Step: goto the warehouse.
 - Medieval: a novice wants the shrine outside the wall visited on the saint's day in his stead; missing it costs him his place in the order. Step: goto the shrine.
 - Modern: a whistleblower wants a meeting on level 4 of the parking garage, nowhere with cameras; being seen anywhere else ends her career. Step: goto the garage.

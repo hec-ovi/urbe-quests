@@ -32,8 +32,10 @@ const effect = {
 
 const place = {
   type: 'object',
-  description: 'Either a parcelId or a districtId from the world catalog',
-  properties: { parcelId: { type: 'string' }, districtId: { type: 'string' } },
+  description: 'Exactly one parcelId, districtId, stationId, or stopId from the world catalog',
+  properties: {
+    parcelId: { type: 'string' }, districtId: { type: 'string' }, stationId: { type: 'string' }, stopId: { type: 'string' },
+  },
 };
 
 const stepKinds = [
