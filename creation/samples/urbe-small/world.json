@@ -1,0 +1,515 @@
+{
+  "meta": {
+    "seed": "urbe-small",
+    "naming": {
+      "theme": "rain-soaked cyberpunk port city, 2140, corporate enclaves over a working harbour",
+      "model": "qwen3.6-35b-a3b-heretic-q8",
+      "namedAt": "2026-09-01T23:43:45.871Z"
+    }
+  },
+  "districts": [
+    {
+      "id": "d0",
+      "kind": "commercial",
+      "tier": "poor",
+      "name": "Sump Row"
+    },
+    {
+      "id": "d1",
+      "kind": "downtown",
+      "tier": "high_rich",
+      "name": "The Glass Apex"
+    }
+  ],
+  "parcels": [
+    {
+      "id": "p0",
+      "districtId": "d0",
+      "type": "offices",
+      "tier": "mid",
+      "name": "Weir Exchange"
+    },
+    {
+      "id": "p1",
+      "districtId": "d1",
+      "type": "offices",
+      "tier": "high_rich",
+      "name": "Aethelgard Tower"
+    },
+    {
+      "id": "p2",
+      "districtId": "d1",
+      "type": "corpo",
+      "tier": "high_rich",
+      "name": "Aurelian Hydro"
+    },
+    {
+      "id": "p3",
+      "districtId": "d1",
+      "type": "offices",
+      "tier": "high_rich",
+      "name": "Vane Capital"
+    },
+    {
+      "id": "p4",
+      "districtId": "d1",
+      "type": "police",
+      "tier": "high_rich",
+      "name": "Apex Oversight"
+    },
+    {
+      "id": "p5",
+      "districtId": "d0",
+      "type": "offices",
+      "tier": "poor",
+      "name": "Rust Lock Works"
+    },
+    {
+      "id": "p6",
+      "districtId": "d0",
+      "type": "commerce",
+      "tier": "poor",
+      "name": "Sluice Grub"
+    },
+    {
+      "id": "p7",
+      "districtId": "d1",
+      "type": "commerce",
+      "tier": "high_rich",
+      "name": "Lumina"
+    },
+    {
+      "id": "p8",
+      "districtId": "d1",
+      "type": "hotel",
+      "tier": "high_rich",
+      "name": "The Apex Weir"
+    },
+    {
+      "id": "p9",
+      "districtId": "d0",
+      "type": "mall",
+      "tier": "poor",
+      "name": "Sump Exchange"
+    },
+    {
+      "id": "p10",
+      "districtId": "d1",
+      "type": "corpo",
+      "tier": "high_rich",
+      "name": "Vantablack Dynamics"
+    },
+    {
+      "id": "p11",
+      "districtId": "d0",
+      "type": "commerce",
+      "tier": "poor",
+      "name": "Rust Bucket Eatery"
+    },
+    {
+      "id": "p12",
+      "districtId": "d0",
+      "type": "residential",
+      "tier": "poor"
+    },
+    {
+      "id": "p13",
+      "districtId": "d0",
+      "type": "commerce",
+      "tier": "poor",
+      "name": "Dredge Feed"
+    },
+    {
+      "id": "p14",
+      "districtId": "d0",
+      "type": "residential",
+      "tier": "poor"
+    },
+    {
+      "id": "p15",
+      "districtId": "d1",
+      "type": "restaurant",
+      "tier": "high_rich",
+      "name": "Apex Void"
+    },
+    {
+      "id": "p16",
+      "districtId": "d1",
+      "type": "offices",
+      "tier": "high_rich",
+      "name": "Ocularis Spire"
+    },
+    {
+      "id": "p17",
+      "districtId": "d1",
+      "type": "hotel",
+      "tier": "high_rich",
+      "name": "Vault Spire"
+    },
+    {
+      "id": "p18",
+      "districtId": "d1",
+      "type": "corpo",
+      "tier": "high_rich",
+      "name": "Solara Prime"
+    },
+    {
+      "id": "p19",
+      "districtId": "d1",
+      "type": "commerce",
+      "tier": "high_rich",
+      "name": "Aether"
+    },
+    {
+      "id": "p20",
+      "districtId": "d0",
+      "type": "offices",
+      "tier": "poor",
+      "name": "Muck Sump Agency"
+    },
+    {
+      "id": "p21",
+      "districtId": "d0",
+      "type": "hotel",
+      "tier": "poor",
+      "name": "Sump Locks"
+    },
+    {
+      "id": "p22",
+      "districtId": "d1",
+      "type": "corpo",
+      "tier": "high_rich",
+      "name": "Orbis Levee"
+    },
+    {
+      "id": "p23",
+      "districtId": "d1",
+      "type": "hotel",
+      "tier": "high_rich",
+      "name": "Zenith Tower"
+    },
+    {
+      "id": "p24",
+      "districtId": "d1",
+      "type": "offices",
+      "tier": "high_rich",
+      "name": "Sovereign Apex"
+    },
+    {
+      "id": "p25",
+      "districtId": "d0",
+      "type": "restaurant",
+      "tier": "poor",
+      "name": "Sump Grime"
+    },
+    {
+      "id": "p26",
+      "districtId": "d0",
+      "type": "offices",
+      "tier": "poor",
+      "name": "Sluice Gate Depot"
+    },
+    {
+      "id": "p27",
+      "districtId": "d0",
+      "type": "commerce",
+      "tier": "poor",
+      "name": "Levee Chow"
+    },
+    {
+      "id": "p28",
+      "districtId": "d0",
+      "type": "offices",
+      "tier": "poor",
+      "name": "Dredge Common"
+    },
+    {
+      "id": "p29",
+      "districtId": "d0",
+      "type": "commerce",
+      "tier": "poor",
+      "name": "Tide-Mare Tavern"
+    },
+    {
+      "id": "p30",
+      "districtId": "d0",
+      "type": "commerce",
+      "tier": "poor",
+      "name": "Muck & Mesh"
+    },
+    {
+      "id": "p31",
+      "districtId": "d1",
+      "type": "residential",
+      "tier": "rich"
+    },
+    {
+      "id": "p32",
+      "districtId": "d1",
+      "type": "clinic",
+      "tier": "high_rich",
+      "name": "Vitalis Spire Clinic"
+    },
+    {
+      "id": "p33",
+      "districtId": "d1",
+      "type": "hotel",
+      "tier": "high_rich",
+      "name": "Glass Citadel"
+    },
+    {
+      "id": "p34",
+      "districtId": "d0",
+      "type": "commerce",
+      "tier": "poor",
+      "name": "Barrel-Bottom Bistro"
+    },
+    {
+      "id": "p35",
+      "districtId": "d1",
+      "type": "corpo",
+      "tier": "high_rich",
+      "name": "Zenith Tides"
+    },
+    {
+      "id": "p36",
+      "districtId": "d1",
+      "type": "restaurant",
+      "tier": "high_rich",
+      "name": "Zenith Pure"
+    },
+    {
+      "id": "p37",
+      "districtId": "d0",
+      "type": "commerce",
+      "tier": "poor",
+      "name": "Weir-Watcher's Table"
+    },
+    {
+      "id": "p38",
+      "districtId": "d0",
+      "type": "commerce",
+      "tier": "poor",
+      "name": "Damp Rat Diner"
+    },
+    {
+      "id": "p39",
+      "districtId": "d0",
+      "type": "commerce",
+      "tier": "poor",
+      "name": "Sump Soup Stand"
+    },
+    {
+      "id": "p40",
+      "districtId": "d1",
+      "type": "coffee_shop",
+      "tier": "high_rich",
+      "name": "Oxide Filter"
+    },
+    {
+      "id": "p41",
+      "districtId": "d1",
+      "type": "offices",
+      "tier": "high_rich",
+      "name": "Zenith Vault"
+    },
+    {
+      "id": "p42",
+      "districtId": "d1",
+      "type": "commerce",
+      "tier": "rich",
+      "name": "Vantablack"
+    },
+    {
+      "id": "p43",
+      "districtId": "d1",
+      "type": "residential",
+      "tier": "high_rich"
+    },
+    {
+      "id": "p44",
+      "districtId": "d1",
+      "type": "corpo",
+      "tier": "high_rich",
+      "name": "Apex Weir Corp"
+    },
+    {
+      "id": "p45",
+      "districtId": "d0",
+      "type": "residential",
+      "tier": "poor"
+    },
+    {
+      "id": "p46",
+      "districtId": "d0",
+      "type": "offices",
+      "tier": "poor",
+      "name": "Iron Trench Office"
+    },
+    {
+      "id": "p47",
+      "districtId": "d1",
+      "type": "corpo",
+      "tier": "rich",
+      "name": "High Glass Holdings"
+    },
+    {
+      "id": "p48",
+      "districtId": "d0",
+      "type": "residential",
+      "tier": "poor"
+    },
+    {
+      "id": "p49",
+      "districtId": "d0",
+      "type": "residential",
+      "tier": "poor"
+    },
+    {
+      "id": "p50",
+      "districtId": "d0",
+      "type": "restaurant",
+      "tier": "poor",
+      "name": "Rusty Weir"
+    },
+    {
+      "id": "p51",
+      "districtId": "d0",
+      "type": "offices",
+      "tier": "mid",
+      "name": "Harbor Junction"
+    },
+    {
+      "id": "p52",
+      "districtId": "d1",
+      "type": "offices",
+      "tier": "high_rich",
+      "name": "Lumina High"
+    },
+    {
+      "id": "p53",
+      "districtId": "d1",
+      "type": "offices",
+      "tier": "high_rich",
+      "name": "Pure Form Tower"
+    },
+    {
+      "id": "p54",
+      "districtId": "d0",
+      "type": "commerce",
+      "tier": "poor",
+      "name": "Grime & Grain"
+    },
+    {
+      "id": "p55",
+      "districtId": "d1",
+      "type": "commerce",
+      "tier": "high_rich",
+      "name": "Oculus"
+    },
+    {
+      "id": "p56",
+      "districtId": "d0",
+      "type": "restaurant",
+      "tier": "mid",
+      "name": "Yard Exchange"
+    },
+    {
+      "id": "p57",
+      "districtId": "d1",
+      "type": "commerce",
+      "tier": "high_rich",
+      "name": "Zenith Dining"
+    },
+    {
+      "id": "p58",
+      "districtId": "d1",
+      "type": "offices",
+      "tier": "high_rich",
+      "name": "Apex Zenith"
+    },
+    {
+      "id": "p59",
+      "districtId": "d1",
+      "type": "hotel",
+      "tier": "rich",
+      "name": "The Meridian"
+    },
+    {
+      "id": "p60",
+      "districtId": "d1",
+      "type": "commerce",
+      "tier": "high_rich",
+      "name": "Apex Lounge"
+    },
+    {
+      "id": "p61",
+      "districtId": "d1",
+      "type": "commerce",
+      "tier": "high_rich",
+      "name": "The Glass House"
+    },
+    {
+      "id": "p62",
+      "districtId": "d1",
+      "type": "commerce",
+      "tier": "high_rich",
+      "name": "Elysium"
+    },
+    {
+      "id": "p63",
+      "districtId": "d1",
+      "type": "offices",
+      "tier": "high_rich",
+      "name": "Silica Spire"
+    },
+    {
+      "id": "p64",
+      "districtId": "d1",
+      "type": "offices",
+      "tier": "high_rich",
+      "name": "Glass Tier One"
+    },
+    {
+      "id": "p65",
+      "districtId": "d1",
+      "type": "commerce",
+      "tier": "high_rich",
+      "name": "Void"
+    },
+    {
+      "id": "p66",
+      "districtId": "d0",
+      "type": "offices",
+      "tier": "poor",
+      "name": "Low Levee Services"
+    },
+    {
+      "id": "p67",
+      "districtId": "d1",
+      "type": "offices",
+      "tier": "high_rich",
+      "name": "Aura Spire"
+    },
+    {
+      "id": "p68",
+      "districtId": "d1",
+      "type": "residential",
+      "tier": "high_rich"
+    },
+    {
+      "id": "p69",
+      "districtId": "d1",
+      "type": "offices",
+      "tier": "high_rich",
+      "name": "Void High"
+    },
+    {
+      "id": "p70",
+      "districtId": "d1",
+      "type": "commerce",
+      "tier": "high_rich",
+      "name": "Stratos"
+    }
+  ]
+}

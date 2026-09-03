@@ -5,7 +5,7 @@
  * built library is not next to this repo (standalone runs stay green).
  */
 
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import type { CityBlueprint, NPCTypeSet as SimNPCTypeSet } from '../../../simulation/dist/index.js';
 import type { QuestlineDefinition } from '../../flow/schema.js';
@@ -133,4 +133,24 @@ describe.skipIf(!existsSync(SIM_ENTRY))('real simulation integration', () => {
     const behavior = sim.behaviorAt(informer.npcId, TUE_10);
     expect(['interior', 'street', 'transit', 'home']).toContain(behavior.mode);
   });
+
+  for (const size of ['small', 'medium', 'large'] as const) {
+    const blueprintUrl = new URL(`../../../engine/out/cities/${size}/blueprint.json`, import.meta.url);
+    const questlinesUrl = new URL(`../../creation/samples/games/${size}/questlines.json`, import.meta.url);
+    const typesUrl = new URL('../../creation/fixtures/urbe-cyberpunk.npc-types.json', import.meta.url);
+    it.skipIf(!existsSync(blueprintUrl) || !existsSync(questlinesUrl))(`casts every ${size} game questline against its real city simulation`, async () => {
+      const { createSimulation } = await import('../../../simulation/dist/index.js');
+      const blueprint = JSON.parse(readFileSync(blueprintUrl, 'utf8')) as CityBlueprint;
+      const npcTypes = JSON.parse(readFileSync(typesUrl, 'utf8')) as SimNPCTypeSet;
+      const definitions = JSON.parse(readFileSync(questlinesUrl, 'utf8')) as QuestlineDefinition[];
+      const sim: SimulationPort = createSimulation({ seed: `quest-game-${size}`, blueprint, npcTypes });
+
+      for (const definition of definitions) {
+        const cast = new CastResolver(sim).resolve(definition, TUE_10);
+        const runtime = new QuestlineRuntime(definition, cast, sim);
+        expect(Object.keys(cast)).toHaveLength(definition.roles.length);
+        expect(runtime.activeSteps().length).toBeGreaterThan(0);
+      }
+    });
+  }
 });

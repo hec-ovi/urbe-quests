@@ -10,6 +10,7 @@ export type * from './world/types/simulation.js';
 export * from './flow/schema.js';
 export type { PlayerEvent } from './flow/events.js';
 export { FlowValidator } from './flow/validate.js';
+export { QuestlineSetValidator, type QuestlineSet } from './flow/QuestlineSet.js';
 export {
   QuestlineRuntime,
   type AdvanceResult,

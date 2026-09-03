@@ -64,6 +64,8 @@ async function main(): Promise<void> {
     },
   });
 
+  writer.writeQuestlines(result);
+
   writer.write('meta.json', JSON.stringify({ prompt, model: client.model, world: worldPath !== undefined ? basename(worldPath) : 'neon-bay', ranAt: new Date().toISOString() }, null, 2) + '\n');
   log(`done: ${result.script.script.characters.length} characters, ${result.side.length} of ${result.situations.situations.length} side quests, written to ${writer.path}`);
 }

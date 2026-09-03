@@ -5,6 +5,7 @@ import type { NamedWorld, NPCTypeSet } from './types/named-world.js';
 
 export * from './types/named-world.js';
 export * from './types/simulation.js';
+export { namedWorldFromAtlas, type AtlasQuestWorld } from './fromAtlas.js';
 export { StubSimulation, type StubSimulationInput } from './stub/StubSimulation.js';
 
 export type FixtureName = 'neon-bay' | 'aldermoor';

@@ -6,25 +6,17 @@
     "roles": [
       {
         "roleId": "r_denna",
-        "npcType": "corpo_coffee_barista",
-        "reservedName": {
-          "given": "Denna",
-          "family": "Cho"
-        },
+        "npcType": "quest_vendor",
         "persona": "Quiet, precise with drink orders, reads people by what they order and never finish. Wants someone she can trust to see what she's been saving; fears being the one whose name is on the sweep report; would never just throw the cups away."
       },
       {
         "roleId": "r_talis",
-        "npcType": "corpo_analyst",
-        "reservedName": {
-          "given": "Talis",
-          "family": "Rook"
-        },
+        "npcType": "quest_corporate",
         "persona": "Precise until the precision runs out. Orders the same coffee every day and leaves it to go cold when the numbers she's reading won't leave her alone."
       },
       {
         "roleId": "r_guard",
-        "npcType": "security_guard",
+        "npcType": "quest_security",
         "persona": "Runs the confiscation sweep on a fixed rotation and thinks paper cups with handwriting on them are somebody else's problem the moment they're bagged."
       }
     ],
@@ -79,7 +71,7 @@
         "target": {
           "kind": "goto",
           "place": {
-            "parcelId": "p40"
+            "parcelId": "p2"
           }
         },
         "next": [
@@ -106,7 +98,7 @@
         "target": {
           "kind": "talk",
           "roleId": "r_denna",
-          "atParcelId": "p40"
+          "atParcelId": "p2"
         },
         "next": [
           {
@@ -191,7 +183,7 @@
         "target": {
           "kind": "talk",
           "roleId": "r_talis",
-          "atParcelId": "p40"
+          "atParcelId": "p2"
         },
         "next": [],
         "endingId": "e1_kept"
@@ -210,8 +202,8 @@
     ]
   },
   "cast": {
-    "r_denna": "npc_16",
-    "r_talis": "npc_8",
-    "r_guard": "npc_19"
+    "r_denna": "npc_11",
+    "r_talis": "npc_6",
+    "r_guard": "npc_12"
   }
 }

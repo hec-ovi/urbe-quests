@@ -1,0 +1,393 @@
+{
+  "meta": {
+    "theme": "rain-soaked cyberpunk city",
+    "worldSeed": "urbe-portable",
+    "createdAt": "2026-09-03T00:00:00Z"
+  },
+  "types": [
+    {
+      "type": "quest_vendor",
+      "label": "City Vendor",
+      "category": "vendor",
+      "boilerplate": "Runs counters, stalls, cafes and public-facing service desks; knows regulars, deliveries and the practical cost of a district.",
+      "examples": [
+        "market seller",
+        "barista",
+        "hotel clerk"
+      ],
+      "grounding": {
+        "parcelTypes": [
+          "commerce",
+          "mall",
+          "restaurant",
+          "coffee_shop",
+          "hotel",
+          "corpo"
+        ],
+        "tiers": [
+          "poor",
+          "mid",
+          "rich",
+          "high_rich"
+        ]
+      },
+      "weight": 4
+    },
+    {
+      "type": "quest_corporate",
+      "label": "Technical and Corporate Worker",
+      "category": "worker",
+      "boilerplate": "Works in offices, corporate facilities and technical services; knows procedures, schedules and the limits of their own access.",
+      "examples": [
+        "analyst",
+        "maintenance technician",
+        "transit clerk"
+      ],
+      "grounding": {
+        "parcelTypes": [
+          "offices",
+          "corpo"
+        ],
+        "tiers": [
+          "poor",
+          "mid",
+          "rich",
+          "high_rich"
+        ]
+      },
+      "weight": 5
+    },
+    {
+      "type": "quest_clinician",
+      "label": "Clinical Worker",
+      "category": "worker",
+      "boilerplate": "Works in a clinic or hospital and knows patients only through care they personally provided or records they may access.",
+      "examples": [
+        "nurse",
+        "technician",
+        "reception worker"
+      ],
+      "grounding": {
+        "parcelTypes": [
+          "clinic",
+          "hospital"
+        ],
+        "tiers": [
+          "poor",
+          "mid",
+          "rich",
+          "high_rich"
+        ]
+      },
+      "weight": 2
+    },
+    {
+      "type": "quest_security",
+      "label": "Security Worker",
+      "category": "authority",
+      "boilerplate": "Guards public and private facilities; knows the post, its incident procedure and what happened during their own shifts.",
+      "examples": [
+        "precinct guard",
+        "corporate security",
+        "building watch"
+      ],
+      "grounding": {
+        "parcelTypes": [
+          "police",
+          "military",
+          "corpo",
+          "offices",
+          "residential"
+        ],
+        "tiers": [
+          "poor",
+          "mid",
+          "rich",
+          "high_rich"
+        ]
+      },
+      "weight": 3
+    },
+    {
+      "type": "quest_resident",
+      "label": "City Resident",
+      "category": "resident",
+      "boilerplate": "Lives in the city with a household, routine and local relationships grounded by the simulation.",
+      "examples": [
+        "tenant",
+        "neighbour",
+        "retiree"
+      ],
+      "grounding": {
+        "parcelTypes": [
+          "residential"
+        ],
+        "tiers": [
+          "poor",
+          "mid",
+          "rich",
+          "high_rich"
+        ]
+      },
+      "weight": 8
+    },
+    {
+      "type": "quest_street",
+      "label": "Street Regular",
+      "category": "street",
+      "boilerplate": "Spends much of the day in public space and knows only the routes, people and events they directly encounter.",
+      "examples": [
+        "courier",
+        "day labourer",
+        "street seller"
+      ],
+      "grounding": {
+        "tiers": [
+          "poor",
+          "mid",
+          "rich",
+          "high_rich"
+        ]
+      },
+      "weight": 3
+    },
+    {
+      "type": "quest_transit",
+      "label": "Transit Worker",
+      "category": "transit",
+      "boilerplate": "Operates or staffs public transport and knows its own lines, stops, service windows and incidents.",
+      "examples": [
+        "driver",
+        "station agent",
+        "platform worker"
+      ],
+      "grounding": {
+        "tiers": [
+          "poor",
+          "mid",
+          "rich",
+          "high_rich"
+        ]
+      },
+      "weight": 2
+    }
+  ],
+  "namePool": {
+    "given": [
+      "Kael",
+      "Jax",
+      "Dax",
+      "Zane",
+      "Torin",
+      "Vex",
+      "Kiro",
+      "Bren",
+      "Soren",
+      "Rian",
+      "Ellis",
+      "Sage",
+      "River",
+      "Sky",
+      "Quinn",
+      "Nico",
+      "Ash",
+      "Case",
+      "Logan",
+      "Reed",
+      "Fox",
+      "Wolf",
+      "Bear",
+      "Silas",
+      "Jude",
+      "Cyrus",
+      "Milo",
+      "Rex",
+      "Gunnar",
+      "Hank",
+      "Lyra",
+      "Nova",
+      "Zara",
+      "Mira",
+      "Elara",
+      "Kira",
+      "Sia",
+      "Nia",
+      "Ivy",
+      "Wren",
+      "Haze",
+      "Raine",
+      "Storm",
+      "Luna",
+      "Jade",
+      "Pearl",
+      "Cleo",
+      "Veda",
+      "Maeve",
+      "Elle",
+      "Juno",
+      "Tess",
+      "Blake",
+      "Drew",
+      "Lane",
+      "Sylvia",
+      "Rosa",
+      "Lila",
+      "Mara",
+      "Nyx",
+      "Neo",
+      "Zero",
+      "Hex",
+      "Glitch",
+      "Byte",
+      "Link",
+      "Node",
+      "Core",
+      "Flux",
+      "Shift",
+      "Dash",
+      "Spin",
+      "Crash",
+      "Burn",
+      "Dust",
+      "Mist",
+      "Fog",
+      "Rain",
+      "Sleet",
+      "Avery",
+      "Charlie",
+      "Dakota",
+      "Finley",
+      "Jordan",
+      "Kendall",
+      "Riley",
+      "Taylor"
+    ],
+    "givenByGender": {
+      "male": [
+        "Kael",
+        "Jax",
+        "Dax",
+        "Zane",
+        "Torin",
+        "Vex",
+        "Kiro",
+        "Bren",
+        "Soren",
+        "Rian",
+        "Ellis",
+        "Sage",
+        "River",
+        "Sky",
+        "Quinn",
+        "Nico",
+        "Ash",
+        "Case",
+        "Logan",
+        "Reed",
+        "Fox",
+        "Wolf",
+        "Bear",
+        "Silas",
+        "Jude",
+        "Cyrus",
+        "Milo",
+        "Rex",
+        "Gunnar",
+        "Hank"
+      ],
+      "female": [
+        "Lyra",
+        "Nova",
+        "Zara",
+        "Mira",
+        "Elara",
+        "Kira",
+        "Sia",
+        "Nia",
+        "Ivy",
+        "Wren",
+        "Haze",
+        "Raine",
+        "Storm",
+        "Luna",
+        "Jade",
+        "Pearl",
+        "Cleo",
+        "Veda",
+        "Maeve",
+        "Elle",
+        "Juno",
+        "Tess",
+        "Blake",
+        "Drew",
+        "Lane",
+        "Sylvia",
+        "Rosa",
+        "Lila",
+        "Mara",
+        "Nyx"
+      ],
+      "neutral": [
+        "Neo",
+        "Zero",
+        "Hex",
+        "Glitch",
+        "Byte",
+        "Link",
+        "Node",
+        "Core",
+        "Flux",
+        "Shift",
+        "Dash",
+        "Spin",
+        "Crash",
+        "Burn",
+        "Dust",
+        "Mist",
+        "Fog",
+        "Rain",
+        "Sleet",
+        "Avery",
+        "Charlie",
+        "Dakota",
+        "Finley",
+        "Jordan",
+        "Kendall",
+        "Riley",
+        "Taylor"
+      ]
+    },
+    "family": [
+      "Voss",
+      "Kaine",
+      "Rook",
+      "Steele",
+      "Cross",
+      "Blade",
+      "Stone",
+      "Grave",
+      "Vale",
+      "Moss",
+      "Thorn",
+      "Root",
+      "Seed",
+      "Flora",
+      "Fauna",
+      "Nakamura",
+      "Chen",
+      "Silva",
+      "Petrov",
+      "Al-Fayed",
+      "O'Connell",
+      "Sato",
+      "Kim",
+      "Jung",
+      "Mbeki",
+      "Desai",
+      "Rossi",
+      "Dubois",
+      "Schmidt",
+      "Ivanov"
+    ]
+  }
+}

@@ -12,9 +12,13 @@ npm test           # contract tests, no model needed (fixture story, scripted ag
 npm run typecheck
 npm run sample -- "create a dark cynical sci fi cyberpunk story" cyberpunk
 npm run replay -- creation/samples/<name>/recording.json <name>
+npm run materialize -- <recording.json> <profile> <city-blueprint.json> <npc-types.json> <questlines.json>
+npm run bundle -- creation/samples/<name> <questlines.json>
 ```
 
 The sample command runs one real pass against an OpenAI-compatible endpoint (`LLM_BASE_URL`, default `http://localhost:8080/v1`; `LLM_MODEL`, default the first model listed) and writes every stage's output under `creation/samples/<name>/`. The replay command rebuilds the same sample from a recorded run: the model's text and tool calls come from a JSON file and everything else is the real workflow, so a sample can be rebuilt and checked with no model present. Two fixture worlds, a fixture story and a stub population layer ship with the box, so everything else runs on the 2D plane with no other layer present.
+
+`creation/samples/games/{small,medium,large}/questlines.json` are ready engine payloads. Each contains the main line first and three side jobs after it. They were materialized against their concrete city, and all three cast against the real simulation with `creation/fixtures/urbe-cyberpunk.npc-types.json`. Semantic bindings choose matching parcels and districts per city instead of relying on the same numeric parcel id across sizes.
 
 ## The creation workflow
 

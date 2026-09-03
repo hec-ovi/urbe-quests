@@ -6,56 +6,32 @@
     "roles": [
       {
         "roleId": "r_petra",
-        "npcType": "renter",
-        "reservedName": {
-          "given": "Petra",
-          "family": "Moss"
-        },
+        "npcType": "quest_vendor",
         "persona": "Blunt, runs out of patience before she runs out of words. Keeps every one of her brother Sable's shift logs since their mother died. Wants a name on the accident, not a weather pattern; fears grief with no name attached just becomes weather too; would never take a payout that reads like a price on him."
       },
       {
         "roleId": "r_kip",
-        "npcType": "street_eater",
-        "reservedName": {
-          "given": "Kip",
-          "family": "Thorn"
-        },
+        "npcType": "quest_vendor",
         "persona": "Fast, transactional, softens once trust is earned. Found a company drive in the same debris that took Sable Voss. Wants it out of his hands before whoever wants it back finds out he has it; fears being the kind of story the Sump forgets by winter; would never hand it over for free until someone asks him right."
       },
       {
         "roleId": "r_doc",
-        "npcType": "clinic_nurse",
-        "reservedName": {
-          "given": "Mira",
-          "family": "Chen"
-        },
+        "npcType": "quest_clinician",
         "persona": "Tired, exact, no wasted words. Treats execs by day for a wage and Sump Row's dock workers off the books after hours for nothing, keeping a private list of the drowned-sounding lungs the official chart has no room for. Wants the list to matter to someone with the power to act on it; fears it disappearing with her, unread."
       },
       {
         "roleId": "r_talis",
-        "npcType": "corpo_analyst",
-        "reservedName": {
-          "given": "Talis",
-          "family": "Rook"
-        },
+        "npcType": "quest_corporate",
         "persona": "Precise, then suddenly plain when the precision runs out. Wrote the ration model and signed off on the week's anomalous cut without reading past the summary line. Wants to find out the cut was a coincidence; fears finding out it was not more than she fears losing the job that pays for that fear."
       },
       {
         "roleId": "r_cross",
-        "npcType": "security_guard",
-        "reservedName": {
-          "given": "Cross",
-          "family": "Ivanov"
-        },
+        "npcType": "quest_security",
         "persona": "Flat and procedural until it isn't. Filed the maintenance report the night Sable Voss died and was told by morning it never existed, but kept his own copy. Wants the report on record with his own name on it; fears losing the pension that keeps his mother housed in Sump Row; would never destroy the copy."
       },
       {
         "roleId": "r_ilona",
-        "npcType": "exec_resident",
-        "reservedName": {
-          "given": "Ilona",
-          "family": "Vale"
-        },
+        "npcType": "quest_corporate",
         "persona": "Measured, turns statements into questions so the room agrees for her. Grew up in Sump Row before marrying onto the Aurelian Hydro board, and signed the memo that let the company cut the ration early to protect the quarter. Wants to be right about the memo; fears her own signature more than she fears the drowned."
       }
     ],
@@ -65,7 +41,7 @@
         "kind": "device",
         "name": "Sable's drive",
         "description": "Kip's find, but really Sable's: a company data drive, cracked but readable, pulled from the same debris pile that took him. Whoever holds it holds the last thing he saw.",
-        "atParcelId": "p13"
+        "atParcelId": "p6"
       },
       {
         "itemId": "i_medical_log",
@@ -166,7 +142,7 @@
         "target": {
           "kind": "talk",
           "roleId": "r_petra",
-          "atParcelId": "p12"
+          "atParcelId": "p11"
         },
         "next": [
           {
@@ -192,7 +168,7 @@
         "target": {
           "kind": "talk",
           "roleId": "r_kip",
-          "atParcelId": "p13"
+          "atParcelId": "p6"
         },
         "next": [
           {
@@ -280,7 +256,7 @@
         "target": {
           "kind": "talk",
           "roleId": "r_talis",
-          "atParcelId": "p40"
+          "atParcelId": "p2"
         },
         "next": [
           {
@@ -358,7 +334,7 @@
             "flag": "f_confession"
           }
         ],
-        "branching": "exclusive",
+        "branching": "parallel",
         "stepId": "s_listen",
         "actId": "a3_board",
         "wantedByRoleId": "r_talis",
@@ -373,7 +349,7 @@
             "r_ilona",
             "r_talis"
           ],
-          "atParcelId": "p57"
+          "atParcelId": "p15"
         },
         "next": [
           {
@@ -437,7 +413,7 @@
         "target": {
           "kind": "talk",
           "roleId": "r_ilona",
-          "atParcelId": "p2"
+          "atParcelId": "p1"
         },
         "next": [],
         "endingId": "e_payout"
@@ -465,10 +441,10 @@
   },
   "cast": {
     "r_petra": "npc_1",
-    "r_kip": "npc_4",
-    "r_doc": "npc_5",
-    "r_talis": "npc_8",
-    "r_cross": "npc_11",
-    "r_ilona": "npc_14"
+    "r_kip": "npc_3",
+    "r_doc": "npc_4",
+    "r_talis": "npc_6",
+    "r_cross": "npc_7",
+    "r_ilona": "npc_10"
   }
 }

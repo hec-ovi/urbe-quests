@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { loadFixtureWorld, SimulationError, StubSimulation } from '../index.js';
+import { loadFixtureWorld, namedWorldFromAtlas, SimulationError, StubSimulation } from '../index.js';
 
 const TUE_10 = 1 * 1440 + 600;
 const TUE_03 = 1 * 1440 + 180;
@@ -24,6 +24,19 @@ describe('fixtures', () => {
       expect(types.namePool.given.length).toBeGreaterThanOrEqual(20);
       expect(types.namePool.family.length).toBeGreaterThanOrEqual(20);
     }
+  });
+
+  it('derives stable district labels from an Atlas world when naming is absent', () => {
+    const world = namedWorldFromAtlas(
+      {
+        meta: { seed: 'plain-atlas' },
+        districts: [{ id: 'd0', kind: 'downtown', tier: 'rich' }],
+        parcels: [{ id: 'p0', districtId: 'd0', type: 'offices', tier: 'rich' }],
+      },
+      'noir city',
+    );
+    expect(world.meta.naming).toEqual({ theme: 'noir city', namedAt: 'derived-from-atlas' });
+    expect(world.districts[0]!.name).toBe('downtown d0');
   });
 });
 

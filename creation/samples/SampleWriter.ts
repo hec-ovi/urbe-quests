@@ -4,7 +4,8 @@
  */
 
 import { mkdirSync, writeFileSync } from 'node:fs';
-import type { CreationProgress } from '../schema.js';
+import type { CreationProgress, CreationResult } from '../schema.js';
+import { QuestlineSetValidator } from '../../flow/QuestlineSet.js';
 
 export type Log = (line: string) => void;
 
@@ -22,6 +23,13 @@ export class SampleWriter {
 
   write(file: string, text: string): void {
     writeFileSync(new URL(file, this.dir), text);
+  }
+
+  /** Engine payload: the main definition first, then side quests in situation order. */
+  writeQuestlines(result: CreationResult): void {
+    const definitions = [result.main.definition, ...result.side.map((side) => side.definition)];
+    new QuestlineSetValidator().validate(definitions);
+    this.write('questlines.json', JSON.stringify(definitions, null, 2) + '\n');
   }
 
   onProgress(event: CreationProgress, log: Log): void {

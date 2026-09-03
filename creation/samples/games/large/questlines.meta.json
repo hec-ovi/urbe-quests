@@ -1,0 +1,13 @@
+{
+  "contractVersion": "1.0.0",
+  "profile": "large",
+  "worldSeed": "urbe",
+  "recording": "recording.json",
+  "npcTypes": "urbe-cyberpunk.npc-types.json",
+  "mainQuestlineId": "q_weir_line",
+  "sideQuestlineIds": [
+    "q_oxide_filter",
+    "q_signal_sump",
+    "q_exchange_rate"
+  ]
+}

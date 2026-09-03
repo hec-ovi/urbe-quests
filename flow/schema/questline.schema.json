@@ -1,0 +1,279 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://urbe.local/quests/flow/schema/questline.schema.json",
+  "title": "QuestlineDefinition",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "title", "premise", "roles", "items", "facts", "acts", "steps", "endings", "flags", "entryStepIds"],
+  "properties": {
+    "id": { "$ref": "#/$defs/id" },
+    "title": { "$ref": "#/$defs/text" },
+    "premise": { "$ref": "#/$defs/text" },
+    "roles": { "type": "array", "items": { "$ref": "#/$defs/role" } },
+    "items": { "type": "array", "items": { "$ref": "#/$defs/item" } },
+    "facts": { "type": "array", "items": { "$ref": "#/$defs/fact" } },
+    "acts": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/act" } },
+    "steps": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/step" } },
+    "endings": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/ending" } },
+    "flags": { "type": "array", "items": { "$ref": "#/$defs/id" }, "uniqueItems": true },
+    "entryStepIds": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/id" }, "uniqueItems": true }
+  },
+  "$defs": {
+    "id": { "type": "string", "minLength": 1 },
+    "text": { "type": "string", "minLength": 1 },
+    "role": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["roleId", "npcType", "persona"],
+      "properties": {
+        "roleId": { "$ref": "#/$defs/id" },
+        "npcType": { "$ref": "#/$defs/id" },
+        "persona": { "$ref": "#/$defs/text" },
+        "reservedName": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["given", "family"],
+          "properties": { "given": { "$ref": "#/$defs/text" }, "family": { "$ref": "#/$defs/text" } }
+        }
+      }
+    },
+    "item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["itemId", "name", "description", "kind"],
+      "properties": {
+        "itemId": { "$ref": "#/$defs/id" },
+        "name": { "$ref": "#/$defs/text" },
+        "description": { "$ref": "#/$defs/text" },
+        "kind": { "enum": ["device", "weapon", "document", "key", "substance", "valuable", "information"] },
+        "atParcelId": { "$ref": "#/$defs/id" }
+      }
+    },
+    "fact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["factId", "roleId", "text"],
+      "properties": {
+        "factId": { "$ref": "#/$defs/id" },
+        "roleId": { "$ref": "#/$defs/id" },
+        "text": { "$ref": "#/$defs/text" },
+        "gateFlag": { "$ref": "#/$defs/id" }
+      }
+    },
+    "act": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["actId", "title", "summary"],
+      "properties": {
+        "actId": { "$ref": "#/$defs/id" },
+        "title": { "$ref": "#/$defs/text" },
+        "summary": { "$ref": "#/$defs/text" }
+      }
+    },
+    "ending": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["endingId", "title", "epilogue"],
+      "properties": {
+        "endingId": { "$ref": "#/$defs/id" },
+        "title": { "$ref": "#/$defs/text" },
+        "epilogue": { "$ref": "#/$defs/text" }
+      }
+    },
+    "place": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["parcelId"],
+          "properties": { "parcelId": { "$ref": "#/$defs/id" } }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["districtId"],
+          "properties": { "districtId": { "$ref": "#/$defs/id" } }
+        }
+      ]
+    },
+    "target": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "place"],
+          "properties": { "kind": { "const": "goto" }, "place": { "$ref": "#/$defs/place" } }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "districtId"],
+          "properties": { "kind": { "const": "observe" }, "districtId": { "$ref": "#/$defs/id" } }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "roleId"],
+          "properties": {
+            "kind": { "const": "talk" },
+            "roleId": { "$ref": "#/$defs/id" },
+            "atParcelId": { "$ref": "#/$defs/id" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "roleIds", "atParcelId"],
+          "properties": {
+            "kind": { "const": "listen" },
+            "roleIds": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2,
+              "items": { "$ref": "#/$defs/id" }
+            },
+            "atParcelId": { "$ref": "#/$defs/id" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "itemId"],
+          "properties": { "kind": { "const": "pickup" }, "itemId": { "$ref": "#/$defs/id" } }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "itemId", "place"],
+          "properties": {
+            "kind": { "const": "deliver" },
+            "itemId": { "$ref": "#/$defs/id" },
+            "place": { "$ref": "#/$defs/place" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "itemId", "fromRoleId"],
+          "properties": {
+            "kind": { "const": "steal" },
+            "itemId": { "$ref": "#/$defs/id" },
+            "fromRoleId": { "$ref": "#/$defs/id" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "roleId"],
+          "properties": { "kind": { "const": "assassinate" }, "roleId": { "$ref": "#/$defs/id" } }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "atParcelId", "role"],
+          "properties": {
+            "kind": { "const": "work" },
+            "atParcelId": { "$ref": "#/$defs/id" },
+            "role": { "$ref": "#/$defs/text" }
+          }
+        }
+      ]
+    },
+    "predicate": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "flag"],
+          "properties": { "kind": { "enum": ["flagSet", "flagNotSet"] }, "flag": { "$ref": "#/$defs/id" } }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "stepId"],
+          "properties": { "kind": { "const": "stepDone" }, "stepId": { "$ref": "#/$defs/id" } }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "roleId"],
+          "properties": { "kind": { "enum": ["roleAlive", "roleOnDuty"] }, "roleId": { "$ref": "#/$defs/id" } }
+        }
+      ]
+    },
+    "flagOp": {
+      "oneOf": [
+        { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "enum": ["resign", "die"] } } },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind"],
+          "properties": { "kind": { "const": "promote" }, "toParcelId": { "$ref": "#/$defs/id" } }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "tag"],
+          "properties": { "kind": { "const": "custom" }, "tag": { "$ref": "#/$defs/id" } }
+        }
+      ]
+    },
+    "effect": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "flag"],
+          "properties": { "kind": { "enum": ["setFlag", "clearFlag"] }, "flag": { "$ref": "#/$defs/id" } }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "roleId", "op"],
+          "properties": {
+            "kind": { "const": "simFlag" },
+            "roleId": { "$ref": "#/$defs/id" },
+            "op": { "$ref": "#/$defs/flagOp" }
+          }
+        }
+      ]
+    },
+    "next": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["toStepId", "when"],
+      "properties": {
+        "toStepId": { "$ref": "#/$defs/id" },
+        "when": { "type": "array", "items": { "$ref": "#/$defs/predicate" } }
+      }
+    },
+    "step": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["stepId", "actId", "narrative", "target", "gives", "needs", "conditions", "effects", "next", "branching"],
+      "properties": {
+        "stepId": { "$ref": "#/$defs/id" },
+        "actId": { "$ref": "#/$defs/id" },
+        "narrative": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["description", "playerHint", "stake"],
+          "properties": {
+            "description": { "$ref": "#/$defs/text" },
+            "playerHint": { "$ref": "#/$defs/text" },
+            "stake": { "$ref": "#/$defs/text" }
+          }
+        },
+        "wantedByRoleId": { "$ref": "#/$defs/id" },
+        "target": { "$ref": "#/$defs/target" },
+        "gives": { "type": "array", "items": { "$ref": "#/$defs/id" }, "uniqueItems": true },
+        "needs": { "type": "array", "items": { "$ref": "#/$defs/id" }, "uniqueItems": true },
+        "conditions": { "type": "array", "items": { "$ref": "#/$defs/predicate" } },
+        "effects": { "type": "array", "items": { "$ref": "#/$defs/effect" } },
+        "next": { "type": "array", "items": { "$ref": "#/$defs/next" } },
+        "branching": { "enum": ["parallel", "exclusive"] },
+        "endingId": { "$ref": "#/$defs/id" }
+      }
+    }
+  }
+}

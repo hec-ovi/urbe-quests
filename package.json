@@ -1,6 +1,6 @@
 {
   "name": "quests",
-  "version": "0.2.15",
+  "version": "0.3.0",
   "directories": {
     "doc": "docs"
   },
@@ -10,12 +10,15 @@
     "watch": "npm run build && tsc -p tsconfig.build.json --watch --preserveWatchOutput",
     "typecheck": "tsc --noEmit",
     "sample": "tsx creation/samples/run-local.ts",
-    "replay": "tsx creation/samples/replay.ts"
+    "replay": "tsx creation/samples/replay.ts",
+    "bundle": "tsx creation/samples/bundle.ts",
+    "materialize": "tsx creation/samples/materialize.ts"
   },
   "type": "module",
   "private": "true",
   "devDependencies": {
     "@types/node": "^26.4.0",
+    "ajv": "^8.20.0",
     "tsx": "^4.23.13",
     "typescript": "^7.0.2",
     "undici": "^8.10.1",

@@ -32,7 +32,9 @@ The side branch never fails the run: a side quest whose translation throws is dr
 
 `npm run replay -- <recording json> <name> [<named world json> <npc types json>]` ([samples/replay.ts](samples/replay.ts), ports in [samples/RecordedPorts.ts](samples/RecordedPorts.ts)) rebuilds a sample from a recorded run: the model's text and tool calls come from JSON (`prompt`, `model`, `script`, `situations`, `plans` and `builds` keyed by assignment title), everything else is the real workflow, so a sample is rebuilt and checked with no model present.
 
-[samples/urbe-small/](samples/urbe-small/) is the small city's set: the story, three situations, a ten-step main questline in four acts with two endings and one side questline per situation, all rebuilt from its `recording.json` against the named world the engine carries.
+`npm run materialize -- <recording> <profile> <atlas-or-named-world> <npc-types> <questlines-output>` replays semantic parcel, district and fallback role-type bindings against a concrete city. It writes the engine payload conforming to [schema/questline-set.schema.json](schema/questline-set.schema.json), plus `questlines.meta.json`. Same inputs produce byte-identical outputs. `npm run bundle -- <sample-dir> [<output>]` packages any completed sample the same way.
+
+[samples/urbe-small/](samples/urbe-small/) is the standalone source recording and its world/type snapshots. [samples/games/](samples/games/) contains materialized small, medium and large sets: a ten-step main questline in four acts with two reachable player-selected endings, plus three five-step side jobs. Their shared naming-free fallback type set is [fixtures/urbe-cyberpunk.npc-types.json](fixtures/urbe-cyberpunk.npc-types.json). Real-simulation integration tests cast every set against its concrete city.
 
 ## Depends on
 - ../story, ../builder, ../world, ../ports

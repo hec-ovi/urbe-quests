@@ -6,20 +6,12 @@
     "roles": [
       {
         "roleId": "r_yara",
-        "npcType": "mall_vendor",
-        "reservedName": {
-          "given": "Yara",
-          "family": "Fenn"
-        },
+        "npcType": "quest_vendor",
         "persona": "Prices anything in a second, never asks what it's for, until she has to. Wants a fair price and no questions; fears the batch being traced to her stall; would never leave a customer to collapse over a chit she sold him."
       },
       {
         "roleId": "r_milo",
-        "npcType": "transit_agent",
-        "reservedName": {
-          "given": "Milo",
-          "family": "Draeger"
-        },
+        "npcType": "quest_corporate",
         "persona": "Checks serials twice out of habit, not suspicion, until the habit finds something real. Wants to know what he actually bought for his mother; fears finding out he's been funding the exact thing he's supposed to catch."
       }
     ],
@@ -80,7 +72,7 @@
         "target": {
           "kind": "goto",
           "place": {
-            "parcelId": "p9"
+            "parcelId": "p7"
           }
         },
         "next": [
@@ -110,7 +102,7 @@
         "target": {
           "kind": "talk",
           "roleId": "r_yara",
-          "atParcelId": "p9"
+          "atParcelId": "p7"
         },
         "next": [
           {
@@ -140,7 +132,7 @@
         "target": {
           "kind": "talk",
           "roleId": "r_milo",
-          "atParcelId": "p51"
+          "atParcelId": "p0"
         },
         "next": [
           {
@@ -198,7 +190,7 @@
         "target": {
           "kind": "talk",
           "roleId": "r_milo",
-          "atParcelId": "p51"
+          "atParcelId": "p0"
         },
         "next": [],
         "endingId": "e3_treated"
@@ -217,7 +209,7 @@
     ]
   },
   "cast": {
-    "r_yara": "npc_24",
-    "r_milo": "npc_26"
+    "r_yara": "npc_16",
+    "r_milo": "npc_14"
   }
 }

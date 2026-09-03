@@ -2,10 +2,11 @@
 
 Purpose: creates the world's story and questlines from one creation prompt (a film script, translated into a main questline and side quests as deterministic typed step flows whose NPCs are resolved by type through simulation queries) and assembles NPC dialog context (scoped knowledge, active wants, memory, deflection) for the engine's LLM calls.
 
-Status: v0.2. Built against naming v0.1 and simulation v0.1.
+Status: v0.3. Built against naming v0.1 and simulation v0.8.
 
 ## In
 - Named world and NPC type set: shapes in [world/types/named-world.ts](world/types/named-world.ts), mirrors of ../naming/schema/world-state.schema.json and npc-types.schema.json.
+- Recorded creation may consume an Atlas world before naming through `namedWorldFromAtlas` ([world/CONTRACT.md](world/CONTRACT.md)); its generated labels are deterministic fallbacks, not authored place names.
 - Simulation: a `SimulationPort` ([world/types/simulation.ts](world/types/simulation.ts)), the consumed slice of ../simulation's CitySimulation (getNPCVendor, reserveNPC, findNPCs, getNPC, behaviorAt, interrupt, resume, applyFlag). The real simulation satisfies it; [world/stub/StubSimulation.ts](world/stub/StubSimulation.ts) ships for standalone runs.
 - Creation prompt: the user's words ("create a dark cynical sci fi cyberpunk story").
 - Creation keeps a failure local to what failed: a side quest whose build fails is dropped, and a situations pass that cannot be read drops all of them, both reported through `warn` on the input; the script or the main line failing fails the run.
@@ -16,6 +17,7 @@ Status: v0.2. Built against naming v0.1 and simulation v0.1.
 - Creation: `new QuestlineCreation().run(input) -> CreationResult` ([creation/CONTRACT.md](creation/CONTRACT.md)): text-only script pass, translation of the script into the main questline (plan pass closing with a manifest of ids, then the flow tool build bounded by it), text-only situations pass and one side questline per situation; `progress` events report each stage and build round. Every stage runs alone too:
   - Story: `ScriptPass`, `SituationsPass` ([story/CONTRACT.md](story/CONTRACT.md)).
   - Translation: `QuestlineTranslator`, `TranslationPlanner`, `QuestlineBuilder` ([builder/CONTRACT.md](builder/CONTRACT.md)).
+- Engine quest set: the main `QuestlineDefinition` first, followed by side quest definitions in stable situation order, exactly [creation/schema/questline-set.schema.json](creation/schema/questline-set.schema.json). Each definition is exactly [flow/schema/questline.schema.json](flow/schema/questline.schema.json). Creation-time casts are omitted because each game casts against its own simulation.
 - Browser hosts import [runtime.ts](runtime.ts) (dist/runtime.js): the flow runtime, validator, cast resolver, errors and types, with no node APIs behind them; index.ts adds creation, story and dialog, which read prompt files from disk.
 - Cast: `new CastResolver(sim).resolve(definition, timeMin) -> ResolvedCast` ([builder/CastResolver.ts](builder/CastResolver.ts)) binds every role to an NPC through the host's simulation (reserved names, else whoever is on duty by type, else anyone of that type already in the world); a host casts at load so ids are its own simulation's.
 - Flow runtime: `QuestlineRuntime` ([flow/CONTRACT.md](flow/CONTRACT.md)): pure code state machine over the questline DAG. Availability (schedule, liveness, held items) and the place each step points at are evaluated on demand; flags and step history are the only persisted state; a dead NPC voids its quests.

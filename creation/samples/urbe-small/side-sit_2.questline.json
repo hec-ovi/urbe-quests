@@ -6,20 +6,12 @@
     "roles": [
       {
         "roleId": "r_kip",
-        "npcType": "street_eater",
-        "reservedName": {
-          "given": "Kip",
-          "family": "Thorn"
-        },
+        "npcType": "quest_vendor",
         "persona": "Fast, transactional, softens once trust is earned. Wants a witness who won't cash a good find in cheap; fears sitting on something worth more than his life; would never let this one go for less than its actual weight."
       },
       {
         "roleId": "r_wick",
-        "npcType": "subway_tech",
-        "reservedName": {
-          "given": "Wick",
-          "family": "Talbot"
-        },
+        "npcType": "quest_corporate",
         "persona": "Talks like he's still reading a schematic, careful, methodical. Wants a reason to look at a junction he's never been cleared to open; fears what he already suspects it's doing to his mother's block more than he fears his own shift log."
       }
     ],
@@ -74,7 +66,7 @@
         "target": {
           "kind": "goto",
           "place": {
-            "parcelId": "p13"
+            "parcelId": "p6"
           }
         },
         "next": [
@@ -103,7 +95,7 @@
         "target": {
           "kind": "talk",
           "roleId": "r_kip",
-          "atParcelId": "p13"
+          "atParcelId": "p6"
         },
         "next": [
           {
@@ -130,7 +122,7 @@
         },
         "target": {
           "kind": "work",
-          "atParcelId": "p51",
+          "atParcelId": "p0",
           "role": "maintenance temp"
         },
         "next": [
@@ -159,7 +151,7 @@
         "target": {
           "kind": "talk",
           "roleId": "r_wick",
-          "atParcelId": "p51"
+          "atParcelId": "p0"
         },
         "next": [
           {
@@ -187,7 +179,7 @@
         "target": {
           "kind": "talk",
           "roleId": "r_kip",
-          "atParcelId": "p13"
+          "atParcelId": "p6"
         },
         "next": [],
         "endingId": "e2_confirmed"
@@ -206,7 +198,7 @@
     ]
   },
   "cast": {
-    "r_kip": "npc_4",
-    "r_wick": "npc_21"
+    "r_kip": "npc_3",
+    "r_wick": "npc_14"
   }
 }

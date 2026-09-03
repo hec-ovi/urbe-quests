@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://urbe.local/quests/creation/schema/questline-set.schema.json",
+  "title": "QuestlineSet",
+  "description": "Engine payload. The main questline is the first entry, followed by side quests in stable situation order.",
+  "type": "array",
+  "minItems": 1,
+  "items": { "$ref": "../../flow/schema/questline.schema.json" }
+}
