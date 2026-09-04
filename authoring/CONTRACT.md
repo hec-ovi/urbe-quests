@@ -48,7 +48,7 @@ The shared named world envelope is [schema/world-context.schema.json](schema/wor
 ## Dependencies
 
 - `flow`, only through [../flow/CONTRACT.md](../flow/CONTRACT.md) and [../flow/schema/questline.schema.json](../flow/schema/questline.schema.json). Authoring imports no flow implementation.
-- `world`, through [../world/CONTRACT.md](../world/CONTRACT.md) and mirrored named world types.
+- `world`, through [../world/CONTRACT.md](../world/CONTRACT.md) and its compatible named-world consumer types.
 - Injected story and gameplay agent ports. The layer owns no model client.
 
 ## Invariants

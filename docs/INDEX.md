@@ -2,7 +2,7 @@
 
 - root: CONTRACT.md, the coupling surface for Engine. Depends on Atlas, Naming, Simulation, and Engine investigation and mission-asset contracts.
 - authoring/: GBrain-style progressive skill resolver and separate story-writing and gameplay-adaptation stages. Loads a lightweight index first, then selected mechanic skills; validates exact cast, parcel, district, station, stop, interaction, prerequisite, consequence, flow, and cause-effect references.
-- world/: consumed dependency surface: Atlas world adapter, mirror types of naming and simulation contracts including transit identities without geometry, fixture named worlds (two eras), deterministic stub simulation.
+- world/: consumed dependency surface: Atlas world adapter with a local fallback marker, compatible consumer projections that accept Naming outputs directly, consumed Simulation types, transit identities without geometry, fixture named worlds (two eras), deterministic stub simulation.
 - flow/: questline schema and deterministic runtime: typed step DAG, branches, endings, validated saved state, exact mechanic completion events, and route-ready parcel, station, or stop guidance. No LLM.
 - story/: text-only story passes: the film script from the creation prompt (characters, four movements of passages, enforced minimums) and the side situations written from it. Fixture story. Depends on world, ports.
 - builder/: translation of a story arc into a questline: text plan with an id manifest, agent tool build over all 16 mechanics, immediate world-target checks, and cast resolution by type. Depends on flow, world, story, ports.

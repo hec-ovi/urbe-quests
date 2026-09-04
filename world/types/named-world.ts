@@ -1,7 +1,7 @@
 /**
- * Consumed slice of ../naming's outputs (naming/schema/world-state.schema.json
- * and naming/schema/npc-types.schema.json). Mirror types; a real naming output
- * satisfies them structurally.
+ * Compatible consumer projections of Naming's named-world and NPC type set outputs.
+ * Naming output fits directly; the local pre-naming Atlas fallback supplies only
+ * the fields Quests reads.
  */
 
 export type Tier = 'poor' | 'mid' | 'rich' | 'high_rich';

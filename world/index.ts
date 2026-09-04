@@ -1,4 +1,4 @@
-/** World box surface: mirror types, fixture loader, stub simulation. */
+/** World box surface: consumer types, fixture loader, stub simulation. */
 
 import { readFileSync } from 'node:fs';
 import type { NamedWorld, NPCTypeSet } from './types/named-world.js';

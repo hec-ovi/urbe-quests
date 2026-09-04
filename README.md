@@ -20,7 +20,7 @@ npm run materialize -- <recording.json> <profile> <atlas-or-named-world.json> <n
 npm run bundle -- creation/samples/<name> [<questlines.json>] [<handoff-input.json>]
 ```
 
-The live sample uses an OpenAI-compatible endpoint through `LLM_BASE_URL`, `LLM_MODEL`, and optional `LLM_API_KEY`. Replay uses recorded text and tool calls, so it needs no model. The local fixtures and stub simulation keep the box runnable without the other repositories.
+The live sample uses an OpenAI-compatible endpoint through `LLM_BASE_URL`, `LLM_MODEL`, and optional `LLM_API_KEY`. Replay uses recorded text and tool calls, so it needs no model. Materialize accepts Naming output directly. With an Atlas input, it fills missing district labels and records `derived-from-atlas` as a local deterministic fallback marker rather than authoritative Naming metadata. The local fixtures and stub simulation keep the box runnable without the other repositories.
 
 ## Authoring
 
