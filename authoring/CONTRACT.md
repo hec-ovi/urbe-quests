@@ -9,6 +9,7 @@ Purpose: exposes story writing and gameplay adaptation as separate agent stages 
 - Skill resolve query: [schema/skill-resolve-query.schema.json](schema/skill-resolve-query.schema.json). Full skill bodies load only for the named skills.
 - Story request: [schema/story-request.schema.json](schema/story-request.schema.json). It contains the user's prompt and named world context, without quest mechanics.
 - Gameplay adaptation request: [schema/adaptation-request.schema.json](schema/adaptation-request.schema.json). It contains a completed story, the same named world context, and an optional mechanic allowlist.
+- World context accepts Naming's [named-world](../../naming/schema/named-world.schema.json) and [NPC type set](../../naming/schema/npc-types.schema.json) outputs through the [world normalizer](../world/WorldContextNormalizer.ts). The agent receives only the closed consumer projection.
 - Story agent response: [schema/story-output.schema.json](schema/story-output.schema.json).
 - Mechanic selector response: [schema/mechanic-selection.schema.json](schema/mechanic-selection.schema.json).
 - Gameplay agent response: [schema/adaptation-output.schema.json](schema/adaptation-output.schema.json).
@@ -25,13 +26,13 @@ Purpose: exposes story writing and gameplay adaptation as separate agent stages 
 - Gameplay-stage result: [schema/adaptation-output.schema.json](schema/adaptation-output.schema.json). Every step records its mechanic choice, story beats, narrative reason, cause, effect, and ordered transition trace. Every ending records terminal steps and story outcomes.
 - Closed error envelope: [schema/authoring-error.schema.json](schema/authoring-error.schema.json).
 
-The shared named world envelope is [schema/world-context.schema.json](schema/world-context.schema.json). It preserves named parcel, district, station, and stop identities without geometry. Shared ids, mechanics, skill summaries, and schema bundles are [schema/values.schema.json](schema/values.schema.json).
+The shared named world envelope is [schema/world-context.schema.json](schema/world-context.schema.json). It preserves naming metadata, gender-tagged name pools, named parcel and district identities, and whichever transit collections the source world carries. Geometry is excluded. [fixtures/world-context.json](fixtures/world-context.json) satisfies the Naming v0.4.8 output schemas with partial transit. Shared ids, mechanics, skill summaries, and schema bundles are [schema/values.schema.json](schema/values.schema.json).
 
 ## Events
 
 - `skillIndex()`, `route(message)`, and `resolveSkills(names)` expose progressive skill discovery.
-- `writeStory(input, agent)` validates the request, loads `story-writing`, calls the injected agent once, validates the structured result, then checks identity and character references.
-- `adaptGameplay(input, agent)` exposes the lightweight mechanic index to the selector, validates its selection, loads only those full skills, calls the injected adaptation agent, then runs flow, world-target, and cause-effect audits.
+- `writeStory(input, agent)` projects its Naming world context, validates the closed request, loads `story-writing`, calls the injected agent once, validates the structured result, then checks identity and character references.
+- `adaptGameplay(input, agent)` projects the same world context, exposes the lightweight mechanic index to the selector, validates its selection, loads only those full skills, calls the injected adaptation agent, then runs flow, world-target, and cause-effect audits.
 
 ## Errors
 
@@ -54,10 +55,11 @@ The shared named world envelope is [schema/world-context.schema.json](schema/wor
 ## Invariants
 
 - Story writing never emits quest mechanics, system ids, or runtime events. Its named scene places must exist in the supplied world; gameplay adaptation owns exact target ids.
+- NPC type district grounding uses Naming's district names. Transit collections are independent and may be absent.
 - Gameplay adaptation receives the completed story unchanged.
 - Gameplay place targets use one exact world identity: `parcelId`, `districtId`, `stationId`, or `stopId`.
 - The lightweight index is read before mechanic bodies. Only selected mechanic bodies enter the gameplay adaptation request.
-- Skill frontmatter `triggers` are the routing source of truth. `skills/RESOLVER.md` mirrors them for human scanning.
+- Skill frontmatter `triggers` are the routing source of truth. `skills/RESOLVER.md` lists them for human scanning.
 - Supported mechanics are exactly `goto`, `observe`, `talk`, `listen`, `pickup`, `deliver`, `steal`, `assassinate`, `work`, `investigation`, `rescue`, `escort`, `access`, `hacking`, `sabotage`, and `transportation`.
 - Investigation is staged as one exact clue per step. Each clue names its scene, evidence interaction, information item, subject cast, and place; later clues use `needs`, `conditions`, or graph edges to require earlier discoveries.
 - Rescue names one cast role and one release interaction. Reaching safety is a separate escort step with exact follow mode, route, and endpoints.

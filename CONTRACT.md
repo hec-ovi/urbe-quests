@@ -2,11 +2,11 @@
 
 Purpose: authors the world's story and playable questlines, runs them as deterministic typed step flows whose NPCs resolve by type through simulation queries, and assembles scoped NPC dialog context.
 
-Status: v0.8.1. Built against naming v0.4.8, simulation v0.9.1, engine investigation v1.1, and engine mission-assets v1.0.
+Status: v0.8.2. Built against naming v0.4.8, simulation v0.9.1, engine investigation v1.1, and engine mission-assets v1.0.
 
 ## In
-- Named world and NPC type set: [world/types/named-world.ts](world/types/named-world.ts) defines compatible consumer projections of Naming's [named-world](../naming/schema/named-world.schema.json) and [NPC type set](../naming/schema/npc-types.schema.json) outputs. Naming output is accepted directly; the projections also permit the local pre-naming Atlas fallback below.
-- Recorded creation may consume an Atlas world before naming through `namedWorldFromAtlas` ([world/CONTRACT.md](world/CONTRACT.md)); its generated labels are deterministic fallbacks, not authored place names. It records `derived-from-atlas` as a local deterministic metadata marker rather than authoritative Naming metadata.
+- Named world and NPC type set: [world/types/named-world.ts](world/types/named-world.ts) defines compatible consumer projections of Naming's [named-world](../naming/schema/named-world.schema.json) and [NPC type set](../naming/schema/npc-types.schema.json) outputs. [WorldContextNormalizer](world/WorldContextNormalizer.ts) accepts unmodified Naming JSON, preserves naming metadata and gender-tagged name pools, and projects only the fields Quests consumes.
+- Recorded creation may consume an Atlas world before naming through `namedWorldFromAtlas` ([world/CONTRACT.md](world/CONTRACT.md)). Only an input without naming metadata receives generated district labels and the local deterministic `derived-from-atlas` marker.
 - Simulation: a `SimulationPort` ([world/types/simulation.ts](world/types/simulation.ts)), the consumed slice of ../simulation's CitySimulation (getNPCVendor, reserveNPC, findNPCs, getNPC, behaviorAt, interrupt, resume, applyFlag). The real simulation satisfies it; [world/stub/StubSimulation.ts](world/stub/StubSimulation.ts) ships for standalone runs.
 - Creation prompt: the user's words ("create a dark cynical sci fi cyberpunk story").
 - Creation keeps a failure local to what failed: a side quest whose build fails is dropped, and a situations pass that cannot be read drops all of them, both reported through `warn` on the input; the script or the main line failing fails the run.

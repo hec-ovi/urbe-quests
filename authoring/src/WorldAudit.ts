@@ -5,10 +5,11 @@ export class WorldAudit {
   validateContext(context: WorldContext): void {
     const problems: string[] = [];
     const districts = collectUnique(context.world.districts.map((district) => district.id), 'district', problems);
+    const districtNames = new Set(context.world.districts.map((district) => district.name));
     collectUnique(context.world.parcels.map((parcel) => parcel.id), 'parcel', problems);
     const transit = context.world.transit;
     const transitEntities = transit === undefined ? [] : Object.values(transit).flat();
-    collectUnique(transit?.busStops.map((entity) => entity.id) ?? [], 'stop', problems);
+    collectUnique(transit?.busStops?.map((entity) => entity.id) ?? [], 'stop', problems);
     collectUnique(
       [...(transit?.trainStations ?? []), ...(transit?.subwayStations ?? [])].map((entity) => entity.id),
       'station',
@@ -25,8 +26,8 @@ export class WorldAudit {
       }
     }
     for (const type of context.types.types) {
-      for (const districtId of type.grounding.districts ?? []) {
-        if (!districts.has(districtId)) problems.push(`NPC type ${type.type} is grounded to unknown district ${districtId}`);
+      for (const districtName of type.grounding.districts ?? []) {
+        if (!districtNames.has(districtName)) problems.push(`NPC type ${type.type} is grounded to unknown district ${districtName}`);
       }
     }
 

@@ -37,6 +37,44 @@ describe('two-stage authoring harness', () => {
     expect(harness.resolveSkills(['observe']).skills[0]?.mechanic).toBe('observe');
   });
 
+  it('projects authoritative Naming output through the closed story boundary', async () => {
+    const input = clone(storyRequest) as StoryRequest & {
+      world: StoryRequest['world'] & { stats?: object };
+    };
+    Object.assign(input.world.meta, { version: '0.1.0', bounds: { min: [0, 0], max: [1, 1] } });
+    Object.assign(input.world.districts[0]!, { center: [0, 0], boundary: [[0, 0]], maxFloors: 4 });
+    input.world.stats = { population: 10 };
+    const write = vi.fn(async (request: StoryAgentRequest): Promise<unknown> => {
+      expect(request.input.world.meta.naming).toEqual(context.world.meta.naming);
+      expect(request.input.types.namePool.givenByGender).toEqual(context.types.namePool.givenByGender);
+      expect(Object.keys(request.input.world.transit ?? {}).sort()).toEqual(['busStops', 'trainStations']);
+      expect(request.input.world.meta).not.toHaveProperty('version');
+      expect(request.input.world.districts[0]).not.toHaveProperty('center');
+      expect(request.input.world).not.toHaveProperty('stats');
+      return clone(story);
+    });
+
+    await expect(new AuthoringHarness().writeStory(input, { write })).resolves.toEqual(story);
+    expect(write).toHaveBeenCalledOnce();
+    expect(input.world).toHaveProperty('stats');
+  });
+
+  it('keeps malformed or incompletely named worlds inside the closed input error', async () => {
+    const write = vi.fn(async (): Promise<unknown> => clone(story));
+    const malformed = clone(storyRequest) as unknown as StoryRequest;
+    (malformed as unknown as { types: { namePool: null } }).types.namePool = null;
+    await expect(new AuthoringHarness().writeStory(malformed, { write })).rejects.toMatchObject({
+      code: 'E_AUTHORING_INPUT',
+    });
+
+    const missingName = clone(storyRequest);
+    delete (missingName.world.districts[0] as Partial<(typeof missingName.world.districts)[number]>).name;
+    await expect(new AuthoringHarness().writeStory(missingName, { write })).rejects.toMatchObject({
+      code: 'E_AUTHORING_INPUT',
+    });
+    expect(write).not.toHaveBeenCalled();
+  });
+
   it('runs story writing as its own schema-constrained skill stage', async () => {
     const write = vi.fn(async (_request: StoryAgentRequest): Promise<unknown> => clone(story));
     const result = await new StoryStage().write(storyRequest, { write });
@@ -96,7 +134,7 @@ describe('two-stage authoring harness', () => {
       async (_request: MechanicSelectionAgentRequest): Promise<unknown> => ({ mechanics: ['talk', 'pickup', 'deliver'] }),
     );
     const adapt = vi.fn(async (_request: GameplayAgentRequest): Promise<unknown> => clone(adaptation));
-    const result = await new GameplayStage().adapt(adaptationRequest, { selectMechanics, adapt });
+    const result = await new AuthoringHarness().adaptGameplay(adaptationRequest, { selectMechanics, adapt });
 
     expect(result).toEqual(adaptation);
     const selectionRequest = selectMechanics.mock.calls[0]?.[0];

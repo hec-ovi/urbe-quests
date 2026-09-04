@@ -4,7 +4,8 @@
       "seed": "authoring-fixture",
       "naming": {
         "theme": "rain-darkened industrial city",
-        "namedAt": "fixture"
+        "model": "fixture-model",
+        "namedAt": "2026-09-03T00:00:00.000Z"
       }
     },
     "districts": [
@@ -33,18 +34,15 @@
     ],
     "transit": {
       "busStops": [{ "id": "stop_harbor", "districtId": "d_harbor", "name": "Harbor Stop" }],
-      "busRoutes": [{ "id": "bus_harbor", "districtId": "d_harbor", "name": "Harbor Loop" }],
-      "trainStations": [{ "id": "station_harbor", "districtId": "d_harbor", "name": "Harbor Station" }],
-      "trainLines": [{ "id": "rail_harbor", "districtId": "d_harbor", "name": "Harbor Line" }],
-      "subwayStations": [],
-      "subwayLines": []
+      "trainStations": [{ "id": "station_harbor", "districtId": "d_harbor", "name": "Harbor Station" }]
     }
   },
   "types": {
     "meta": {
       "theme": "rain-darkened industrial city",
       "worldSeed": "authoring-fixture",
-      "createdAt": "fixture"
+      "model": "fixture-model",
+      "createdAt": "2026-09-03T00:00:00.000Z"
     },
     "types": [
       {
@@ -53,7 +51,7 @@
         "category": "vendor",
         "boilerplate": "A local worker with a public routine and a private stake.",
         "grounding": {
-          "districts": ["d_harbor"],
+          "districts": ["Harbor Ward"],
           "parcelTypes": ["coffee_shop", "offices"],
           "tiers": ["poor", "mid"]
         },
@@ -61,8 +59,13 @@
       }
     ],
     "namePool": {
-      "given": ["Mara"],
-      "family": ["Voss"]
+      "given": ["Mara", "Ash", "Bren", "Cato", "Dara", "Edda", "Falk", "Gus", "Hale", "Iva", "Joss", "Kell", "Lena", "Nia", "Orin", "Pia", "Ruth", "Sten", "Tova", "Vero"],
+      "givenByGender": {
+        "male": [],
+        "female": [],
+        "neutral": ["Mara", "Ash", "Bren", "Cato", "Dara", "Edda", "Falk", "Gus", "Hale", "Iva", "Joss", "Kell", "Lena", "Nia", "Orin", "Pia", "Ruth", "Sten", "Tova", "Vero"]
+      },
+      "family": ["Voss", "Adler", "Boone", "Corve", "Draes", "Ellon", "Fane", "Grell", "Hart", "Ives", "Kade", "Locke", "Mour", "Nash", "Odel", "Pryce", "Quill", "Rane", "Soller", "Thane"]
     }
   }
 }

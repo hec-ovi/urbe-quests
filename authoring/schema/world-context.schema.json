@@ -61,7 +61,6 @@
         "transit": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["busStops", "busRoutes", "trainStations", "trainLines", "subwayStations", "subwayLines"],
           "properties": {
             "busStops": { "type": "array", "items": { "$ref": "#/$defs/transitEntity" } },
             "busRoutes": { "type": "array", "items": { "$ref": "#/$defs/transitEntity" } },
@@ -121,6 +120,16 @@
           "required": ["given", "family"],
           "properties": {
             "given": { "type": "array", "minItems": 1, "items": { "$ref": "urn:urbe:quests:authoring:values#/$defs/text" } },
+            "givenByGender": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["male", "female", "neutral"],
+              "properties": {
+                "male": { "type": "array", "items": { "$ref": "urn:urbe:quests:authoring:values#/$defs/text" } },
+                "female": { "type": "array", "items": { "$ref": "urn:urbe:quests:authoring:values#/$defs/text" } },
+                "neutral": { "type": "array", "items": { "$ref": "urn:urbe:quests:authoring:values#/$defs/text" } }
+              }
+            },
             "family": { "type": "array", "minItems": 1, "items": { "$ref": "urn:urbe:quests:authoring:values#/$defs/text" } }
           }
         }

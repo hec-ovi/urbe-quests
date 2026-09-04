@@ -58,8 +58,8 @@ describe('fixtures', () => {
     );
 
     expect(world.transit?.busStops).toEqual([{ id: 'stop_1', districtId: 'd0' }]);
-    expect(world.transit?.trainStations[0]?.name).toBe('Central Rail');
-    expect(world.transit?.subwayStations[0]?.id).toBe('subway_1');
+    expect(world.transit?.trainStations?.[0]?.name).toBe('Central Rail');
+    expect(world.transit?.subwayStations?.[0]?.id).toBe('subway_1');
   });
 });
 

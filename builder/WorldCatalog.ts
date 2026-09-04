@@ -23,8 +23,8 @@ export class WorldCatalog {
     const transit = this.world.transit;
     if (transit !== undefined) {
       lines.push('', 'Transit places (use these ids):');
-      for (const stop of transit.busStops) lines.push(`- ${stop.name ?? 'bus stop'} [stopId ${stop.id}]`);
-      for (const station of [...transit.trainStations, ...transit.subwayStations]) {
+      for (const stop of transit.busStops ?? []) lines.push(`- ${stop.name ?? 'bus stop'} [stopId ${stop.id}]`);
+      for (const station of [...(transit.trainStations ?? []), ...(transit.subwayStations ?? [])]) {
         lines.push(`- ${station.name ?? 'station'} [stationId ${station.id}]`);
       }
     }

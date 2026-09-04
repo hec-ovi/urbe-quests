@@ -5,6 +5,7 @@ import { QuestGraphAudit } from './QuestGraphAudit.js';
 import { SkillResolver } from './SkillResolver.js';
 import { StoryAudit } from './StoryAudit.js';
 import { WorldAudit } from './WorldAudit.js';
+import { WorldContextNormalizer } from '../../world/WorldContextNormalizer.js';
 import {
   MECHANICS,
   type AdaptationOutput,
@@ -27,10 +28,11 @@ export class GameplayStage {
     private readonly worldAudit = new WorldAudit(),
     private readonly causeEffectAudit = new CauseEffectAudit(),
     private readonly graphAudit = new QuestGraphAudit(),
+    private readonly worldContext = new WorldContextNormalizer(),
   ) {}
 
   async adapt(input: AdaptationRequest, agent: GameplayAgentPort): Promise<AdaptationOutput> {
-    const request = this.boundary.input<AdaptationRequest>('adaptation-request', input);
+    const request = this.boundary.input<AdaptationRequest>('adaptation-request', this.worldContext.normalize(input));
     this.storyAudit.validate(request.story);
     const allowed = this.allowedMechanics(request.requestedMechanics);
     const core = this.resolver.resolve({ names: ['gameplay-adaptation'] });

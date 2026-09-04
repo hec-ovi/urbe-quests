@@ -8,6 +8,8 @@ const story = await harness.writeStory(storyInput, storyAgent);
 const quest = await harness.adaptGameplay({ story, world, types }, gameplayAgent);
 ```
 
+Naming world and NPC type JSON is projected onto the closed geometry-free authoring context before an agent sees it. Naming metadata, gender-tagged names, and present transit identities stay intact.
+
 The gameplay port first chooses from a lightweight skill index. The harness then loads `gameplay-adaptation` plus only those mechanic skill bodies. Agent output is accepted only after JSON Schema validation, world-id checks, flow validation, and an exact story-to-step and outcome-to-ending trace.
 
 The skill catalog matches the runtime's 16 target kinds, including staged evidence, release and follow objectives, credentialed access, hacking, sabotage, and authored journeys such as ride-hail. Interactions carry exact target, cast, item, place, prerequisite, completion event, and consequence state. Unsupported names fail before either gameplay adapter runs. See [CONTRACT.md](CONTRACT.md) for schemas and error codes.

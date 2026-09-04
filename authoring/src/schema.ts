@@ -1,3 +1,5 @@
+import type { NamedWorld, NPCTypeSet } from '../../world/types/named-world.js';
+
 export const MECHANICS = [
   'goto',
   'observe',
@@ -18,55 +20,9 @@ export const MECHANICS = [
 ] as const;
 export type Mechanic = (typeof MECHANICS)[number];
 
-export type Tier = 'poor' | 'mid' | 'rich' | 'high_rich';
-export type ParcelType =
-  | 'residential'
-  | 'hotel'
-  | 'offices'
-  | 'corpo'
-  | 'hospital'
-  | 'clinic'
-  | 'police'
-  | 'military'
-  | 'factory'
-  | 'commerce'
-  | 'mall'
-  | 'restaurant'
-  | 'coffee_shop';
-
 export interface WorldContext {
-  world: {
-    meta: { seed: string | number; naming: { theme: string; model?: string; namedAt: string } };
-    districts: { id: string; kind: 'downtown' | 'commercial' | 'residential' | 'industrial' | 'mixed'; tier: Tier; name: string }[];
-    parcels: { id: string; districtId: string; type: ParcelType; tier: Tier; name?: string }[];
-    transit?: {
-      busStops: TransitEntity[];
-      busRoutes: TransitEntity[];
-      trainStations: TransitEntity[];
-      trainLines: TransitEntity[];
-      subwayStations: TransitEntity[];
-      subwayLines: TransitEntity[];
-    };
-  };
-  types: {
-    meta: { theme: string; worldSeed: string | number; createdAt: string; model?: string };
-    types: {
-      type: string;
-      label: string;
-      category: 'resident' | 'worker' | 'vendor' | 'authority' | 'transit' | 'street';
-      boilerplate: string;
-      examples?: string[];
-      grounding: { districts?: string[]; parcelTypes?: ParcelType[]; tiers?: Tier[] };
-      weight: number;
-    }[];
-    namePool: { given: string[]; family: string[] };
-  };
-}
-
-export interface TransitEntity {
-  id: string;
-  districtId?: string;
-  name?: string;
+  world: NamedWorld;
+  types: NPCTypeSet;
 }
 
 export type PlaceTarget =

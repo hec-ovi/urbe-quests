@@ -1,5 +1,7 @@
 # Changelog
 
+0.8.2: Naming world and NPC type output is projected at the authoring and materialization boundaries. Naming metadata, gender-tagged names, and partial transit identities pass through; raw Atlas input receives the local deterministic fallback marker.
+
 0.8.1: NPC dialogue is typed text. Quests supplies scoped context, text replies, and serializable verbatim-tail memory with summarized digests. Engine owns conversation actor lifecycle and accepted-action animation.
 
 0.8.0: quest plans use depth floors with open step, act and branch counts. Tool execution keeps a plan-sized safety round budget. The package test command runs once, runtime Ajv validation is a production dependency, and the simulation contract is v0.9.1.

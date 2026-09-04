@@ -44,12 +44,12 @@ export interface NamedTransitEntity {
 }
 
 export interface NamedTransit {
-  busStops: NamedTransitEntity[];
-  busRoutes: NamedTransitEntity[];
-  trainStations: NamedTransitEntity[];
-  trainLines: NamedTransitEntity[];
-  subwayStations: NamedTransitEntity[];
-  subwayLines: NamedTransitEntity[];
+  busStops?: NamedTransitEntity[];
+  busRoutes?: NamedTransitEntity[];
+  trainStations?: NamedTransitEntity[];
+  trainLines?: NamedTransitEntity[];
+  subwayStations?: NamedTransitEntity[];
+  subwayLines?: NamedTransitEntity[];
 }
 
 export interface NamedWorld {
@@ -59,7 +59,7 @@ export interface NamedWorld {
   };
   districts: NamedDistrict[];
   parcels: NamedParcel[];
-  /** Optional only for compatibility with the early fixtures. Full named worlds carry it. */
+  /** Naming preserves only transit collections present in the source world. */
   transit?: NamedTransit;
 }
 
@@ -75,9 +75,13 @@ export interface NPCType {
   weight: number;
 }
 
+export type NameGender = 'male' | 'female' | 'neutral';
+
 /** Themed personal name pool; names repeat across NPCs by design. Min 20 each. */
 export interface NamePool {
   given: string[];
+  /** Required by Naming output; optional only for Quests' standalone fallback fixtures. */
+  givenByGender?: Record<NameGender, string[]>;
   family: string[];
 }
 
@@ -85,4 +89,12 @@ export interface NPCTypeSet {
   meta: { theme: string; worldSeed: string | number; createdAt: string; model?: string };
   types: NPCType[];
   namePool: NamePool;
+}
+
+/** Atlas fields consumed when Quests materializes before a Naming pass exists. */
+export interface AtlasQuestWorld {
+  meta: { seed: string | number };
+  districts: Array<Omit<NamedDistrict, 'name'> & { name?: string }>;
+  parcels: NamedParcel[];
+  transit?: NamedTransit;
 }
