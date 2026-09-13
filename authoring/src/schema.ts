@@ -1,3 +1,4 @@
+import type { QuestlineDefinition } from '../../flow/schema.js';
 import type { NamedWorld, NPCTypeSet } from '../../world/types/named-world.js';
 
 export const MECHANICS = [
@@ -25,95 +26,8 @@ export interface WorldContext {
   types: NPCTypeSet;
 }
 
-export type PlaceTarget =
-  | { parcelId: string }
-  | { districtId: string }
-  | { stationId: string }
-  | { stopId: string };
-export type StepTarget =
-  | { kind: 'goto'; place: PlaceTarget }
-  | { kind: 'observe'; districtId: string }
-  | { kind: 'talk'; roleId: string; atParcelId?: string }
-  | { kind: 'listen'; roleIds: [string, string]; atParcelId: string }
-  | { kind: 'pickup'; itemId: string }
-  | { kind: 'deliver'; itemId: string; place: PlaceTarget }
-  | { kind: 'steal'; itemId: string; fromRoleId: string }
-  | { kind: 'assassinate'; roleId: string }
-  | { kind: 'work'; atParcelId: string; role: string }
-  | {
-      kind: 'investigation';
-      sceneId: string;
-      evidenceId: string;
-      evidenceItemId: string;
-      subjectRoleIds: string[];
-      place: PlaceTarget;
-      completionFlag: string;
-    }
-  | { kind: 'rescue'; roleId: string; releaseTargetId: string; place: PlaceTarget; completionFlag: string }
-  | {
-      kind: 'escort';
-      roleId: string;
-      routeId: string;
-      mode: 'follow-player' | 'lead-player';
-      from: PlaceTarget;
-      to: PlaceTarget;
-      completionFlag: string;
-    }
-  | { kind: 'access'; accessPointId: string; credentialItemId: string; place: PlaceTarget; completionFlag: string }
-  | { kind: 'hacking'; targetId: string; place: PlaceTarget; completionFlag: string }
-  | { kind: 'sabotage'; targetId: string; place: PlaceTarget; completionFlag: string }
-  | {
-      kind: 'transportation';
-      journeyId: string;
-      mode: 'ride-hail' | 'public-transit' | 'vehicle' | 'animal' | 'aircraft';
-      from: PlaceTarget;
-      to: PlaceTarget;
-      passengerRoleIds: string[];
-      cargoItemIds: string[];
-      completionFlag: string;
-    };
-export type Predicate =
-  | { kind: 'flagSet'; flag: string }
-  | { kind: 'flagNotSet'; flag: string }
-  | { kind: 'stepDone'; stepId: string }
-  | { kind: 'roleAlive'; roleId: string }
-  | { kind: 'roleOnDuty'; roleId: string };
-export type FlagOp =
-  | { kind: 'resign' }
-  | { kind: 'promote'; toParcelId?: string }
-  | { kind: 'die' }
-  | { kind: 'custom'; tag: string };
-export type Effect =
-  | { kind: 'setFlag'; flag: string }
-  | { kind: 'clearFlag'; flag: string }
-  | { kind: 'simFlag'; roleId: string; op: FlagOp };
-export interface QuestStep {
-  stepId: string;
-  actId: string;
-  narrative: { description: string; playerHint: string; stake: string };
-  wantedByRoleId?: string;
-  target: StepTarget;
-  gives: string[];
-  needs: string[];
-  conditions: Predicate[];
-  effects: Effect[];
-  next: { toStepId: string; when: Predicate[] }[];
-  branching: 'parallel' | 'exclusive';
-  endingId?: string;
-}
-export interface QuestlineDefinition {
-  id: string;
-  title: string;
-  premise: string;
-  roles: { roleId: string; npcType: string; persona: string; reservedName?: { given: string; family: string } }[];
-  items: { itemId: string; name: string; description: string; kind: 'device' | 'weapon' | 'document' | 'key' | 'substance' | 'valuable' | 'information'; atParcelId?: string }[];
-  facts: { factId: string; roleId: string; text: string; gateFlag?: string }[];
-  acts: { actId: string; title: string; summary: string }[];
-  steps: QuestStep[];
-  endings: { endingId: string; title: string; epilogue: string }[];
-  flags: string[];
-  entryStepIds: string[];
-}
+export type { PlaceTarget, StepTarget, Predicate, Effect, QuestStep, QuestlineDefinition } from '../../flow/schema.js';
+export type { FlagOp } from '../../world/types/simulation.js';
 
 export interface SkillSummary {
   name: string;

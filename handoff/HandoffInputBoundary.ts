@@ -1,25 +1,24 @@
+import { Ajv2020 } from 'ajv/dist/2020.js';
 import { QuestError } from '../errors.js';
 import type { HandoffInput } from './schema.js';
+import inputSchema from './schema/handoff-input.schema.json' with { type: 'json' };
+import assets from './schema/mission-asset-requests.schema.json' with { type: 'json' };
+import asset from './schema/mission-asset-request.schema.json' with { type: 'json' };
+import items from './schema/mission-item-bindings.schema.json' with { type: 'json' };
+import mechanics from './schema/mechanic-target-bindings.schema.json' with { type: 'json' };
+import capabilities from './schema/host-capabilities.schema.json' with { type: 'json' };
+import investigations from './schema/investigation-binding-slice.schema.json' with { type: 'json' };
+
+const validate = new Ajv2020({ allErrors: true, strict: true,
+  schemas: [assets, asset, items, mechanics, capabilities, investigations],
+}).compile<HandoffInput>(inputSchema);
 
 export class HandoffInputBoundary {
   parse(input: unknown): HandoffInput {
-    if (!isRecord(input)) this.fail('handoff input must be an object');
-    const allowed = new Set(['hostCapabilities', 'investigations', 'mechanicTargetBindings', 'missionAssetRequests', 'missionItemBindings']);
-    if (Object.keys(input).some((key) => !allowed.has(key))) this.fail('handoff input has an unknown property');
-    for (const key of ['investigations', 'mechanicTargetBindings', 'missionAssetRequests', 'missionItemBindings']) {
-      const value = input[key];
-      if (value !== undefined && !Array.isArray(value)) this.fail(`handoff input ${key} must be an array`);
+    if (!validate(input)) {
+      throw new QuestError('E_HANDOFF', 'handoff input does not match its schema',
+        validate.errors?.map(error => `${error.instancePath || '/'} ${error.message}`));
     }
-    if (input.hostCapabilities !== undefined && !isRecord(input.hostCapabilities)) {
-      this.fail('handoff input hostCapabilities must be an object');
-    }
-    return input as HandoffInput;
-  }
-
-  private fail(message: string): never {
-    throw new QuestError('E_HANDOFF', message);
+    return input;
   }
 }
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null && !Array.isArray(value);

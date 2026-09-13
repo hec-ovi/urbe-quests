@@ -1,9 +1,4 @@
-/**
- * The self-questioning pass of translation: one text-only call turns a story
- * arc into a plan (cast, artifacts, acts, steps with whose want drives each)
- * that closes with a manifest of ids. Prose in, prose out, no tools; the
- * manifest is parsed by code, with one repair round when it is missing.
- */
+/** Writes a prose plan and validates its closing ID manifest, with one repair attempt. */
 
 import { promptLoader } from '../prompts.js';
 import type { LLMPort } from '../ports/llm.js';
@@ -31,11 +26,11 @@ const prompt = promptLoader(new URL('./prompts/', import.meta.url));
 
 export class TranslationPlanner {
   async plan(input: PlanInput): Promise<PlanResult> {
-    const body = [
-      renderAssignment(input.assignment),
-      `The arc to translate:\n${input.assignment.arc}`,
-      new WorldBrief(input.world, input.types).render(),
-    ].join('\n\n');
+    const body = prompt('plan-input.md', {
+      assignment: renderAssignment(input.assignment),
+      arc: input.assignment.arc,
+      world: new WorldBrief(input.world, input.types).render(),
+    }).trim();
     const { value, raw } = await completeWithRepair({
       llm: input.llm,
       system: prompt('translate-plan.md'),

@@ -4,26 +4,28 @@
  * persona is layered on; nothing here is invented.
  */
 
+import { promptLoader } from '../prompts.js';
 import type { NamedWorld } from '../world/types/named-world.js';
 import type { NPCInstance } from '../world/types/simulation.js';
 import { clock, dayName } from './time.js';
+
+const prompt = promptLoader(new URL('./prompts/', import.meta.url));
 
 export class BackgroundRenderer {
   constructor(private readonly world: NamedWorld) {}
 
   render(npc: NPCInstance): string {
     const lines: string[] = [];
-    lines.push(`You are ${npc.name.given} ${npc.name.family}.`);
-    lines.push(`You live at ${this.place(npc.home.parcelId)}, unit ${npc.home.unit}.`);
+    lines.push(prompt('background.md#identity', { ...npc.name, home: this.place(npc.home.parcelId), unit: npc.home.unit }));
     if (npc.job) {
       const days = this.days(npc.job.shift.days);
       const hours = `${clock(npc.job.shift.startMin)} to ${clock(npc.job.shift.endMin)}`;
-      lines.push(`You work at ${this.place(npc.job.parcelId)} as ${npc.job.role.replace(/_/g, ' ')}, ${days} from ${hours}.`);
+      lines.push(prompt('background.md#job', { place: this.place(npc.job.parcelId), role: npc.job.role.replace(/_/g, ' '), days, hours }));
     } else {
-      lines.push('You have no job at the moment.');
+      lines.push(prompt('background.md#jobless'));
     }
     for (const member of npc.family) {
-      lines.push(`Your ${member.relation} is ${member.name.given} ${member.name.family}.`);
+      lines.push(prompt('background.md#family', { ...member.name, relation: member.relation }));
     }
     const leisure = new Set(
       npc.routine
@@ -31,7 +33,7 @@ export class BackgroundRenderer {
         .map((e) => this.place(e.place.id)),
     );
     if (leisure.size > 0) {
-      lines.push(`In your free time you tend to be at ${[...leisure].join(', ')}.`);
+      lines.push(prompt('background.md#leisure', { places: [...leisure].join(', ') }));
     }
     return lines.join('\n');
   }

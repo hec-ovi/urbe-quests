@@ -1,6 +1,6 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, dirname, resolve } from 'node:path';
-import type { HandoffBundle, HandoffInput } from '../../handoff/schema.js';
+import type { HandoffBundle } from '../../handoff/schema.js';
 
 export const HANDOFF_FILES = Object.freeze({
   hostCapabilities: 'host-capabilities.json',

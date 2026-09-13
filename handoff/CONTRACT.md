@@ -5,7 +5,7 @@ Purpose: projects validated quest definitions, physical assets, interaction anch
 ## In
 
 - `new EngineHandoff().assemble(questlines, input)` ([EngineHandoff.ts](EngineHandoff.ts)). `questlines` is the exact set from [../creation/schema/questline-set.schema.json](../creation/schema/questline-set.schema.json).
-- `input` ([schema/handoff-input.schema.json](schema/handoff-input.schema.json)) carries engine investigation v1.1 requests, mission asset create requests, quest item bindings, fixed mechanic target bindings, and host capabilities. Every property is optional when its mechanic is absent.
+- `input` ([schema/handoff-input.schema.json](schema/handoff-input.schema.json)) carries engine investigation v1.1 requests, mission asset create requests, quest item bindings, fixed mechanic target bindings, and host capabilities. Every property is optional when its mechanic is absent. The complete consumed input is schema-validated before semantic audits.
 - Investigation requests stay owned by engine investigation and must already satisfy its v1.1 scene-request schema. This box consumes and validates the exact binding slice in [schema/investigation-binding-slice.schema.json](schema/investigation-binding-slice.schema.json): quest, step, scene, evidence, information item, parcel or district, completion action, location, and evidence prerequisite graph.
 - Mission asset create requests use the consumed v1.0 shape in [schema/mission-asset-request.schema.json](schema/mission-asset-request.schema.json). Requests remain separate from item bindings. The binding shape is exactly `{ questId, itemId, assetId }` ([schema/mission-item-bindings.schema.json](schema/mission-item-bindings.schema.json)).
 - Fixed target bindings use [schema/mechanic-target-bindings.schema.json](schema/mechanic-target-bindings.schema.json). Rescue binds `{ questId, stepId, releaseTargetId, assetId, interactionId }`, where `interactionId` is `open` or `use`. Access uses `accessPointId` and `access`; hacking and sabotage use `targetId` and `hack` or `sabotage`. The referenced request must describe a fixed asset and declare that interaction anchor. See [fixtures/engine-public-transit.input.json](fixtures/engine-public-transit.input.json).
@@ -43,5 +43,6 @@ The CLI writer emits `questlines.json`, `objectives.json`, `investigations.json`
 ## Depends on
 
 - ../flow questline and questline-set contracts.
+- Ajv, schema validation at the input boundary.
 - Engine investigation v1.1, through its scene-request contract.
 - Engine mission-assets v1.0, through its create-request contract.

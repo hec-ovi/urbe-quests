@@ -1,64 +1,29 @@
-# urbe-quests
+# urbe-quests 0.8.3
 
-Story authoring and deterministic quest flow for generated cities.
-
-One workflow writes a film-style story, plans a main quest and related situations, then builds typed quest graphs. A second public workflow keeps story writing and gameplay adaptation as separate agent calls. Its GBrain-style resolver loads a small skill index first and only the selected mechanic skills afterward.
-
-Quest state contains completed steps, active steps, flags, and an ending. Availability, inventory, NPC location, and route guidance are derived from the definition, cast, simulation, and current time. Untrusted saves are checked against the graph before restoration.
-
-## Run
+Writes a story from city context, adapts it to typed gameplay, and runs quest rules in code. Models are injected per creative stage. Engine receives definitions, objectives, asset requests and exact interaction bindings.
 
 ```sh
 npm install
 npm test
 npm run typecheck
 npm run build
-
-npm run sample -- "create a dark cynical sci fi cyberpunk story" cyberpunk
-npm run replay -- creation/samples/<name>/recording.json <name>
-npm run materialize -- <recording.json> <profile> <atlas-or-named-world.json> <npc-types.json> <questlines.json> [<handoff-input.json>]
-npm run bundle -- creation/samples/<name> [<questlines.json>] [<handoff-input.json>]
 ```
 
-The live sample uses an OpenAI-compatible endpoint through `LLM_BASE_URL`, `LLM_MODEL`, and optional `LLM_API_KEY`. Replay uses recorded text and tool calls, so it needs no model. Materialize accepts unmodified Naming output, preserves its metadata and gender-tagged name pool, and projects the fields Quests consumes. Raw Atlas input has no naming metadata; materialize fills its missing district labels and records the local deterministic `derived-from-atlas` marker. The local fixtures and stub simulation keep the box runnable without the other repositories.
+Start with [SKILL.md](SKILL.md) for a copyable library call, [CONTRACT.md](CONTRACT.md) for the API and [docs/INDEX.md](docs/INDEX.md) for individual responsibilities.
 
-## Authoring
+`AuthoringHarness.writeStory` writes narrative only. `adaptGameplay` receives the completed story, named places and NPC types, selects mechanic skills, and checks the resulting definition and story trace. `QuestlineCreation.run` provides the text script, plan and tool-build workflow with main and side quests. Both paths remain public; canonical orchestration and Naming integration are [open proposals](docs/ISSUES.md).
 
-The closed mechanic set is:
+Node callers import `dist/index.js`; browser hosts import `dist/runtime.js`. Runtime completion requires an exact accepted event and available target. Inventory, objective location and route guidance are derived from state. Dialogue supplies scoped facts, text replies and serializable memory; the host controls the visible person and their routine.
 
-`goto`, `observe`, `talk`, `listen`, `pickup`, `deliver`, `steal`, `assassinate`, `work`, `investigation`, `rescue`, `escort`, `access`, `hacking`, `sabotage`, `transportation`.
+## CLI
 
-Every step carries its narrative reason, player hint, stake, prerequisites, effects, transitions, and exact mechanic target. Roles bind NPC types, not instance ids. Places bind one known parcel, district, station, or stop. The authoring and builder boundaries reject unknown roles, items, interactions, places, branches, flags, and endings.
+```sh
+npm run sample -- "A debt threatens a night-shift worker" local-story
+npm run replay -- creation/samples/urbe-small/recording.json local-replay
+npm run materialize -- <recording.json> <profile> <atlas-or-named-world.json> <npc-types.json> <questlines.json> [<handoff-input.json>]
+npm run bundle -- <sample-directory> [<questlines.json>] [<handoff-input.json>]
+```
 
-Story minimums are floors. Situation, step, act, and branch totals stay open, and model responses carry no token, word, or character cap. The tool loop alone has a plan-sized safety round budget.
+The live sample streams text and tool calls without output caps. It takes `LLM_BASE_URL` (default `http://localhost:8080/v1`), `LLM_MODEL` (default first listed model), and optional `LLM_API_KEY`. Replay and materialize run without a model. Named input retains its metadata; raw Atlas input receives deterministic fallback district labels.
 
-The authoring vocabulary supports five transportation modes. A runnable engine bundle accepts only modes declared by its host capability profile. The current Engine fixture declares `public-transit`.
-
-`AuthoringHarness.writeStory` returns story only. `AuthoringHarness.adaptGameplay` receives that completed story unchanged, selects compatible mechanic skills, and returns a questline with cause-effect traces. Full inputs and outputs are in [authoring/CONTRACT.md](authoring/CONTRACT.md).
-
-## Runtime
-
-`QuestlineRuntime` advances only exact completion events. It exposes active steps, inventory, availability, schedule windows, the current objective place, and route-ready guidance. Parcel, station, and stop targets become route destinations; district areas, street edges, moving routes, and unavailable targets return a closed reason.
-
-The browser-safe entry is `runtime.ts`. The full entry is `index.ts`.
-
-## Engine handoff
-
-Materialize and bundle write this file set beside the requested questlines path:
-
-- `questlines.json`: main quest first, then side quests.
-- `objectives.json`: ordered `{ questId, stepId, action }` projections. `action` is the exact typed target.
-- `investigations.json`: engine investigation v1.1 scene requests.
-- `mechanic-target-bindings.json`: rescue, access, hacking, and sabotage target ids mapped to fixed mission assets and exact interaction anchors.
-- `mission-assets.json`: engine mission asset v1.0 create requests.
-- `mission-item-bindings.json`: explicit `{ questId, itemId, assetId }` associations.
-- `host-capabilities.json`: transportation modes the target host can run.
-- `quest-bundle.json`: filenames and counts.
-
-The handoff input uses [handoff/schema/handoff-input.schema.json](handoff/schema/handoff-input.schema.json); [handoff/fixtures/engine-public-transit.input.json](handoff/fixtures/engine-public-transit.input.json) is a complete fixed-target example. Missing catalogs are written as empty arrays. An investigation or fixed mechanic step without its exact binding fails. A transportation step whose mode is absent from the host profile also fails.
-
-Quests supplies scoped NPC context and one text reply for each typed player line, and it can serialize dialog memory. Engine keeps the exact visible NPC in place, pauses and resumes its routine as conversation opens and closes, and coordinates standing or seated speaker and listener gestures. Quest action animation begins only after Engine accepts the exact action; Engine owns completion, interruption, and routine resumption. Quest definitions and objective projections contain none of that transient presentation state.
-
-## Contracts
-
-Start with [docs/INDEX.md](docs/INDEX.md) and [CONTRACT.md](CONTRACT.md). Each inner box has its own contract. Ready quest sets for small, medium, and large fixture cities live under `creation/samples/games/`.
+Engine bundle **1.1** has [eight stable JSON files](handoff/CONTRACT.md#out). The host declares supported transportation modes. Quests validates semantic bindings; Engine validates physical placement and playability. [Creation](creation/CONTRACT.md) documents CLI defaults and partial side results.

@@ -1,8 +1,4 @@
-/**
- * Step three of questline creation: from the finished script, one text-only
- * call writes related situations, each a small arc with its own presentation,
- * development, conflict and resolution. Each becomes a side quest.
- */
+/** Writes related side-story situations from a completed script. */
 
 import { promptLoader } from '../prompts.js';
 import type { LLMPort } from '../ports/llm.js';
@@ -28,11 +24,11 @@ const prompt = promptLoader(new URL('./prompts/', import.meta.url));
 export class SituationsPass {
   async run(input: SituationsPassInput): Promise<SituationsPassResult> {
     const minimums = { ...DEFAULT_SITUATION_MINIMUMS, ...input.minimums };
-    const brief = [
-      `The story:\n\n${renderScript(input.script)}`,
-      `The city's character:\n${input.world.meta.naming.theme}`,
-      new WorldBrief(input.world, input.types).render(),
-    ].join('\n\n');
+    const brief = prompt('pass-input.md#situations', {
+      story: renderScript(input.script),
+      theme: input.world.meta.naming.theme,
+      world: new WorldBrief(input.world, input.types).render(),
+    });
 
     const { value, raw } = await completeWithRepair({
       llm: input.llm,

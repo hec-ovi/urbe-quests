@@ -1,10 +1,4 @@
-/**
- * Mutable questline draft behind the agent-facing tools, bounded by the
- * plan's manifest: only planned ids are accepted, every reference is checked
- * against the manifest the moment it is made, and finish reports what is
- * still missing before it validates. Problems come back as messages the
- * agent corrects; nothing here aborts the loop.
- */
+/** Collects planned pieces, checks their references and validates the completed definition. */
 
 import { FlowValidator } from '../flow/validate.js';
 import type {
@@ -34,7 +28,7 @@ export class QuestlineDraft {
 
   constructor(
     private readonly manifest: PlanManifest,
-    private readonly audit?: DraftAudit,
+    private readonly audit: DraftAudit,
   ) {}
 
   create(args: { id: string; title: string; premise: string }): string {
@@ -58,7 +52,7 @@ export class QuestlineDraft {
   addRole(role: QuestRole): string {
     const def = this.current();
     this.accept('roles', role.roleId, def.roles.map((r) => r.roleId));
-    this.rejectAudit(this.audit?.roleProblems(role) ?? []);
+    this.rejectAudit(this.audit.roleProblems(role));
     def.roles.push(role);
     return `role ${role.roleId} added; ${this.status()}`;
   }
@@ -66,7 +60,7 @@ export class QuestlineDraft {
   addItem(item: QuestItem): string {
     const def = this.current();
     this.accept('items', item.itemId, def.items.map((i) => i.itemId));
-    this.rejectAudit(this.audit?.itemProblems(item) ?? []);
+    this.rejectAudit(this.audit.itemProblems(item));
     def.items.push(item);
     return `item ${item.itemId} added; ${this.status()}`;
   }
@@ -100,7 +94,7 @@ export class QuestlineDraft {
     const def = this.current();
     this.accept('steps', step.stepId, def.steps.map((s) => s.stepId));
     const { entry, ...rest } = step;
-    const problems = [...this.stepProblems(rest), ...(this.audit?.stepProblems(rest) ?? [])];
+    const problems = [...this.stepProblems(rest), ...this.audit.stepProblems(rest)];
     if (problems.length > 0) throw new DraftError(`step ${rest.stepId} not added: ${problems.join('; ')}`);
     for (const p of [...rest.conditions, ...rest.next.flatMap((e) => e.when)]) {
       if (p.kind === 'flagSet' || p.kind === 'flagNotSet') this.declareFlag(p.flag);

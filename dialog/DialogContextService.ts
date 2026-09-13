@@ -1,10 +1,4 @@
-/**
- * Assembles an NPC's dialog context as cache-ordered layers: shared world
- * rules, shared type boilerplate, the instance's deterministic background plus
- * personas, flag-gated quest knowledge, memory digest, then the volatile now
- * line and recent turns. A fact outside these layers is simply not in the
- * prompt, so it cannot leak; deflection is the character genuinely not knowing.
- */
+/** Builds per-person context from Simulation, quest facts and recorded conversation. */
 
 import { QuestError } from '../errors.js';
 import { promptLoader } from '../prompts.js';
@@ -25,7 +19,8 @@ export interface DialogContextServiceInput {
   memory?: MemoryStoreOptions;
 }
 
-const SYSTEM_PROMPT = promptLoader(new URL('./prompts/', import.meta.url))('dialog-system.md');
+const prompt = promptLoader(new URL('./prompts/', import.meta.url));
+const SYSTEM_PROMPT = prompt('dialog-system.md');
 
 export class DialogContextService {
   private readonly world: NamedWorld;
@@ -66,7 +61,7 @@ export class DialogContextService {
     if (quest.length > 0) segments.push({ id: 'quest', text: quest, shared: false });
     const memory = this.memoryStore.snapshot(npcId);
     if (memory.digest.length > 0) {
-      segments.push({ id: 'memory', text: `You remember:\n${memory.digest.map((n) => `- ${n}`).join('\n')}`, shared: false });
+      segments.push({ id: 'memory', text: prompt('context.md#memory', { notes: memory.digest.map((n) => `- ${n}`).join('\n') }), shared: false });
     }
     segments.push({ id: 'turns', text: this.renderNow(npcId, timeMin, memory.turns), shared: false });
     return { npcId, segments };
@@ -87,7 +82,7 @@ export class DialogContextService {
   private renderWorld(): string {
     if (this.worldSegment === undefined) {
       const districts = this.world.districts.map((d) => d.name).join(', ');
-      this.worldSegment = `${SYSTEM_PROMPT}\nThe city and its districts: ${districts}.\nIts character: ${this.world.meta.naming.theme}`;
+      this.worldSegment = prompt('context.md#world', { system: SYSTEM_PROMPT, districts, theme: this.world.meta.naming.theme });
     }
     return this.worldSegment;
   }
@@ -105,7 +100,7 @@ export class DialogContextService {
     const parts = [this.background.render(this.sim.getNPC(npcId))];
     for (const runtime of this.questlines) {
       for (const role of runtime.def.roles) {
-        if (runtime.cast[role.roleId] === npcId) parts.push(`Who you are underneath: ${role.persona}`);
+        if (runtime.cast[role.roleId] === npcId) parts.push(prompt('context.md#persona', { persona: role.persona }));
       }
     }
     return parts.join('\n');
@@ -134,19 +129,20 @@ export class DialogContextService {
       if (ending !== undefined && Object.values(runtime.cast).includes(npcId)) endings.push(`- ${ending.epilogue}`);
     }
     const blocks: string[] = [];
-    if (known.length > 0) blocks.push(`Things you know and may speak about when it fits:\n${known.join('\n')}`);
-    if (wants.length > 0) blocks.push(`What you want from the player right now, and what it means to you:\n${wants.join('\n')}`);
-    if (endings.length > 0) blocks.push(`How it ended, as you lived it:\n${endings.join('\n')}`);
+    if (known.length > 0) blocks.push(prompt('context.md#known', { facts: known.join('\n') }));
+    if (wants.length > 0) blocks.push(prompt('context.md#wants', { wants: wants.join('\n') }));
+    if (endings.length > 0) blocks.push(prompt('context.md#endings', { endings: endings.join('\n') }));
     return blocks.join('\n');
   }
 
   private renderNow(npcId: string, timeMin: number, turns: DialogTurn[]): string {
     const behavior = this.sim.behaviorAt(npcId, timeMin);
     const day = dayName(Math.floor(timeMin / 1440) % 7);
-    const lines = [`It is ${day} ${clock(timeMin % 1440)}; right now you are ${behavior.activity.replace('_', ' ')}.`];
+    const lines = [prompt('context.md#now', { day, time: clock(timeMin % 1440), activity: behavior.activity.replace('_', ' ') })];
     if (turns.length > 0) {
-      lines.push('The conversation so far:');
-      for (const turn of turns) lines.push(`${turn.speaker === 'player' ? 'Player' : 'You'}: ${turn.text}`);
+      lines.push(prompt('context.md#conversation', {
+        turns: turns.map(turn => `${turn.speaker === 'player' ? 'Player' : 'You'}: ${turn.text}`).join('\n'),
+      }));
     }
     return lines.join('\n');
   }

@@ -1,17 +1,4 @@
-/**
- * Produces a committed sample: runs QuestlineCreation against an
- * OpenAI-compatible chat endpoint and writes every stage's output under
- * creation/samples/<name>/ the moment it lands, so a run that stops late
- * keeps what it made. Progress goes to stderr with elapsed seconds.
- *
- *   npm run sample -- "create a dark cynical sci fi cyberpunk story" cyberpunk
- *
- * Args: "<creation prompt>" <sample name> [<named world json> <npc types json>];
- * without the two paths the neon-bay fixture is the world.
- * Env: LLM_BASE_URL (default http://localhost:8080/v1), LLM_API_KEY (bearer token
- * for a hosted server), LLM_MODEL (default: the first model the server lists).
- * No output caps are sent; each build's round budget comes from its plan.
- */
+/** Runs live story creation and writes artifacts as stages complete. */
 
 import { readFileSync } from 'node:fs';
 import { basename } from 'node:path';

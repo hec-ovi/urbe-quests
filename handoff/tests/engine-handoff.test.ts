@@ -3,7 +3,7 @@ import { Ajv2020 } from 'ajv/dist/2020.js';
 import { mkdtempSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import questlinesFixture from '../../creation/samples/games/small/questlines.json' with { type: 'json' };
+import adaptationFixture from '../../authoring/fixtures/adaptation.json' with { type: 'json' };
 import { HANDOFF_FILES, writeEngineHandoff } from '../../creation/samples/EngineHandoffWriter.js';
 import type { QuestlineDefinition } from '../../flow/schema.js';
 import questlineSchema from '../../flow/schema/questline.schema.json' with { type: 'json' };
@@ -19,7 +19,7 @@ import bundleSchema from '../schema/quest-bundle.schema.json' with { type: 'json
 import handoffInputSchema from '../schema/handoff-input.schema.json' with { type: 'json' };
 import investigationSliceSchema from '../schema/investigation-binding-slice.schema.json' with { type: 'json' };
 
-const fixtureQuestlines = questlinesFixture as QuestlineDefinition[];
+const fixtureQuestlines = [adaptationFixture.definition] as QuestlineDefinition[];
 
 function investigationQuest(): QuestlineDefinition {
   return {
@@ -162,6 +162,8 @@ describe('EngineHandoff', () => {
 
   it('fails closed on incompatible asset requests and invalid item bindings', () => {
     const handoff = new EngineHandoff();
+    expect(() => handoff.assemble(fixtureQuestlines, { missionAssetRequests: [{ dimensions: null }] }))
+      .toThrowError(expect.objectContaining({ code: 'E_HANDOFF' }));
     const incompatible = assetRequest();
     incompatible.requiredInteractions = ['hack'];
     expect(() => handoff.assemble(fixtureQuestlines, { missionAssetRequests: [incompatible] })).toThrowError(/incompatible interactions/);

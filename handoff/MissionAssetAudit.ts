@@ -41,7 +41,6 @@ export class MissionAssetAudit {
     const seenBindings = new Set<string>();
     const embeddedAssetIds = investigationAssetIds(investigations);
     for (const binding of bindings) {
-      if (!isExactBinding(binding)) this.fail('mission item binding does not match {questId,itemId,assetId}');
       const key = `${binding.questId}\u0000${binding.itemId}`;
       if (seenBindings.has(key)) this.fail(`duplicate mission item binding ${binding.questId}/${binding.itemId}`);
       seenBindings.add(key);
@@ -56,45 +55,31 @@ export class MissionAssetAudit {
   }
 
   private validateRequest(request: MissionAssetCreateRequest): void {
-    const keys = ['assetId', 'clearance', 'contractVersion', 'dimensions', 'family', 'materials', 'purpose', 'requiredInteractions', 'seed'];
-    if (!isRecord(request) || !sameKeys(request, keys) || request.contractVersion !== '1.0') this.fail('mission asset request does not match version 1.0');
-    if (!/^[a-z0-9][a-z0-9._:-]{1,95}$/.test(request.assetId) || request.purpose.length === 0 || request.purpose.length > 240) {
-      this.fail(`mission asset ${String(request.assetId)} has invalid identity or purpose`);
-    }
     const rule = RULES[request.family];
-    if (rule === undefined) this.fail(`mission asset ${request.assetId} has unknown family ${String(request.family)}`);
     const dimensions = [request.dimensions?.width, request.dimensions?.height, request.dimensions?.depth];
-    if (!isExactNumbers(request.dimensions, ['width', 'height', 'depth']) || dimensions.some((value, index) => value! < rule.min[index]! || value! > rule.max[index]!)) {
+    if (dimensions.some((value, index) => value! < rule.min[index]! || value! > rule.max[index]!)) {
       this.fail(`mission asset ${request.assetId} dimensions do not fit ${request.family}`);
-    }
-    if (!Array.isArray(request.requiredInteractions) || request.requiredInteractions.length === 0 || new Set(request.requiredInteractions).size !== request.requiredInteractions.length) {
-      this.fail(`mission asset ${request.assetId} needs unique interactions`);
     }
     const invalidInteractions = request.requiredInteractions.filter((interaction) => !rule.interactions.includes(interaction));
     if (invalidInteractions.length > 0 || (request.requiredInteractions.includes('close') && !request.requiredInteractions.includes('open'))) {
       this.fail(`mission asset ${request.assetId} has incompatible interactions`);
     }
-    if (!Array.isArray(request.materials) || request.materials.length < 1 || request.materials.length > 6) this.fail(`mission asset ${request.assetId} needs materials`);
     const slots = new Set<string>();
     for (const material of request.materials) {
-      if (!isRecord(material) || !sameKeys(material, ['key', 'slot', 'variantId']) || !rule.slots.includes(material.slot as never)) {
+      if (!rule.slots.includes(material.slot as never)) {
         this.fail(`mission asset ${request.assetId} has an incompatible material slot`);
       }
       if (slots.has(material.slot)) this.fail(`mission asset ${request.assetId} repeats material slot ${material.slot}`);
       slots.add(material.slot);
-      if (!/^[a-z0-9_-]+\/[a-z0-9_-]+\/[a-z0-9_-]+$/.test(material.key) || !/^[a-z0-9_-]+(:[a-z0-9_-]+)?$/.test(material.variantId)) {
-        this.fail(`mission asset ${request.assetId} has an invalid material reference`);
-      }
+
     }
     for (const slot of rule.requiredSlots ?? ['surface']) if (!slots.has(slot)) this.fail(`mission asset ${request.assetId} requires material slot ${slot}`);
-    if (!isExactNumbers(request.clearance, ['approachDepth', 'sideMargin', 'overhead'])) this.fail(`mission asset ${request.assetId} has invalid clearance`);
     const minimumApproach = request.requiredInteractions.includes('sit') ? 0.9 :
       request.requiredInteractions.includes('open') && ['cabinet', 'evidence-container'].includes(request.family)
         ? Math.max(0.75, Math.min(2, request.dimensions.depth)) : 0.75;
     if (request.clearance.approachDepth < minimumApproach || request.clearance.approachDepth > 4 || request.clearance.sideMargin < 0.2 || request.clearance.sideMargin > 2 || request.clearance.overhead < 0.1 || request.clearance.overhead > 3) {
       this.fail(`mission asset ${request.assetId} clearance is too small or outside the contract`);
     }
-    if (!Number.isInteger(request.seed) || request.seed < 0 || request.seed > 4294967295) this.fail(`mission asset ${request.assetId} has invalid seed`);
   }
 
   private fail(message: string): never {
@@ -113,14 +98,4 @@ function investigationAssetIds(investigations: InvestigationSceneRequest[]): Set
   return ids;
 }
 
-function isExactBinding(value: unknown): value is MissionItemBinding {
-  return isRecord(value) && sameKeys(value, ['assetId', 'itemId', 'questId']) &&
-    ['assetId', 'itemId', 'questId'].every((key) => typeof value[key] === 'string' && value[key].length > 0);
-}
-
-function isExactNumbers(value: unknown, keys: string[]): value is Record<string, number> {
-  return isRecord(value) && sameKeys(value, [...keys].sort()) && keys.every((key) => typeof value[key] === 'number' && Number.isFinite(value[key]));
-}
-
-const isRecord = (value: unknown): value is Record<string, any> => typeof value === 'object' && value !== null && !Array.isArray(value);
-const sameKeys = (value: object, expected: string[]) => JSON.stringify(Object.keys(value).sort()) === JSON.stringify(expected);
+const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);

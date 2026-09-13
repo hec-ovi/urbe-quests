@@ -1,14 +1,17 @@
-# Box map
+# Quests map
 
-- root: CONTRACT.md, the coupling surface for Engine. Depends on Atlas, Naming, Simulation, and Engine investigation and mission-asset contracts.
-- authoring/: GBrain-style progressive skill resolver and separate story-writing and gameplay-adaptation stages. Projects Naming output onto a closed geometry-free context, loads a lightweight index first, then selected mechanic skills; validates exact cast, parcel, district, station, stop, interaction, prerequisite, consequence, flow, and cause-effect references.
-- world/: consumed dependency surface: one Naming or Atlas normalizer, a local marker only for raw Atlas, compatible Naming consumer types, consumed Simulation types, partial transit identities without geometry, fixture named worlds (two eras), deterministic stub simulation.
-- flow/: questline schema and deterministic runtime: typed step DAG, branches, endings, validated saved state, exact mechanic completion events, and route-ready parcel, station, or stop guidance. No LLM.
-- story/: text-only story passes: the film script from the creation prompt (characters, four movements of passages, enforced minimums) and the side situations written from it. Fixture story. Depends on world, ports.
-- builder/: translation of a story arc into a questline: text plan with an id manifest, agent tool build over all 16 mechanics, immediate world-target checks, and cast resolution by type. Depends on flow, world, story, ports.
-- creation/: the creation workflow: script, main translation, situations and side translations from one prompt with one port per stage; progress events per stage and build round. Sample harness, deterministic materialization, and stable engine handoff files. Depends on story, builder, world, ports, handoff.
-- handoff/: validates investigation, mission item, fixed mechanic asset-anchor, and host transport capability bindings; projects every exact objective action; writes engine bundle v1.1. Depends on flow, engine investigation v1.1, engine mission-assets v1.0.
-- dialog/: NPC dialog context: scoped fact store, flag-gated quest knowledge, active wants and ending reactions, verbatim-tail memory with summarized digests, cache-ordered context segments, deflection. Depends on world, flow, ports.
-- ports/: injected LLM and agent interfaces shared by story, builder, dialog. prompts.ts at the root loads every box's prompt files.
+[Public contract](../CONTRACT.md), [caller skill](../SKILL.md), [integration proposals](ISSUES.md).
 
-Dependency edges: authoring -> flow, world, injected agent ports; creation -> story, builder, world, ports, handoff writer; handoff -> flow, engine investigation and mission asset contracts; builder -> flow, world, story, ports; story -> world, ports; dialog -> world, flow, ports; flow -> world; world -> Atlas, Naming, Simulation contracts.
+| Folder | Purpose | Depends on | Input / output schemas |
+| --- | --- | --- | --- |
+| [authoring](../authoring/CONTRACT.md) | Story agent, mechanic resolver and gameplay agent | world, flow, injected agents | [requests and responses](../authoring/src/schema.ts), [JSON schemas](../authoring/schema/) |
+| [world](../world/CONTRACT.md) | World projections and standalone Simulation | Atlas, Naming, Simulation contracts | [world/types](../world/types/named-world.ts), [Simulation](../world/types/simulation.ts) |
+| [story](../story/CONTRACT.md) | Text script and side situations | world, ports | [requests](../story/CONTRACT.md#in), [results](../story/schema.ts) |
+| [builder](../builder/CONTRACT.md) | Plans, tool builds and type-based casting | flow, story, world, ports | [requests](../builder/CONTRACT.md#in), [results](../builder/schema.ts) |
+| [creation](../creation/CONTRACT.md) | Main/side orchestration and CLI file writers | story, builder, world, ports, handoff | [creation](../creation/schema.ts), [quest set](../creation/schema/questline-set.schema.json) |
+| [flow](../flow/CONTRACT.md) | Validates definitions and runs accepted events | world | [definition](../flow/schema/questline.schema.json), [event](../flow/schema/player-event.schema.json), [save](../flow/schema/questline-state.schema.json), [guidance](../flow/schema/step-guidance.schema.json) |
+| [handoff](../handoff/CONTRACT.md) | Checks semantic asset/interaction bindings | flow, Engine investigation/mission-asset contracts | [input](../handoff/schema/handoff-input.schema.json), [bundle](../handoff/schema.ts), [manifest](../handoff/schema/quest-bundle.schema.json) |
+| [dialog](../dialog/CONTRACT.md) | Scoped context, replies and memory | world, flow, ports | [inputs](../dialog/CONTRACT.md#in), [context/memory](../dialog/schema.ts) |
+| ports | Injected text and tool calls | none | [requests/replies](../ports/llm.ts) |
+
+`index.ts` is the Node facade; `runtime.ts` is the browser facade. Prompt Markdown lives beside its owner; `prompts.ts` loads it. CLI output is local generated data. Raw requirements and verification records under `docs/` are ignored.

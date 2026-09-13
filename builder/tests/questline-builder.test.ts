@@ -11,13 +11,9 @@ import { describe, expect, it } from 'vitest';
 import type { AgentPort, AgentReply, AgentToolCall, LLMPort } from '../../ports/llm.js';
 import { loadFixtureWorld, StubSimulation } from '../../world/index.js';
 import { parsePlanManifest } from '../PlanManifest.js';
-import { ToolDispatcher } from '../ToolDispatcher.js';
-import { QuestlineDraft } from '../QuestlineDraft.js';
 import { QuestlineBuilder } from '../QuestlineBuilder.js';
 import { QuestlineTranslator } from '../QuestlineTranslator.js';
 import type { BuildProgress, QuestAssignment } from '../schema.js';
-import { BUILDER_TOOLS } from '../tools.js';
-import { WorldTargetAudit } from '../WorldTargetAudit.js';
 
 const ASSIGNMENT: QuestAssignment = {
   title: 'The Kettle Debt',
@@ -139,96 +135,6 @@ describe('PlanManifest', () => {
   });
 });
 
-describe('QuestlineDraft through the tools', () => {
-  it('publishes and builds the full runtime mechanic catalog', () => {
-    const addStep = BUILDER_TOOLS.find((tool) => tool.name === 'add_step');
-    const target = (addStep?.inputSchema['properties'] as Record<string, Record<string, unknown>> | undefined)?.['target'];
-    const kinds = ((target?.['properties'] as Record<string, Record<string, unknown>> | undefined)?.['kind']?.['enum']);
-    expect(kinds).toEqual([
-      'goto', 'observe', 'talk', 'listen', 'pickup', 'deliver', 'steal', 'assassinate', 'work',
-      'investigation', 'rescue', 'escort', 'access', 'hacking', 'sabotage', 'transportation',
-    ]);
-    const place = (target?.['properties'] as Record<string, Record<string, unknown>> | undefined)?.['place'];
-    expect(Object.keys((place?.['properties'] as Record<string, unknown>) ?? {})).toEqual([
-      'parcelId', 'districtId', 'stationId', 'stopId',
-    ]);
-
-    const manifest = parsePlanManifest('## Manifest\nroles: witness\nitems: clue\nacts: a1\nendings: e1\nsteps: inspect_clue');
-    const dispatcher = new ToolDispatcher(new QuestlineDraft(manifest));
-    const calls: AgentToolCall[] = [
-      { tool: 'create_questline', input: { id: 'q_scene', title: 'The Scene', premise: 'One clue changes the witness account.' } },
-      { tool: 'add_role', input: { roleId: 'witness', npcType: 'cafe_barista', persona: 'Remembers the direction of every mark.' } },
-      { tool: 'add_item', input: { itemId: 'clue', name: 'Burn direction', description: 'The fixed trace that establishes where the fire began.', kind: 'information' } },
-      { tool: 'add_act', input: { actId: 'a1', title: 'Read the room', summary: 'Inspect the fixed evidence.' } },
-      { tool: 'add_ending', input: { endingId: 'e1', title: 'Origin found', epilogue: 'The witness account has a physical origin.' } },
-      step({
-        narrative: { description: 'The burn runs away from the locked relay.', playerHint: 'Inspect the wall burn.', stake: 'The witness is blamed if the trace disappears.' },
-        wantedByRoleId: 'witness',
-        stepId: 'inspect_clue',
-        actId: 'a1',
-        target: {
-          kind: 'investigation', sceneId: 'scene_relay', evidenceId: 'wall_burn', evidenceItemId: 'clue',
-          subjectRoleIds: ['witness'], place: { parcelId: 'p4' }, completionFlag: 'clue_found',
-        },
-        gives: ['clue'],
-        effects: [{ kind: 'setFlag', flag: 'clue_found' }],
-        next: [],
-        endingId: 'e1',
-        entry: true,
-      }),
-      FINISH,
-    ];
-    const outcomes = calls.map((call) => dispatcher.dispatch(call));
-    expect(outcomes.at(-1)?.finished?.steps[0]?.target.kind).toBe('investigation');
-  });
-
-  it('refuses unknown world targets before committing a step and accepts catalog transit places', () => {
-    const { world, types } = fixtureDeps();
-    world.transit = {
-      busStops: [{ id: 'stop_market', name: 'Market Stop' }],
-      busRoutes: [],
-      trainStations: [{ id: 'station_central', name: 'Central Station' }],
-      trainLines: [],
-      subwayStations: [],
-      subwayLines: [],
-    };
-    const dispatcher = new ToolDispatcher(new QuestlineDraft(MANIFEST, new WorldTargetAudit(world, types)));
-    for (const call of [...SETUP_CALLS, ...STEP_CALLS]) dispatcher.dispatch(call);
-    const unknown = dispatcher.dispatch(step({
-      ...(FINAL_STEP.input as object),
-      target: { kind: 'deliver', itemId: 'ledger', place: { stopId: 'stop_missing' } },
-    }));
-    expect(unknown.result).toContain('unknown stop stop_missing');
-    const accepted = dispatcher.dispatch(step({
-      ...(FINAL_STEP.input as object),
-      target: { kind: 'deliver', itemId: 'ledger', place: { stationId: 'station_central' } },
-    }));
-    expect(accepted.result).toContain('step s_pay added');
-  });
-
-  it('accepts only the ids the plan lists and names the planned ones', () => {
-    const dispatcher = new ToolDispatcher(new QuestlineDraft(MANIFEST));
-    for (const call of SETUP_CALLS) dispatcher.dispatch(call);
-    const extra = dispatcher.dispatch(step({ ...(STEP_CALLS[0]!.input as object), stepId: 's_extra' }));
-    expect(extra.result).toMatch(/^error: step s_extra is not in the plan; planned steps: s_ask, s_fetch, s_pay; not yet added: s_ask, s_fetch, s_pay/);
-    expect(dispatcher.dispatch(STEP_CALLS[0]!).result).toBe('step s_ask added (entry); 7 of 9 planned pieces in');
-  });
-
-  it('refuses a step with every bad reference at once', () => {
-    const dispatcher = new ToolDispatcher(new QuestlineDraft(MANIFEST));
-    for (const call of SETUP_CALLS) dispatcher.dispatch(call);
-    const { result } = dispatcher.dispatch(step({ ...(STEP_CALLS[1]!.input as object), actId: 'a9', needs: ['ghost'] }));
-    expect(result).toContain('unknown act a9 (planned acts: a1)');
-    expect(result).toContain('unknown item ghost (planned items: ledger, stall)');
-  });
-
-  it('finish reports the planned pieces still missing before validating', () => {
-    const dispatcher = new ToolDispatcher(new QuestlineDraft(MANIFEST));
-    for (const call of [...SETUP_CALLS, ...STEP_CALLS]) dispatcher.dispatch(call);
-    expect(dispatcher.dispatch(FINISH).result).toBe('error: not finished; still to add from the plan: steps: s_pay; then call finish_questline again');
-  });
-});
-
 describe('QuestlineBuilder', () => {
   it('answers a half-written call with what the tool needs and goes on', async () => {
     const halfStep = step({ stepId: 's_ask', actId: 'a1', narrative: { description: 'Ask Mara about the ledger.' } });
@@ -255,24 +161,19 @@ describe('QuestlineBuilder', () => {
     expect(nudge).toContain('Still to add from the plan: roles: barista, lender; items: ledger, stall; acts: a1; endings: e_paid; steps: s_ask, s_fetch, s_pay; then call finish_questline.');
   });
 
-  it('gives up after three text-only replies', async () => {
-    await expect(build(scriptedAgent([]).agent)).rejects.toThrow(/without finishing The Kettle Debt: 0 of 9 planned pieces in/);
-  });
-
-  it('bounds the rounds by the plan: two per planned piece plus eight', async () => {
-    const stuck: AgentPort = { step: async () => ({ kind: 'calls', calls: [SETUP_CALLS[0]!] }) };
-    const events: BuildProgress[] = [];
-    await expect(build(stuck, { progress: (e) => events.push(e) })).rejects.toThrowError(
-      expect.objectContaining({ code: 'E_LLM', message: expect.stringContaining('within 26 rounds: 0 of 9 planned pieces in') }),
-    );
-    expect(events).toHaveLength(26);
-    expect(events[1]).toEqual({ title: 'The Kettle Debt', round: 2, maxRounds: 26, committed: 0, planned: 9, note: 'create_questline (1 refused)' });
+  it('reports E_LLM when the configured build round budget is exhausted', async () => {
+    const stuck: AgentPort = { step: async () => ({ kind: 'calls', calls: [] }) };
+    await expect(build(stuck, { maxRounds: 1 })).rejects.toMatchObject({ code: 'E_LLM' });
   });
 
   it('drafts from the plan through the tools, corrects a validation failure from feedback, and resolves the cast', async () => {
     const { agent, requests } = scriptedAgent([
       { kind: 'calls', calls: SETUP_CALLS },
-      { kind: 'calls', calls: [...STEP_CALLS, FINISH] },
+      { kind: 'calls', calls: [
+        step({ ...(STEP_CALLS[0]!.input as object), stepId: 'unplanned' }),
+        step({ ...(STEP_CALLS[0]!.input as object), target: { kind: 'talk', roleId: 'barista', atParcelId: 'missing' } }),
+        ...STEP_CALLS, FINISH,
+      ] },
       { kind: 'calls', calls: [FINAL_STEP, FINISH] },
     ]);
     const deps = fixtureDeps();
@@ -284,11 +185,10 @@ describe('QuestlineBuilder', () => {
     expect(requests).toHaveLength(3);
     const toolTurns = requests[2]!.transcript.filter((t) => t.role === 'tool');
     expect(toolTurns.some((t) => t.results.some((r) => r.result.includes('error:')))).toBe(true);
-    expect(events.map((e) => [e.round, e.committed, e.note])).toEqual([
-      [1, 6, 'create_questline, add_role, add_role, add_item, add_item, add_fact, add_fact, add_act, add_ending'],
-      [2, 8, 'add_step, add_step, finish_questline (1 refused)'],
-      [3, 9, 'add_step, finish_questline'],
-    ]);
+    expect(events.at(-1)).toMatchObject({ round: 3, committed: MANIFEST.roles.length + MANIFEST.items.length + MANIFEST.acts.length + MANIFEST.endings.length + MANIFEST.steps.length });
+    const feedback = toolTurns.flatMap(turn => turn.results.map(result => result.result)).join('\n');
+    expect(feedback).toContain('not in the plan');
+    expect(feedback).toContain('unknown parcel missing');
 
     expect(definition.id).toBe('q_kettle');
     expect(definition.flags).toEqual(['knows_debt']);

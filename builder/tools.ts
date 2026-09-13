@@ -1,14 +1,14 @@
-/**
- * Agent-facing tool definitions for questline drafting. Narrative properties
- * come before structural ones in every schema on purpose: the model commits
- * to story before structure.
- */
+/** Agent tools with narrative fields first and descriptions loaded from Markdown. */
+
+import { promptLoader } from '../prompts.js';
 
 import type { AgentTool } from '../ports/llm.js';
 
+const prompt = promptLoader(new URL('./prompts/', import.meta.url));
+
 const predicate = {
   type: 'object',
-  description: 'Pure condition. kinds: flagSet, flagNotSet, stepDone, roleAlive, roleOnDuty',
+  description: prompt('tools/predicate.md').trim(),
   properties: {
     kind: { enum: ['flagSet', 'flagNotSet', 'stepDone', 'roleAlive', 'roleOnDuty'] },
     flag: { type: 'string' },
@@ -20,7 +20,7 @@ const predicate = {
 
 const effect = {
   type: 'object',
-  description: 'Applied when the step completes. kinds: setFlag, clearFlag, simFlag (op: resign, promote, die, custom)',
+  description: prompt('tools/effect.md').trim(),
   properties: {
     kind: { enum: ['setFlag', 'clearFlag', 'simFlag'] },
     flag: { type: 'string' },
@@ -32,7 +32,7 @@ const effect = {
 
 const place = {
   type: 'object',
-  description: 'Exactly one parcelId, districtId, stationId, or stopId from the world catalog',
+  description: prompt('tools/place.md').trim(),
   properties: {
     parcelId: { type: 'string' }, districtId: { type: 'string' }, stationId: { type: 'string' }, stopId: { type: 'string' },
   },
@@ -60,30 +60,29 @@ const stepKinds = [
 export const BUILDER_TOOLS: AgentTool[] = [
   {
     name: 'create_questline',
-    description: 'Start the questline. Write the premise first: what this story is about and why it matters.',
+    description: prompt('tools/create_questline.md#description').trim(),
     inputSchema: {
       type: 'object',
       properties: {
         title: { type: 'string' },
-        premise: { type: 'string', description: 'The story of this questline in prose, written before any structure.' },
-        id: { type: 'string', description: 'Short machine id, e.g. q_kettle_debt' },
+        premise: { type: 'string', description: prompt('tools/create_questline.md#premise').trim() },
+        id: { type: 'string', description: prompt('tools/create_questline.md#id').trim() },
       },
       required: ['title', 'premise', 'id'],
     },
   },
   {
     name: 'add_role',
-    description:
-      'Add a character role. Bind it to an NPC type from the catalog, never to an id or a location; the simulation decides who, where and when. Write the persona as story: personality, needs, drives.',
+    description: prompt('tools/add_role.md#description').trim(),
     inputSchema: {
       type: 'object',
       properties: {
-        persona: { type: 'string', description: 'Personality, needs and story on top of the mathematical background.' },
+        persona: { type: 'string', description: prompt('tools/add_role.md#persona').trim() },
         roleId: { type: 'string' },
-        npcType: { type: 'string', description: 'Type string from the NPC type catalog.' },
+        npcType: { type: 'string', description: prompt('tools/add_role.md#npcType').trim() },
         reservedName: {
           type: 'object',
-          description: 'Only for a pre-instanced story NPC with a fixed identity.',
+          description: prompt('tools/add_role.md#reservedName').trim(),
           properties: { given: { type: 'string' }, family: { type: 'string' } },
           required: ['given', 'family'],
         },
@@ -93,28 +92,26 @@ export const BUILDER_TOOLS: AgentTool[] = [
   },
   {
     name: 'add_item',
-    description:
-      'Add an artifact. Write whose it is and what it means to them before what it is. Physical kinds start placed at a parcel (then a pickup step) or in a person\'s hands (then a steal step, or the step that gives it). Kind information is never picked up: a talk, listen or observe step gives it.',
+    description: prompt('tools/add_item.md#description').trim(),
     inputSchema: {
       type: 'object',
       properties: {
         name: { type: 'string' },
-        description: { type: 'string', description: 'Whose it is, what it means to them, what it is.' },
+        description: { type: 'string', description: prompt('tools/add_item.md#meaning').trim() },
         itemId: { type: 'string' },
         kind: { enum: ['device', 'weapon', 'document', 'key', 'substance', 'valuable', 'information'] },
-        atParcelId: { type: 'string', description: 'Where a physical item starts when it starts placed; required for pickup targets.' },
+        atParcelId: { type: 'string', description: prompt('tools/add_item.md#atParcelId').trim() },
       },
       required: ['name', 'description', 'itemId', 'kind'],
     },
   },
   {
     name: 'add_fact',
-    description:
-      'Add a piece of quest knowledge one role can talk about. With gateFlag, the NPC does not know or reveal it until that flag is set; without, the NPC can always share it.',
+    description: prompt('tools/add_fact.md#description').trim(),
     inputSchema: {
       type: 'object',
       properties: {
-        text: { type: 'string', description: 'The knowledge, in the NPC\'s own voice.' },
+        text: { type: 'string', description: prompt('tools/add_fact.md#text').trim() },
         factId: { type: 'string' },
         roleId: { type: 'string' },
         gateFlag: { type: 'string' },
@@ -124,7 +121,7 @@ export const BUILDER_TOOLS: AgentTool[] = [
   },
   {
     name: 'add_act',
-    description: 'Add an act: a movement of the questline.',
+    description: prompt('tools/add_act.md').trim(),
     inputSchema: {
       type: 'object',
       properties: {
@@ -137,12 +134,12 @@ export const BUILDER_TOOLS: AgentTool[] = [
   },
   {
     name: 'add_ending',
-    description: 'Add one way the questline can end.',
+    description: prompt('tools/add_ending.md#description').trim(),
     inputSchema: {
       type: 'object',
       properties: {
         title: { type: 'string' },
-        epilogue: { type: 'string', description: 'How the story closes when this ending is reached.' },
+        epilogue: { type: 'string', description: prompt('tools/add_ending.md#epilogue').trim() },
         endingId: { type: 'string' },
       },
       required: ['title', 'epilogue', 'endingId'],
@@ -150,30 +147,28 @@ export const BUILDER_TOOLS: AgentTool[] = [
   },
   {
     name: 'add_step',
-    description:
-      'Add a step. Write the narrative and the stake first, then the mechanics. Every step names the role who wants it. Steps connect through next edges; a step with no edges is terminal and needs an endingId. Mark starting steps with entry: true.',
+    description: prompt('tools/add_step.md#description').trim(),
     inputSchema: {
       type: 'object',
       properties: {
         narrative: {
           type: 'object',
           properties: {
-            description: { type: 'string', description: 'What happens in the story at this step.' },
-            playerHint: { type: 'string', description: 'What the player sees as the objective.' },
+            description: { type: 'string', description: prompt('tools/add_step.md#narrative').trim() },
+            playerHint: { type: 'string', description: prompt('tools/add_step.md#playerHint').trim() },
             stake: {
               type: 'string',
-              description: 'What this step means to the person who wants it and what it costs them if it does not happen, in their own truth.',
+              description: prompt('tools/add_step.md#stake').trim(),
             },
           },
           required: ['description', 'playerHint', 'stake'],
         },
-        wantedByRoleId: { type: 'string', description: 'The role whose want this step serves; they speak the stake to the player.' },
+        wantedByRoleId: { type: 'string', description: prompt('tools/add_step.md#wantedByRoleId').trim() },
         stepId: { type: 'string' },
         actId: { type: 'string' },
         target: {
           type: 'object',
-          description:
-            'The typed objective. Use the exact fields in the step catalog. Investigation, rescue, escort, access, hacking, sabotage, and transportation require a completionFlag set by the step effects.',
+          description: prompt('tools/add_step.md#target').trim(),
           properties: {
             kind: { enum: stepKinds },
             place,
@@ -205,13 +200,13 @@ export const BUILDER_TOOLS: AgentTool[] = [
           },
           required: ['kind'],
         },
-        gives: { type: 'array', items: { type: 'string' }, description: 'Item ids the player receives when the step completes (handed over, or information told).' },
-        needs: { type: 'array', items: { type: 'string' }, description: 'Item ids the player must hold to act on the step.' },
-        conditions: { type: 'array', items: predicate, description: 'Extra gates; usually empty.' },
+        gives: { type: 'array', items: { type: 'string' }, description: prompt('tools/add_step.md#gives').trim() },
+        needs: { type: 'array', items: { type: 'string' }, description: prompt('tools/add_step.md#needs').trim() },
+        conditions: { type: 'array', items: predicate, description: prompt('tools/add_step.md#conditions').trim() },
         effects: { type: 'array', items: effect },
         next: {
           type: 'array',
-          description: 'Outgoing edges. Empty means terminal (set endingId).',
+          description: prompt('tools/add_step.md#next').trim(),
           items: {
             type: 'object',
             properties: {
@@ -221,16 +216,16 @@ export const BUILDER_TOOLS: AgentTool[] = [
             required: ['toStepId', 'when'],
           },
         },
-        branching: { enum: ['parallel', 'exclusive'], description: 'exclusive: only the first passing edge activates.' },
+        branching: { enum: ['parallel', 'exclusive'], description: prompt('tools/add_step.md#branching').trim() },
         endingId: { type: 'string' },
-        entry: { type: 'boolean', description: 'true for steps active when the questline starts.' },
+        entry: { type: 'boolean', description: prompt('tools/add_step.md#entry').trim() },
       },
       required: ['narrative', 'stepId', 'actId', 'target', 'next'],
     },
   },
   {
     name: 'finish_questline',
-    description: 'Validate and close the questline. Fix any reported problem and call again.',
+    description: prompt('tools/finish_questline.md').trim(),
     inputSchema: { type: 'object', properties: {} },
   },
 ];

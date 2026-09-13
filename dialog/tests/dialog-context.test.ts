@@ -144,8 +144,12 @@ describe('DialogContextService', () => {
     expect(turns.text).toContain('Player: line 5');
   });
 
-  it('refuses context for a dead NPC with E_WRONG_STATE', () => {
+  it('refuses unknown types and dead NPC context', () => {
     const { sim, service, informerId } = setup();
+    const { world, types } = loadFixtureWorld('neon-bay');
+    types.types = types.types.filter(type => type.type !== 'cafe_barista');
+    const unknownType = new DialogContextService({ world, types, sim, llm: { complete: async () => '' } });
+    expect(() => unknownType.contextFor(informerId, TUE_10)).toThrowError(expect.objectContaining({ code: 'E_UNKNOWN_ID' }));
     sim.applyFlag(informerId, { kind: 'die' });
     expect(() => service.contextFor(informerId, TUE_10)).toThrowError(expect.objectContaining({ code: 'E_WRONG_STATE' }));
   });

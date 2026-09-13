@@ -70,10 +70,10 @@ describe('StubSimulation', () => {
     expect(barista.type).toBe('cafe_barista');
     expect(barista.job?.parcelId).toBe('p4');
     for (let day = 0; day < 7; day++) {
-      for (const minute of [0, 419, 480, 959, 1200, 1439]) {
-        const entry = barista.routine.find((e) => e.days.includes(day) && minute >= e.startMin && minute < e.endMin);
-        expect(entry, `day ${day} minute ${minute}`).toBeDefined();
-      }
+      const intervals = barista.routine.filter(entry => entry.days.includes(day));
+      expect(intervals[0]?.startMin).toBe(0);
+      expect(intervals.at(-1)?.endMin).toBe(1440);
+      expect(intervals.slice(1).every((entry, index) => entry.startMin === intervals[index]!.endMin)).toBe(true);
     }
   });
 
@@ -138,7 +138,9 @@ describe('StubSimulation', () => {
     expect(sim.findNPCs({ flag: 'quest_ally' })).toHaveLength(1);
   });
 
-  it('throws E_UNKNOWN_ID for unknown npc ids', () => {
+  it('rejects unknown identities, missing query inputs and invalid time', () => {
+    expect(() => makeSim().getNPCVendor({ timeMin: TUE_10 })).toThrowError(expect.objectContaining({ code: 'E_INVALID_INPUT' }));
+    expect(() => makeSim().getNPCVendor({ type: 'cafe_barista', timeMin: -1 })).toThrowError(expect.objectContaining({ code: 'E_TIME' }));
     expect(() => makeSim().getNPC('npc_nope')).toThrowError(expect.objectContaining({ code: 'E_UNKNOWN_ID' }));
   });
 });

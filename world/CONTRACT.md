@@ -16,7 +16,7 @@ Purpose: projects Naming or Atlas world data onto the fields Quests consumes and
 - Raw Atlas input has no naming metadata. Its missing district names become `<kind> <id>`, and its `namedAt` value is the deterministic local marker `derived-from-atlas`. Inputs carrying naming metadata retain that metadata and never receive fallback labels.
 
 ## Errors
-`SimulationError { code }` with the simulation contract's closed set (E_INVALID_INPUT, E_UNKNOWN_ID, E_STALE_HANDLE, E_NO_MATCH, E_DEAD, E_CONFLICT, E_TIME).
+`SimulationError { code, message, details? }`: `E_INVALID_INPUT`, `E_UNKNOWN_ID`, `E_NO_MATCH`, `E_DEAD`, `E_CONFLICT`, `E_TIME`. The consumed port also permits `E_STALE_HANDLE`; the standalone stub has no crowd handles. Normalization expects typed inputs and is not a validator; authoring validates its projected result. Fixture file failures are ordinary I/O errors.
 
 ## Invariants
 - Same seed and call order: identical instances, names, homes, routines.

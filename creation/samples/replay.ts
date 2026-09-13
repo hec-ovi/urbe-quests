@@ -1,15 +1,4 @@
-/**
- * Rebuilds a sample from a recorded run: the model's text and tool calls come
- * from a JSON file, everything else is the real workflow (parsing, the
- * manifest bound, the tools, validation, casting). No model, no network.
- *
- *   npm run replay -- creation/samples/urbe-small/recording.json urbe-small \
- *     ../engine/out/named/city-urbe-small.named.json ../engine/out/small/npc-types.json
- *
- * Args: <recording json> <sample name> [<named world json> <npc types json>];
- * without the two paths, world.json and npc-types.json beside the recording
- * are used when present; otherwise the neon-bay fixture is the world.
- */
+/** Replays recorded text and tool calls through creation, using adjacent world/type inputs or local fixtures. */
 
 import { existsSync, readFileSync } from 'node:fs';
 import { basename, dirname, join, resolve } from 'node:path';

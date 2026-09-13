@@ -1,11 +1,4 @@
-/**
- * Drives the agent through the drafting tools until the questline validates,
- * then resolves the cast. The plan's manifest bounds the work: only planned
- * ids are accepted, the round budget derives from the plan's size, and every
- * nudge names what is still missing. The agent works from the plan, the
- * character cards and the synopsis, not from the full arc: the thinking
- * happened in the plan pass.
- */
+/** Builds a planned questline through agent tools, validates it and resolves its cast. */
 
 import { QuestError } from '../errors.js';
 import { promptLoader } from '../prompts.js';
@@ -98,8 +91,8 @@ export class QuestlineBuilder {
   private nudgeLine(draft: QuestlineDraft): string {
     const missing = draft.missingLine();
     return missing === undefined
-      ? 'Everything in the plan is in: call finish_questline now, and fix whatever it reports.'
-      : `${missing.charAt(0).toUpperCase()}${missing.slice(1)}; then call finish_questline.`;
+      ? prompt('missing-work.md#complete')
+      : prompt('missing-work.md#pending', { missing: `${missing.charAt(0).toUpperCase()}${missing.slice(1)}` });
   }
 
   private standing(draft: QuestlineDraft): string {
@@ -108,10 +101,10 @@ export class QuestlineBuilder {
   }
 
   private renderPrompt(input: BuildInput): string {
-    return [
-      `Build this questline:\n${renderAssignment(input.assignment)}`,
-      `The translation plan to follow:\n${input.plan}`,
-      new WorldCatalog(input.world, input.types).render(),
-    ].join('\n\n');
+    return prompt('build-input.md', {
+      assignment: renderAssignment(input.assignment),
+      plan: input.plan,
+      world: new WorldCatalog(input.world, input.types).render(),
+    }).trim();
   }
 }

@@ -12,7 +12,7 @@ export class WorldCatalog {
   ) {}
 
   render(): string {
-    const lines: string[] = ['Districts and places (use these ids):'];
+    const lines: string[] = ['Districts and places:'];
     for (const district of this.world.districts) {
       lines.push(`- ${district.name} [districtId ${district.id}] (${district.kind}, ${district.tier.replace('_', ' ')})`);
       for (const parcel of this.world.parcels.filter((p) => p.districtId === district.id)) {
@@ -22,13 +22,13 @@ export class WorldCatalog {
     }
     const transit = this.world.transit;
     if (transit !== undefined) {
-      lines.push('', 'Transit places (use these ids):');
+      lines.push('', 'Transit places:');
       for (const stop of transit.busStops ?? []) lines.push(`- ${stop.name ?? 'bus stop'} [stopId ${stop.id}]`);
       for (const station of [...(transit.trainStations ?? []), ...(transit.subwayStations ?? [])]) {
         lines.push(`- ${station.name ?? 'station'} [stationId ${station.id}]`);
       }
     }
-    lines.push('', 'NPC types (bind roles to these, never to ids or coordinates):');
+    lines.push('', 'NPC types:');
     for (const type of this.types.types) {
       lines.push(`- ${type.type} (${type.label}, ${type.category}): ${type.boilerplate}`);
       for (const example of type.examples ?? []) lines.push(`  example: ${example}`);

@@ -1,64 +1,38 @@
-# CONTRACT: quests
+# Quests 0.8.3
 
-Purpose: authors the world's story and playable questlines, runs them as deterministic typed step flows whose NPCs resolve by type through simulation queries, and assembles scoped NPC dialog context.
+Writes stories through injected agents, adapts them into typed quests, runs their rules in code, and prepares Engine handoffs and scoped NPC dialogue.
 
-Status: v0.8.2. Built against naming v0.4.8, simulation v0.9.1, engine investigation v1.1, and engine mission-assets v1.0.
+## Calls and schemas
 
-## In
-- Named world and NPC type set: [world/types/named-world.ts](world/types/named-world.ts) defines compatible consumer projections of Naming's [named-world](../naming/schema/named-world.schema.json) and [NPC type set](../naming/schema/npc-types.schema.json) outputs. [WorldContextNormalizer](world/WorldContextNormalizer.ts) accepts unmodified Naming JSON, preserves naming metadata and gender-tagged name pools, and projects only the fields Quests consumes.
-- Recorded creation may consume an Atlas world before naming through `namedWorldFromAtlas` ([world/CONTRACT.md](world/CONTRACT.md)). Only an input without naming metadata receives generated district labels and the local deterministic `derived-from-atlas` marker.
-- Simulation: a `SimulationPort` ([world/types/simulation.ts](world/types/simulation.ts)), the consumed slice of ../simulation's CitySimulation (getNPCVendor, reserveNPC, findNPCs, getNPC, behaviorAt, interrupt, resume, applyFlag). The real simulation satisfies it; [world/stub/StubSimulation.ts](world/stub/StubSimulation.ts) ships for standalone runs.
-- Creation prompt: the user's words ("create a dark cynical sci fi cyberpunk story").
-- Creation keeps a failure local to what failed: a side quest whose build fails is dropped, and a situations pass that cannot be read drops all of them, both reported through `warn` on the input; the script or the main line failing fails the run.
-- LLM access is injected per stage, never owned: `StagePorts { script, situations, plan: LLMPort; build: AgentPort }` ([creation/schema.ts](creation/schema.ts)); dialog summarization takes its own `LLMPort`. Ports in [ports/llm.ts](ports/llm.ts). No output caps anywhere.
-- Two-stage skill authoring accepts schema-validated story and adaptation requests through [authoring/CONTRACT.md](authoring/CONTRACT.md). Its optional mechanic list is an allowlist; unsupported names fail before an agent runs.
-- Engine handoff input ([handoff/schema/handoff-input.schema.json](handoff/schema/handoff-input.schema.json)): investigation v1.1 requests, mission asset v1.0 create requests, quest-item asset bindings, fixed mechanic target bindings, and the host's supported transportation modes. Definitions without those mechanics can omit their catalogs.
-- At runtime: closed player events, exact JSON [flow/schema/player-event.schema.json](flow/schema/player-event.schema.json) and TypeScript [flow/events.ts](flow/events.ts), plus current time in simulation minutes. Events cover talked, arrived, picked up, investigated, released, escorted, accessed, hacked, sabotaged, transported, and the remaining declared actions.
+The Node library entry is [index.ts](index.ts), compiled to `dist/index.js`; browser hosts use [runtime.ts](runtime.ts), compiled to `dist/runtime.js`. No HTTP server is required.
 
-## Out
-- Agent authoring: `AuthoringHarness` ([authoring/CONTRACT.md](authoring/CONTRACT.md)) exposes a lightweight GBrain-style skill index and separate `writeStory` and `adaptGameplay` calls. The adaptation output carries a validated questline plus the exact story-beat, mechanic, transition, and ending trace.
-- Creation: `new QuestlineCreation().run(input) -> CreationResult` ([creation/CONTRACT.md](creation/CONTRACT.md)): text-only script pass, translation of the script into the main questline (plan pass closing with a manifest of ids, then the flow tool build bounded by it), text-only situations pass and one side questline per situation; `progress` events report each stage and build round. Every stage runs alone too:
-  - Story: `ScriptPass`, `SituationsPass` ([story/CONTRACT.md](story/CONTRACT.md)).
-  - Translation: `QuestlineTranslator`, `TranslationPlanner`, `QuestlineBuilder` ([builder/CONTRACT.md](builder/CONTRACT.md)).
-- Engine quest set: the main `QuestlineDefinition` first, followed by side quest definitions in stable situation order, exactly [creation/schema/questline-set.schema.json](creation/schema/questline-set.schema.json). Each definition is exactly [flow/schema/questline.schema.json](flow/schema/questline.schema.json). Creation-time casts are omitted because each game casts against its own simulation.
-- Engine handoff: `new EngineHandoff().assemble(questlines, input)` ([handoff/CONTRACT.md](handoff/CONTRACT.md)) validates and returns questlines, every exact objective action, investigations, mission assets, quest-item associations, fixed mechanic interaction anchors, and host capabilities. Materialize and bundle write the eight stable JSON files of bundle v1.1.
-- Browser hosts import [runtime.ts](runtime.ts) (dist/runtime.js): the flow runtime, validator, cast resolver, errors and types, with no node APIs behind them; index.ts adds creation, story and dialog, which read prompt files from disk.
-- Cast: `new CastResolver(sim).resolve(definition, timeMin) -> ResolvedCast` ([builder/CastResolver.ts](builder/CastResolver.ts)) binds every role to an NPC through the host's simulation (reserved names, else whoever is on duty by type, else anyone of that type already in the world); a host casts at load so ids are its own simulation's.
-- Flow runtime: `QuestlineRuntime` ([flow/CONTRACT.md](flow/CONTRACT.md)): pure code state machine over the questline DAG. Availability, inventory, live objective place, and parcel, station, or stop route guidance are evaluated on demand. Restore rejects a state whose history, active frontier, flags, or ending disagrees with the definition. Interaction steps repeat exact interaction, cast, item, mode, and place ids in their completion events and persist a required authored completion flag.
-- Dialog: `Converse` ([dialog/CONTRACT.md](dialog/CONTRACT.md)) answers one player line from an NPC's context with an injected `LLMPort`; `DialogContextService` ([dialog/CONTRACT.md](dialog/CONTRACT.md)): per-NPC-instance scoped fact store (background, persona, flag-gated quest knowledge, the steps this NPC currently wants and the endings it lived), verbatim-tail memory with summarized digests, cache-ordered context segments, deflection guidance. Facts outside the scope never enter the prompt.
+| Call | Input | Output |
+| --- | --- | --- |
+| `AuthoringHarness.writeStory(input, agent)` | [Story request](authoring/schema/story-request.schema.json), [agent port](authoring/src/schema.ts) | [Story](authoring/schema/story-output.schema.json), narrative only |
+| `AuthoringHarness.adaptGameplay(input, agent)` | [Adaptation request](authoring/schema/adaptation-request.schema.json), [agent port](authoring/src/schema.ts) | [Definition and narrative trace](authoring/schema/adaptation-output.schema.json) |
+| `skillIndex`, `route`, `resolveSkills` | [Resolver queries](authoring/CONTRACT.md#inputs) | [Skill index and selected bodies](authoring/CONTRACT.md#outputs) |
+| `QuestlineCreation.run(input)` | [CreationInput](creation/schema.ts), prompt, named world/types, Simulation and per-stage model ports | [CreationResult](creation/schema.ts), script, situations, main and side translations |
+| `ScriptPass.run`, `SituationsPass.run`, `QuestlineTranslator.translate` | [Story](story/CONTRACT.md), [translation](builder/CONTRACT.md) | [Story text](story/schema.ts), [plan, definition and feasibility cast](builder/schema.ts) |
+| `CastResolver.resolve(definition, timeMin)` | [Definition](flow/schema/questline.schema.json), [SimulationPort](world/types/simulation.ts) | [ResolvedCast](flow/schema.ts), role to NPC IDs |
+| `QuestlineRuntime`, `advance`, `restore` | [Definition](flow/schema/questline.schema.json), cast, Simulation, [event](flow/schema/player-event.schema.json), time, [saved state](flow/schema/questline-state.schema.json) | [State and advance result](flow/QuestlineRuntime.ts), [availability](flow/availability.ts), [guidance](flow/schema/step-guidance.schema.json) |
+| `EngineHandoff.assemble(questlines, input?)` | [Quest set](creation/schema/questline-set.schema.json), [bindings and capabilities](handoff/schema/handoff-input.schema.json) | [HandoffBundle](handoff/schema.ts), definitions, objectives, investigations, assets and bindings |
+| `DialogContextService`, `Converse.reply` | [Context inputs](dialog/DialogContextService.ts), [reply input](dialog/Converse.ts), injected model | [Scoped segments and memory](dialog/schema.ts), reply string |
+| `WorldContextNormalizer.normalize`, fixture loaders | [World and type projections](world/types/named-world.ts), [world calls](world/CONTRACT.md) | [Normalized context](world/WorldContextNormalizer.ts), standalone world/story fixtures |
+
+Creation warnings report failed side translations or unusable situations. Main/script failures reject the run. The current result has no completion marker or retained side-failure record. Naming is supplied by callers; its integration is proposed in [issues](docs/ISSUES.md).
+
+Engine receives main definition first, then side definitions, without creation-time cast IDs. The game casts against its own Simulation. The CLI writes bundle **1.1** with the [eight filenames and counts](handoff/schema/quest-bundle.schema.json). Quest definitions and saved state retain their existing shapes; bundle version and package version are separate.
+
+Time is simulation minutes since Monday 00:00. Creative calls use separate contexts; graph transitions, gates, inventory and save validation use code. Quests checks semantic targets and submitted bindings. Engine owns measured placement, reach, visibility, rendering and save coordination. A passed semantic handoff alone does not establish 3D playability.
 
 ## Errors
-Closed set, thrown as `QuestError { code, message, detail? }` ([errors.ts](errors.ts)):
-- `E_INVALID_FLOW`: questline graph invalid (unknown ids, unreachable steps, cycles, undeclared flags, roles or items, information handled as a physical item, unplaced pickup).
-- `E_UNKNOWN_ID`: questline, step, role, npc type or cast entry not found.
-- `E_WRONG_STATE`: event matches no active step, questline already ended, or dialog with a dead NPC.
-- `E_UNAVAILABLE`: step acted on outside its availability (dead, absent, off duty, missing item, condition).
-- `E_CAST`: a role cannot be resolved or reserved against the simulation (cause in detail).
-- `E_LLM`: model output unusable after repair (detail: stage, raw, problems: a script, a situations list or a plan manifest), or a build that ran out of its plan-sized round budget.
-- `E_HANDOFF`: investigation, mission asset, objective, item binding, fixed mechanic target, interaction anchor, or host capability data disagrees with its exact quest or dependency contract.
-`SimulationError` from the port passes through untouched, except cast resolution, which wraps its no-match and reserve conflicts into `E_CAST`.
-The authoring harness has its own closed `AuthoringError` envelope and codes in [authoring/schema/authoring-error.schema.json](authoring/schema/authoring-error.schema.json).
 
-## Invariants
-- No LLM inside generation-state or flow-state code paths: only the script, the situations, the translation plan, questline drafting and memory summarization are creative; every transition, gate and availability check is deterministic code.
-- The authoring resolver sends a lightweight skill index first and loads only the selected skill bodies. Structured agent responses still pass deterministic schema, world, flow, and cause-effect checks.
-- The flow and authoring vocabularies contain 16 exact mechanic kinds, including staged investigation, rescue, escort, credentialed access, hacking, sabotage, and transportation.
-- Authored objective places use one exact parcel, district, station, or stop identity. Route guidance emits only destinations accepted by the route contract and a closed reason for other live places.
-- Every rescue, access, hacking, and sabotage step in a runnable bundle maps its authored target identity to one fixed mission asset and a declared interaction anchor. Every transportation step uses a mode explicitly supported by the host.
-- Authority is split: the script owns plot, character and voice; the simulation owns who people are, where they live and work and when; the closed step and item vocabulary owns what is playable.
-- The builder never places NPCs by id or coordinates: steps bind roles, roles resolve by type through the SimulationPort; one story character is one NPC across questlines.
-- NPC knowledge is closed: a fact enters dialog context only from simulation background, persona overlay, unlocked quest grants, active steps this NPC wants, endings this NPC was part of, or recorded interaction, all decided by runtime state and the cast mapping; deflection applies to everything else.
-- Every prompt, boilerplate and few-shot set lives in its own .md file under the owning box's prompts/ folder; output length is never capped; minimums are floors, never exact counts.
-- Standalone: everything runs on the 2D plane against [world/fixtures/](world/fixtures/), [story/fixtures/](story/fixtures/) and the stub simulation, no other layer present.
-- Dialog is typed text: Quests supplies scoped context, one text reply, and serializable memory. Engine owns conversation open and close, stable actor identity, routine pause and resume, and speaker and listener gestures.
-- Quest objective projection contains no animation state. Engine starts animation only after accepting an exact quest action and owns completion, interruption, and routine resumption.
+[QuestError](errors.ts), `{code, message, detail?}`: `E_INVALID_FLOW` (definition/save), `E_UNKNOWN_ID` (missing identity), `E_WRONG_STATE` (event/state), `E_UNAVAILABLE` (gated action), `E_CAST` (cast resolution), `E_LLM` (unusable text/build), `E_HANDOFF` (bindings/assets/capabilities).
 
-## Depends on
-- [Atlas](../atlas/CONTRACT.md): world subset accepted by `namedWorldFromAtlas` before naming.
-- ../naming/CONTRACT.md (named world, NPC type set)
-- ../simulation/CONTRACT.md (query surface, time convention, flags)
-- ../engine/src/game/investigation/CONTRACT.md (investigation v1.1 request and persistent scene state)
-- ../engine/src/mission-assets/CONTRACT.md (mission asset v1.0 create request)
+[AuthoringError](authoring/schema/authoring-error.schema.json), `{code, message, details}`: `E_AUTHORING_INPUT`, `E_AUTHORING_OUTPUT`, `E_SKILL_CONTRACT`, `E_UNKNOWN_SKILL`, `E_UNSUPPORTED_MECHANIC`, `E_MECHANIC_SELECTION`, `E_WORLD_TARGET`, `E_CAUSE_EFFECT`, `E_INVALID_FLOW`. Meanings: [authoring errors](authoring/CONTRACT.md#errors).
 
-## Consumers
-- ../engine
+These are closed domain sets. Injected provider/Simulation exceptions pass through, except cast reservation and exhausted vendor matches become `E_CAST`. Standalone [SimulationError](world/types/simulation.ts) uses the consumed Simulation error set. CLI file/JSON/usage failures are ordinary exceptions, not domain codes.
+
+## Dependencies
+
+Data contracts only: [Atlas](../atlas/CONTRACT.md) (world projection), [Naming](../naming/CONTRACT.md) (names/types), [Simulation](../simulation/CONTRACT.md) (people/schedules), Engine [investigation](../engine/src/game/investigation/CONTRACT.md) (v1.1) and [mission assets](../engine/src/mission-assets/CONTRACT.md) (v1.0). Models are injected through [ports](ports/llm.ts) and [authoring ports](authoring/src/schema.ts). Ajv validates authoring and handoff schemas. Engine consumes this box.

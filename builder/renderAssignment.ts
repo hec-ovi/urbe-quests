@@ -1,7 +1,8 @@
-/** The assignment as the planner and the builder read it. */
-
+import { promptLoader } from '../prompts.js';
 import type { QuestAssignment } from './schema.js';
 
+const prompt = promptLoader(new URL('./prompts/', import.meta.url));
+
 export function renderAssignment(assignment: QuestAssignment): string {
-  return [`Title: ${assignment.title}`, `Synopsis:\n${assignment.synopsis}`, `Characters:\n${assignment.characters}`].join('\n\n');
+  return prompt('assignment.md', { ...assignment }).trim();
 }

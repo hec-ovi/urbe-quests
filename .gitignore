@@ -7,7 +7,7 @@ session
 # Local authoring data; public technical docs are listed explicitly.
 /docs/*
 !/docs/INDEX.md
-!/docs/RESEARCH.md
+!/docs/ISSUES.md
 inbox/
 .research/
 
@@ -19,3 +19,11 @@ inbox/
 [Ss]creenshot*.webp
 preview-captures/
 review-captures/
+
+# Model output and replayed bundles. Source recordings stay tracked.
+/creation/samples/*/
+!/creation/samples/urbe-small/
+/creation/samples/urbe-small/*
+!/creation/samples/urbe-small/recording.json
+!/creation/samples/urbe-small/world.json
+!/creation/samples/urbe-small/npc-types.json

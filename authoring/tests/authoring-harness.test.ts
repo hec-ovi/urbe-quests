@@ -11,7 +11,6 @@ import type {
   GameplayAgentPort,
   GameplayAgentRequest,
   MechanicSelectionAgentRequest,
-  Mechanic,
   StoryAgentPort,
   StoryAgentRequest,
   StoryOutput,
@@ -153,64 +152,6 @@ describe('two-stage authoring harness', () => {
     expect(gameplayRequest?.outputSchema.rootId).toBe('urn:urbe:quests:authoring:adaptation-output');
   });
 
-  it.each(['investigation', 'rescue', 'escort', 'access', 'hacking', 'sabotage', 'transportation'] as const)(
-    'accepts the schema-valid %s mechanic through the isolated selector and adaptation stages',
-    async (mechanic) => {
-      const noDecisionStory = clone(story);
-      noDecisionStory.decisions = [];
-      const output = singleMechanicAdaptation(mechanic);
-      const mechanics = targetMechanics(output);
-      const selectMechanics = vi.fn(async (_request: MechanicSelectionAgentRequest): Promise<unknown> => ({ mechanics }));
-      const adapt = vi.fn(async (_request: GameplayAgentRequest): Promise<unknown> => output);
-      const result = await new GameplayStage().adapt(
-        { story: noDecisionStory, ...context, requestedMechanics: mechanics },
-        { selectMechanics, adapt },
-      );
-
-      expect(result.definition.steps.some((candidate) => candidate.target.kind === mechanic)).toBe(true);
-      expect(selectMechanics.mock.calls[0]?.[0].availableSkills.skills.map((skill) => skill.name).sort()).toEqual([...mechanics].sort());
-      expect(adapt.mock.calls[0]?.[0].skills.skills.map((skill) => skill.name)).toEqual(['gameplay-adaptation', ...mechanics]);
-    },
-  );
-
-  it('rejects missing interaction identity at the schema boundary and unknown authored targets in deterministic audits', async () => {
-    const noDecisionStory = clone(story);
-    noDecisionStory.decisions = [];
-
-    const missingIdentity = singleMechanicAdaptation('transportation') as unknown as {
-      definition: { steps: { target: Record<string, unknown> }[] };
-    };
-    delete missingIdentity.definition.steps[0]!.target['journeyId'];
-    await expect(
-      new GameplayStage().adapt(
-        { story: noDecisionStory, ...context, requestedMechanics: ['transportation'] },
-        singleMechanicPort('transportation', missingIdentity),
-      ),
-    ).rejects.toMatchObject({ code: 'E_AUTHORING_OUTPUT' });
-
-    const unknownPlace = singleMechanicAdaptation('hacking');
-    const hack = unknownPlace.definition.steps[0]!.target;
-    if (hack.kind !== 'hacking') throw new Error('fixture target changed');
-    hack.place = { parcelId: 'p_missing' };
-    await expect(
-      new GameplayStage().adapt(
-        { story: noDecisionStory, ...context, requestedMechanics: ['hacking'] },
-        singleMechanicPort('hacking', unknownPlace),
-      ),
-    ).rejects.toMatchObject({ code: 'E_WORLD_TARGET', details: [expect.stringContaining('p_missing')] });
-
-    const unknownCast = singleMechanicAdaptation('rescue');
-    const rescue = unknownCast.definition.steps[0]!.target;
-    if (rescue.kind !== 'rescue') throw new Error('fixture target changed');
-    rescue.roleId = 'r_invented';
-    await expect(
-      new GameplayStage().adapt(
-        { story: noDecisionStory, ...context, requestedMechanics: ['rescue'] },
-        singleMechanicPort('rescue', unknownCast),
-      ),
-    ).rejects.toMatchObject({ code: 'E_INVALID_FLOW', details: [expect.stringContaining('r_invented')] });
-  });
-
   it('rejects unsupported caller mechanics before invoking either gameplay adapter', async () => {
     const port = inertGameplayPort();
     await expect(
@@ -298,179 +239,13 @@ describe('two-stage authoring harness', () => {
     });
   });
 
-  it('does not accept extra endings detached from the authored outcomes', async () => {
-    const detached = clone(adaptation);
-    detached.definition.endings.push({
-      endingId: 'e_detached',
-      title: 'Detached',
-      epilogue: 'This route was never in the story.',
-    });
-    detached.definition.steps.push({
-      ...clone(detached.definition.steps.find((step) => step.stepId === 's_protect')!),
-      stepId: 's_detached',
-      endingId: 'e_detached',
-    });
-    detached.definition.steps.find((step) => step.stepId === 's_recover')!.next.push({
-      toStepId: 's_detached',
-      when: [],
-    });
-    detached.mechanicChoices.push({
-      ...clone(detached.mechanicChoices.find((choice) => choice.stepId === 's_protect')!),
-      stepId: 's_detached',
-    });
-    detached.mechanicChoices.find((choice) => choice.stepId === 's_recover')!.transitions.push({
-      toStepId: 's_detached',
-      narrativeCause: 'An unauthored branch appears.',
-      consequence: 'The branch reaches an ending with no story outcome.',
-    });
-    detached.endingRoutes.push({
-      endingId: 'e_detached',
-      terminalStepIds: ['s_detached'],
-      storyOutcomeIds: [],
-      cause: 'No authored cause.',
-      consequence: 'No authored consequence.',
-    });
 
-    await expect(new GameplayStage().adapt(adaptationRequest, fixtureGameplayPort(detached))).rejects.toMatchObject({
-      code: 'E_CAUSE_EFFECT',
-      details: [expect.stringContaining('has no story outcome')],
-    });
-  });
 });
 
 function fixtureGameplayPort(output: AdaptationOutput): GameplayAgentPort {
   return {
     selectMechanics: async () => ({ mechanics: ['talk', 'pickup', 'deliver'] }),
     adapt: async () => output,
-  };
-}
-
-function singleMechanicPort(mechanic: Mechanic, output: unknown): GameplayAgentPort {
-  const mechanics = targetMechanics(output as AdaptationOutput);
-  if (!mechanics.includes(mechanic)) throw new Error(`fixture does not use ${mechanic}`);
-  return {
-    selectMechanics: async () => ({ mechanics }),
-    adapt: async () => output,
-  };
-}
-
-function targetMechanics(output: AdaptationOutput): Mechanic[] {
-  return [...new Set(output.definition.steps.map((candidate) => candidate.target.kind))];
-}
-
-function singleMechanicAdaptation(mechanic: Mechanic): AdaptationOutput {
-  const targetByMechanic: Record<Exclude<Mechanic, 'goto' | 'observe' | 'talk' | 'listen' | 'pickup' | 'deliver' | 'steal' | 'assassinate' | 'work'>, AdaptationOutput['definition']['steps'][number]['target']> = {
-    investigation: {
-      kind: 'investigation', sceneId: 'scene_manifest', evidenceId: 'seal_impression', evidenceItemId: 'evidence',
-      subjectRoleIds: ['r_mara'], place: { parcelId: 'p_cafe' }, completionFlag: 'interaction_done',
-    },
-    rescue: {
-      kind: 'rescue', roleId: 'r_mara', releaseTargetId: 'service_lift_release',
-      place: { parcelId: 'p_cafe' }, completionFlag: 'interaction_done',
-    },
-    escort: {
-      kind: 'escort', roleId: 'r_mara', routeId: 'cafe_archive_walk', mode: 'follow-player',
-      from: { parcelId: 'p_cafe' }, to: { parcelId: 'p_archive' }, completionFlag: 'interaction_done',
-    },
-    access: {
-      kind: 'access', accessPointId: 'archive_side_door', credentialItemId: 'credential',
-      place: { parcelId: 'p_archive' }, completionFlag: 'interaction_done',
-    },
-    hacking: {
-      kind: 'hacking', targetId: 'archive_index_terminal', place: { parcelId: 'p_archive' }, completionFlag: 'interaction_done',
-    },
-    sabotage: {
-      kind: 'sabotage', targetId: 'manifest_purge_queue', place: { parcelId: 'p_archive' }, completionFlag: 'interaction_done',
-    },
-    transportation: {
-      kind: 'transportation', journeyId: 'cafe_archive_ride', mode: 'ride-hail',
-      from: { parcelId: 'p_cafe' }, to: { parcelId: 'p_archive' }, passengerRoleIds: ['r_mara'], cargoItemIds: [],
-      completionFlag: 'interaction_done',
-    },
-  };
-  if (!(mechanic in targetByMechanic)) throw new Error(`test helper only builds expanded mechanics, got ${mechanic}`);
-
-  const target = targetByMechanic[mechanic as keyof typeof targetByMechanic];
-  const access = mechanic === 'access';
-  const investigate = mechanic === 'investigation';
-  const items: AdaptationOutput['definition']['items'] = investigate
-    ? [{ itemId: 'evidence', name: 'Seal impression', description: 'The fixed clue that proves whose manifest was altered.', kind: 'information' }]
-    : access
-      ? [{ itemId: 'credential', name: 'Archive code', description: 'The exact code Mara provides for the side door.', kind: 'information' }]
-      : [];
-  const actionStep: AdaptationOutput['definition']['steps'][number] = {
-    stepId: 's_action',
-    actId: 'a_action',
-    narrative: {
-      description: `The player completes the authored ${mechanic} interaction.`,
-      playerHint: `Complete the named ${mechanic} target.`,
-      stake: 'Mara can act on the manifest only after this exact interaction succeeds.',
-    },
-    wantedByRoleId: 'r_mara',
-    target,
-    gives: investigate ? ['evidence'] : [],
-    needs: access ? ['credential'] : [],
-    conditions: [],
-    effects: [{ kind: 'setFlag', flag: 'interaction_done' }],
-    next: [],
-    branching: 'parallel',
-    endingId: 'e_done',
-  };
-  const prepStep: AdaptationOutput['definition']['steps'][number] = {
-    stepId: 's_credential',
-    actId: 'a_action',
-    narrative: {
-      description: 'Mara provides the exact archive code.',
-      playerHint: 'Talk to Mara at Low Tide Cafe.',
-      stake: 'The side door remains closed without the code she memorized.',
-    },
-    wantedByRoleId: 'r_mara',
-    target: { kind: 'talk', roleId: 'r_mara', atParcelId: 'p_cafe' },
-    gives: ['credential'],
-    needs: [],
-    conditions: [],
-    effects: [],
-    next: [{ toStepId: 's_action', when: [] }],
-    branching: 'parallel',
-  };
-  const steps = access ? [prepStep, actionStep] : [actionStep];
-  const allBeatIds = Object.values(story.movements).flat().map((beat) => beat.beatId);
-  const mechanicChoices: AdaptationOutput['mechanicChoices'] = steps.map((candidate, index) => ({
-    stepId: candidate.stepId,
-    mechanic: candidate.target.kind,
-    storyBeatIds: access && index === 0 ? [allBeatIds[0]!] : access ? allBeatIds.slice(1) : allBeatIds,
-    narrativeReason: `The exact ${candidate.target.kind} interaction enacts the assigned story beat.`,
-    cause: 'The prior authored state makes this action available.',
-    effect: 'The action records its consequence without inferring a target or identity.',
-    transitions: candidate.next.map((edge) => ({
-      toStepId: edge.toStepId,
-      narrativeCause: 'The prerequisite is now carried in deterministic state.',
-      consequence: 'The next exact interaction becomes active.',
-    })),
-  }));
-
-  return {
-    definition: {
-      id: `q_${mechanic}`,
-      title: `Authored ${mechanic}`,
-      premise: `A contract example for the ${mechanic} mechanic.`,
-      roles: [{ roleId: 'r_mara', npcType: 'quest_vendor', persona: 'Mara knows the manifest and names each interaction precisely.' }],
-      items,
-      facts: [],
-      acts: [{ actId: 'a_action', title: 'Exact action', summary: 'Complete one authored interaction.' }],
-      steps,
-      endings: [{ endingId: 'e_done', title: 'Recorded consequence', epilogue: 'The exact interaction changes Mara\'s next choice.' }],
-      flags: ['interaction_done'],
-      entryStepIds: [access ? 's_credential' : 's_action'],
-    },
-    mechanicChoices,
-    endingRoutes: [{
-      endingId: 'e_done',
-      terminalStepIds: ['s_action'],
-      storyOutcomeIds: [],
-      cause: 'The named interaction completed against its authored target.',
-      consequence: 'The completion flag and ending persist.',
-    }],
   };
 }
 

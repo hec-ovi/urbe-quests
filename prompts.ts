@@ -9,7 +9,13 @@ export type PromptLoader = (file: string, vars?: Record<string, string | number>
 
 export function promptLoader(promptsDir: URL): PromptLoader {
   return (file, vars = {}) => {
-    const text = readFileSync(new URL(file, promptsDir), 'utf8');
+    const [path, section] = file.split('#');
+    let text = readFileSync(new URL(path!, promptsDir), 'utf8');
+    if (section !== undefined) {
+      const body = text.split(`## ${section}\n`)[1];
+      if (body === undefined) throw new Error(`missing prompt section ${file}`);
+      text = body.split('\n## ')[0]!.trim();
+    }
     return text.replace(/\{\{(\w+)\}\}/g, (match, name: string) => {
       const value = vars[name];
       return value === undefined ? match : String(value);

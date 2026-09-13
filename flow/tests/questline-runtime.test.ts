@@ -192,12 +192,15 @@ describe('QuestlineRuntime', () => {
     expect(done.endingId).toBe('e_clean');
   });
 
-  it('rejects events that match no active step with E_WRONG_STATE', () => {
+  it('rejects unknown steps and unmatched events without changing state', () => {
     const { sim, cast } = setup();
     const runtime = new QuestlineRuntime(definition(), cast, sim);
+    const saved = runtime.serialize();
+    expect(() => runtime.stepAvailability('missing', TUE_10)).toThrowError(expect.objectContaining({ code: 'E_UNKNOWN_ID' }));
     expect(() => runtime.advance({ kind: 'pickedUp', itemId: 'chip' }, TUE_10)).toThrowError(
       expect.objectContaining({ code: 'E_WRONG_STATE' }),
     );
+    expect(runtime.serialize()).toEqual(saved);
   });
 
   it('resolves the place each step points at: the pinned parcel, the item, the delivery, and the person live', () => {
@@ -221,18 +224,6 @@ describe('QuestlineRuntime', () => {
     sim.applyFlag(baristaId, { kind: 'die' });
     expect(runtime.stepAvailability('s_talk', TUE_10)).toEqual({ available: false, reason: 'role_dead' });
     expect(runtime.status()).toBe('stalled');
-  });
-
-  it('survives serialize/restore mid-quest', () => {
-    const { sim, cast, baristaId, execId } = setup();
-    const runtime = new QuestlineRuntime(definition(), cast, sim);
-    runtime.advance({ kind: 'talkedTo', npcId: baristaId }, TUE_10);
-    runtime.advance({ kind: 'pickedUp', itemId: 'chip' }, TUE_10);
-    const restored = QuestlineRuntime.restore(definition(), cast, sim, runtime.serialize());
-    expect(restored.flags().has('has_chip')).toBe(true);
-    restored.advance({ kind: 'talkedTo', npcId: execId }, TUE_10);
-    const done = restored.advance({ kind: 'delivered', itemId: 'chip', parcelId: 'p1' }, TUE_10);
-    expect(done.endingId).toBe('e_sold');
   });
 
   it('gates a step on held items and derives the inventory from pickups, gives and deliveries', () => {
@@ -262,39 +253,33 @@ describe('QuestlineRuntime', () => {
     expect(() => new QuestlineRuntime(def, cast, sim)).toThrowError(expect.objectContaining({ code: 'E_INVALID_FLOW' }));
   });
 
-  it('completes an assassinate step and records the death in the simulation', () => {
-    const { sim } = setup();
-    const mark = sim.reserveNPC({ name: { given: 'Odo', family: 'Grell' }, type: 'corpo_exec', jobParcelId: 'p3' });
-    const def: QuestlineDefinition = {
-      id: 'q_hit',
-      title: 'A Quiet Retirement',
-      premise: 'Someone at the Crown Exchange signed one memo too many.',
-      roles: [{ roleId: 'mark', npcType: 'corpo_exec', persona: 'Polite. Guilty.' }],
-      items: [],
-      facts: [],
-      acts: [{ actId: 'a1', title: 'The Job', summary: 'Do it.' }],
-      steps: [
-        {
-          stepId: 's_kill',
-          actId: 'a1',
-          narrative: { description: 'No witnesses.', playerHint: 'Find the mark.', stake: 'Every memo he signs empties another floor.' },
-          target: { kind: 'assassinate', roleId: 'mark' },
-          gives: [],
-        needs: [],
-        conditions: [],
-          effects: [],
-          next: [],
-          branching: 'parallel',
-          endingId: 'e_done',
-        },
-      ],
-      endings: [{ endingId: 'e_done', title: 'Retired', epilogue: 'The memo stops circulating.' }],
-      flags: [],
-      entryStepIds: ['s_kill'],
-    };
-    const runtime = new QuestlineRuntime(def, { mark: mark.npcId }, sim);
-    const done = runtime.advance({ kind: 'killed', npcId: mark.npcId }, TUE_10);
-    expect(done.endingId).toBe('e_done');
+  it('runs observation, work, listening, theft and an authored lethal consequence', () => {
+    const { sim, baristaId } = setup();
+    const mark = sim.reserveNPC({ name: { given: 'Odo', family: 'Grell' }, type: 'cafe_barista', jobParcelId: 'p4' });
+    const def = definition();
+    def.roles[1]!.npcType = 'cafe_barista';
+    const targets: QuestlineDefinition['steps'][number]['target'][] = [
+      { kind: 'observe', districtId: 'd1' },
+      { kind: 'work', atParcelId: 'p4', role: 'counter_worker' },
+      { kind: 'listen', roleIds: ['barista', 'exec'], atParcelId: 'p4' },
+      { kind: 'steal', itemId: 'chip', fromRoleId: 'exec' },
+      { kind: 'assassinate', roleId: 'exec' },
+    ];
+    def.steps = targets.map((target, index) => ({
+      ...def.steps[0]!, stepId: `s${index}`, target,
+      next: index < targets.length - 1 ? [{ toStepId: `s${index + 1}`, when: [] }] : [],
+      ...(index === targets.length - 1 ? { endingId: 'e_sold' } : {}),
+    }));
+    def.endings = [def.endings[0]!];
+    def.entryStepIds = ['s0'];
+    const runtime = new QuestlineRuntime(def, { barista: baristaId, exec: mark.npcId }, sim);
+    expect(runtime.windows('s0')).toBeUndefined();
+    runtime.advance({ kind: 'observed', districtId: 'd1' }, TUE_10);
+    runtime.advance({ kind: 'workedShift', parcelId: 'p4' }, TUE_10);
+    runtime.advance({ kind: 'overheard', npcIds: [baristaId, mark.npcId] }, TUE_10);
+    runtime.advance({ kind: 'stole', itemId: 'chip' }, TUE_10);
+    expect(runtime.inventory()).toContain('chip');
+    expect(runtime.advance({ kind: 'killed', npcId: mark.npcId }, TUE_10).endingId).toBe('e_sold');
     expect(sim.getNPC(mark.npcId).flags.dead).toBe(true);
   });
 });

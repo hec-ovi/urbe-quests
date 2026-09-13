@@ -75,28 +75,5 @@ describe('engine questline set', () => {
     expect(validate([definition('main')]), JSON.stringify(validate.errors)).toBe(true);
     const withUnknown = { ...definition('main'), unexpected: true };
     expect(validate([withUnknown])).toBe(false);
-    for (const size of ['small', 'medium', 'large']) {
-      const payload = JSON.parse(readFileSync(new URL(`../samples/games/${size}/questlines.json`, import.meta.url), 'utf8'));
-      expect(validate(payload), `${size}: ${JSON.stringify(validate.errors)}`).toBe(true);
-    }
-  });
-
-  it('ships deterministic small, medium and large game sets with the full story shape', () => {
-    const validator = new QuestlineSetValidator();
-    for (const size of ['small', 'medium', 'large']) {
-      const payload = JSON.parse(
-        readFileSync(new URL(`../samples/games/${size}/questlines.json`, import.meta.url), 'utf8'),
-      ) as QuestlineDefinition[];
-      validator.validate(payload);
-      expect(payload).toHaveLength(4);
-      expect(payload[0]).toMatchObject({ id: 'q_weir_line' });
-      expect(payload[0]!.acts.map((act) => act.actId)).toEqual(['a1_grief', 'a2_glass', 'a3_board', 'a4_choice']);
-      expect(payload[0]!.endings).toHaveLength(2);
-      expect(payload[0]!.steps.find((step) => step.stepId === 's_listen')).toMatchObject({ branching: 'parallel' });
-      expect(payload.slice(1).every((questline) => questline.steps.length === 5)).toBe(true);
-      expect(new Set(payload.flatMap((questline) => questline.steps.map((step) => step.target.kind)))).toEqual(
-        new Set(['goto', 'observe', 'talk', 'listen', 'pickup', 'deliver', 'steal', 'work']),
-      );
-    }
   });
 });

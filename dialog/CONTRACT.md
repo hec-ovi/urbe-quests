@@ -1,6 +1,6 @@
 # CONTRACT: quests/dialog
 
-Purpose: assembles what an NPC is allowed to know into cache-ordered dialog context layers, remembers conversations with tiered summarization, and makes deflection structural: a fact outside the layers is not in the prompt and cannot leak.
+Purpose: assembles what an NPC is allowed to know into cache-ordered dialog context layers, remembers conversations with tiered summarization, and requests replies grounded in those layers.
 
 ## In
 `new DialogContextService(input)` ([DialogContextService.ts](DialogContextService.ts)):
@@ -23,12 +23,12 @@ Then:
 ## Errors
 - `E_WRONG_STATE`: contextFor on a dead NPC (the dead do not talk).
 - `E_UNKNOWN_ID`: NPC type missing from the type set.
-`SimulationError` (unknown npc, dead on record) passes through.
+`SimulationError` from context queries and provider exceptions pass through. `recordTurn` stores the supplied NPC ID without a Simulation lookup.
 
 ## Invariants
 - Closed knowledge: context text contains only world rules, type boilerplate, simulation background, attached personas, unlocked quest facts, this NPC's active wants and lived endings, and recorded conversation. Scope is decided by runtime state and the cast mapping, never by the model; gated facts with unset flags and other NPCs' wants never appear.
 - Shared segments are memoized per service (the cache for common instances) and stable per world/type.
-- The LLM is used for summarization only; what an NPC knows is decided by flags and code.
+- The LLM summarizes memory and writes replies; code selects context facts. Model grounding still requires evaluation with the selected provider.
 - Prompts live in [prompts/](prompts/) .md files; no output caps.
 
 ## Depends on

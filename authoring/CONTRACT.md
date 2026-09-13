@@ -48,7 +48,7 @@ The shared named world envelope is [schema/world-context.schema.json](schema/wor
 
 ## Dependencies
 
-- `flow`, only through [../flow/CONTRACT.md](../flow/CONTRACT.md) and [../flow/schema/questline.schema.json](../flow/schema/questline.schema.json). Authoring imports no flow implementation.
+- `flow`, only through [../flow/CONTRACT.md](../flow/CONTRACT.md) and [../flow/schema/questline.schema.json](../flow/schema/questline.schema.json). Authoring uses the public `FlowValidator` for graph semantics.
 - `world`, through [../world/CONTRACT.md](../world/CONTRACT.md) and its compatible named-world consumer types.
 - Injected story and gameplay agent ports. The layer owns no model client.
 
@@ -69,7 +69,3 @@ The shared named world envelope is [schema/world-context.schema.json](schema/wor
 - Every story beat reaches at least one quest step. Every story decision outcome reaches a distinct quest ending.
 - Every quest step has exactly one matching mechanic record and an ordered trace of all outgoing edges.
 - Agent responses are constrained by the same JSON Schemas used for boundary validation. No output length cap is added.
-
-## How to modify this blackbox safely
-
-Add a mechanic only after `flow` supports its target and player event. Add its skill, frontmatter route, resolver row, schema enum, world checks, graph checks, exact completion event, and valid and invalid trace tests together. Run the authoring contract tests, full tests, typecheck, build, and the compiled resolver smoke test.

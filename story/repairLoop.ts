@@ -1,11 +1,12 @@
-/**
- * One prose call, parsed by code; a shortfall gets one repair round that lists
- * every problem, then E_LLM with the raw text kept in detail.
- */
+/** Parses a text response, allows one repair and retains unusable output in E_LLM. */
+
+import { promptLoader } from '../prompts.js';
 
 import { QuestError } from '../errors.js';
 import type { LLMPort } from '../ports/llm.js';
 import { ProseShortfall } from './headings.js';
+
+const prompt = promptLoader(new URL('./prompts/', import.meta.url));
 
 export interface RepairLoopInput<T> {
   llm: LLMPort;
@@ -22,7 +23,7 @@ export async function completeWithRepair<T>(input: RepairLoopInput<T>): Promise<
   const first = attempt(input.parse, raw);
   if (first.value !== undefined) return { value: first.value, raw };
 
-  const repairPrompt = `${input.prompt}\n\n[Your previous answer]\n${raw}\n\n${input.repair(first.problems)}`;
+  const repairPrompt = prompt('repair-input.md', { request: input.prompt, answer: raw, repair: input.repair(first.problems) }).trim();
   const repaired = await input.llm.complete({ system: input.system, prompt: repairPrompt });
   const second = attempt(input.parse, repaired);
   if (second.value !== undefined) return { value: second.value, raw: repaired };

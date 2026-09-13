@@ -1,9 +1,4 @@
-/**
- * Step one of questline creation: from the creation prompt and the named
- * world, one text-only call writes the whole story as a film script
- * (characters with background and voice, four movements of passages that
- * turn). Minimums are enforced in code; a shortfall gets one repair round.
- */
+/** Writes and validates a narrative script from semantic city context. */
 
 import { promptLoader } from '../prompts.js';
 import type { LLMPort } from '../ports/llm.js';
@@ -30,11 +25,11 @@ export class ScriptPass {
   async run(input: ScriptPassInput): Promise<ScriptPassResult> {
     const creationPrompt = input.prompt ?? input.world.meta.naming.theme;
     const minimums = { ...DEFAULT_SCRIPT_MINIMUMS, ...input.minimums };
-    const brief = [
-      `Creation prompt:\n${creationPrompt}`,
-      `The city's character:\n${input.world.meta.naming.theme}`,
-      new WorldBrief(input.world, input.types).render(),
-    ].join('\n\n');
+    const brief = prompt('pass-input.md#script', {
+      creationPrompt,
+      theme: input.world.meta.naming.theme,
+      world: new WorldBrief(input.world, input.types).render(),
+    });
 
     const { value, raw } = await completeWithRepair({
       llm: input.llm,
