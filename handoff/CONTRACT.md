@@ -23,7 +23,7 @@ Purpose: projects validated quest definitions, physical assets, interaction anch
 - `missionItemBindings`: explicit physical quest item associations.
 - `hostCapabilities`: the validated host declaration used to admit transportation steps.
 
-The CLI writer emits `questlines.json`, `objectives.json`, `investigations.json`, `mechanic-target-bindings.json`, `mission-assets.json`, `mission-item-bindings.json`, `host-capabilities.json`, and `quest-bundle.json` ([schema/quest-bundle.schema.json](schema/quest-bundle.schema.json)). Empty catalogs are `[]`; an omitted host declaration becomes `{"transportationModes":[]}`.
+The CLI writer emits the questlines file at the given path plus `objectives.json`, `investigations.json`, `mechanic-target-bindings.json`, `mission-assets.json`, `mission-item-bindings.json`, `host-capabilities.json`, and `quest-bundle.json` ([schema/quest-bundle.schema.json](schema/quest-bundle.schema.json)). The manifest records the questlines filename. Empty catalogs are `[]`; an omitted host declaration becomes `{"transportationModes":[]}`.
 
 ## Errors
 

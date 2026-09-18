@@ -11,7 +11,7 @@ Purpose: translates a story arc into a validated questline: a text-only plan pas
 The halves run alone: `new TranslationPlanner().plan({ assignment, world, types, llm }) -> PlanResult { text, manifest }` ([TranslationPlanner.ts](TranslationPlanner.ts)) and `new QuestlineBuilder().build({ assignment, plan, manifest, world, types, sim, agent, ... }) -> BuildResult` ([QuestlineBuilder.ts](QuestlineBuilder.ts)).
 
 ## Out
-`TranslationResult { plan, definition, cast }`: the plan text (manifest included), a `QuestlineDefinition` that passed `FlowValidator` ([../flow/schema.ts](../flow/schema.ts)), and its `ResolvedCast` (reserved identities via `reserveNPC`, reused when that person already exists so one story character is one NPC across questlines; everyone else the on-duty vendor by type, tried at three hours of the day, then anyone of that type already in the world; a role pinned to a parcel by its talk or listen step is cast there).
+`TranslationResult { plan, definition, cast }`: the plan text (manifest included), a `QuestlineDefinition` that passed `FlowValidator` ([../flow/schema.ts](../flow/schema.ts)), and its `ResolvedCast` (reserved identities via `reserveNPC`, reused when that person already exists so one story character is one NPC across questlines; everyone else the on-duty vendor by type, tried at the reference time and 8 and 16 hours later, then anyone of that type already in the world; a role pinned to a parcel by its talk or listen step is cast there).
 
 The manifest ([PlanManifest.ts](PlanManifest.ts)): the plan's last section, `## Manifest` with one line each of `roles:`, `items:`, `acts:`, `endings:`, `steps:` listing machine ids (a kind in parentheses is ignored, `none` is an empty list). `parsePlanManifest(plan)` reads it; a plan without a usable one gets one repair round ([prompts/translate-plan-repair.md](prompts/translate-plan-repair.md)). Facts are not planned: the builder adds them freely.
 
@@ -29,7 +29,7 @@ Other `SimulationError`s pass through.
 - The manifest is the bound: the finished questline carries exactly the planned roles, items, acts, endings and steps, plus whatever facts the agent added.
 - The agent never sees or emits NPC ids or coordinates; roles bind types, the simulation resolves people. The script owns personality, needs, drives and voice; the simulation owns home, job, family and routine.
 - Flags referenced by drafted steps and facts are auto-declared; the finished definition always satisfies the flow validator.
-- Prompts live in [prompts/](prompts/): translate-plan.md, translate-plan-repair.md, builder-system.md, builder-nudge.md, step-catalog.md (every example reads want, cost, change, then the step), artifact-catalog.md. Minimums are floors, story breadth has no upper count, and model output has no token, word or character cap.
+- Prompts live in [prompts/](prompts/), including tool descriptions under `prompts/tools/`. Step-catalog examples read want, cost, then change. Minimums are floors, story breadth has no upper count, and model output has no token, word or character cap.
 
 ## Depends on
 - ../flow (schema, validator), ../world (types, SimulationPort), ../story (world brief, repair loop), ../ports (LLMPort, AgentPort)

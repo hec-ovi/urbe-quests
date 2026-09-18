@@ -11,10 +11,19 @@ Purpose: deterministic questline state machine over a condition-gated DAG of typ
 - `PlayerEvent` ([schema/player-event.schema.json](schema/player-event.schema.json), TypeScript [events.ts](events.ts)) plus current time in simulation minutes. Mechanic completion events repeat the authored interaction ids, cast NPC ids, item ids, modes, and places needed to match one target without inference.
 - Authored places are exact `parcelId`, `districtId`, `stationId`, or `stopId` identities. Arrival and delivery events repeat the same identity kind and id.
 
-Mechanic completion events:
+Completion events:
 
 | Step | Event | Exact match fields |
 | --- | --- | --- |
+| `goto` | `arrivedAt` | `place` |
+| `observe` | `observed` | `districtId` |
+| `talk` | `talkedTo` | resolved `npcId` |
+| `listen` | `overheard` | resolved `npcIds` |
+| `pickup` | `pickedUp` | `itemId` |
+| `deliver` | `delivered` | `itemId`, `place` |
+| `steal` | `stole` | `itemId` |
+| `assassinate` | `killed` | resolved `npcId` |
+| `work` | `workedShift` | `parcelId` |
 | `investigation` | `investigated` | `sceneId`, `evidenceId`, `place` |
 | `rescue` | `released` | resolved `npcId`, `releaseTargetId`, `place` |
 | `escort` | `escorted` | resolved `npcId`, `routeId`, `mode`, `from`, `to` |
@@ -31,7 +40,7 @@ Mechanic completion events:
 - `windows(stepId)`: weekly availability windows derived from the target NPC's routine; undefined for schedule-free steps.
 - `stepPlace(stepId, timeMin)`: where the step points, for a marker on the map: the parcel, district, station, or stop the target names, the parcel the item sits at, or the simulation's live place for the person it targets. Undefined when the simulation has no place to give.
 - `stepGuidance(stepId, timeMin)` ([schema/step-guidance.schema.json](schema/step-guidance.schema.json)): route-ready parcel, station, or stop destination. District areas, street edges, moving routes, and unavailable targets return a closed reason instead of an invalid route request. The host supplies current feet as the route origin.
-- `advance(event, timeMin)`: completes matching available steps, applies effects (quest flags, simulation flags), activates edges (parallel or exclusive branching), reports an ending on terminal steps. Talk, listen, steal, rescue, escort, and transportation with cast passengers enforce liveness and available presence at advance time; a kill event records the death in the simulation.
+- `advance(event, timeMin)`: completes matching available steps, applies effects (quest flags, simulation flags), activates edges (parallel or exclusive branching), reports an ending on terminal steps. Talk, listen, steal, rescue, escort, and transportation enforce liveness and available presence at advance time; completing an assassinate step records the death in the simulation.
 - `serialize()` ([schema/questline-state.schema.json](schema/questline-state.schema.json)) / `QuestlineRuntime.restore(...)`. Restore accepts untrusted JSON only when step history, active frontier, ending, and replayed flags agree with the definition.
 
 `FlowValidator` ([validate.ts](validate.ts)): structural validation (ids, references, declared flags, DAG, reachability, terminal endings, role usage, item rules: information is never a pickup, deliver or steal target; a pickup item is placed at a parcel). Investigation stages must grant their declared information evidence. Access must need its key, information, or device credential. Transportation must need all physical cargo. Escort and transportation endpoints must differ. Every interaction mechanic must set its declared completion flag.

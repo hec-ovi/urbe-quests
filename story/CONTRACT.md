@@ -20,7 +20,7 @@ Provider errors from the port pass through.
 ## Invariants
 - Text only: neither pass uses tools; parsing and minimum checks are code; a shortfall lists every problem in one repair round; raw text is always kept.
 - Minimums are floors rendered into the prompt, never exact counts.
-- Prompts live in [prompts/](prompts/): script-pass.md, script-repair.md, situations-pass.md, situations-repair.md; output length is never capped.
+- Prompts live in [prompts/](prompts/): pass-input.md, script-pass.md, script-repair.md, situations-pass.md, situations-repair.md, repair-input.md. Output length is never capped.
 
 ## Depends on
 - ../world (types), ../ports (LLMPort)

@@ -26,7 +26,7 @@ Purpose: exposes story writing and gameplay adaptation as separate agent stages 
 - Gameplay-stage result: [schema/adaptation-output.schema.json](schema/adaptation-output.schema.json). Every step records its mechanic choice, story beats, narrative reason, cause, effect, and ordered transition trace. Every ending records terminal steps and story outcomes.
 - Closed error envelope: [schema/authoring-error.schema.json](schema/authoring-error.schema.json).
 
-The shared named world envelope is [schema/world-context.schema.json](schema/world-context.schema.json). It preserves naming metadata, gender-tagged name pools, named parcel and district identities, and whichever transit collections the source world carries. Geometry is excluded. [fixtures/world-context.json](fixtures/world-context.json) satisfies the Naming v0.4.8 output schemas with partial transit. Shared ids, mechanics, skill summaries, and schema bundles are [schema/values.schema.json](schema/values.schema.json).
+The shared named world envelope is [schema/world-context.schema.json](schema/world-context.schema.json). It preserves naming metadata, optional gender-tagged name pools, named parcel and district identities, and whichever transit collections the source world carries. Geometry is excluded. [fixtures/world-context.json](fixtures/world-context.json) matches that envelope, with partial transit. Shared ids, mechanics, skill summaries, and schema bundles are [schema/values.schema.json](schema/values.schema.json).
 
 ## Events
 

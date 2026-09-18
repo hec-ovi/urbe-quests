@@ -13,7 +13,7 @@ Start with [SKILL.md](SKILL.md) for a copyable library call, [CONTRACT.md](CONTR
 
 `AuthoringHarness.writeStory` writes narrative only. `adaptGameplay` receives the completed story, named places and NPC types, selects mechanic skills, and checks the resulting definition and story trace. `QuestlineCreation.run` provides the text script, plan and tool-build workflow with main and side quests. Both paths remain public; canonical orchestration and Naming integration are [open proposals](docs/ISSUES.md).
 
-Node callers import `dist/index.js`; browser hosts import `dist/runtime.js`. Runtime completion requires an exact accepted event and available target. Inventory, objective location and route guidance are derived from state. Dialogue supplies scoped facts, text replies and serializable memory; the host controls the visible person and their routine.
+Node callers import `dist/index.js` (authoring, creation, dialog, handoff). Browser hosts import `dist/runtime.js` (definitions, runtime, cast, guidance). Runtime completion requires an exact accepted event and available target. Inventory, objective location and route guidance are derived from state. Dialogue, on the Node entry, supplies scoped facts, text replies and serializable memory; the host controls the visible person and their routine.
 
 ## CLI
 

@@ -1,4 +1,4 @@
-# Quests map
+# Quests map 0.8.4
 
 [Public contract](../CONTRACT.md), [caller skill](../SKILL.md), [integration proposals](ISSUES.md).
 
