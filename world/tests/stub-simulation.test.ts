@@ -1,6 +1,6 @@
 /**
- * Contract-surface tests for quests/world: fixture loading and the stub
- * simulation's semantics (determinism, staffing schedule, liveness, flags).
+ * Contract-surface tests for quests/world: fixture loading, the Atlas
+ * projection, and the stub simulation's semantics.
  */
 
 import { describe, expect, it } from 'vitest';
@@ -26,37 +26,23 @@ describe('fixtures', () => {
     }
   });
 
-  it('derives stable district labels from an Atlas world when naming is absent', () => {
+  it('labels an Atlas world without naming and keeps its transit identities', () => {
     const world = namedWorldFromAtlas(
       {
         meta: { seed: 'plain-atlas' },
         districts: [{ id: 'd0', kind: 'downtown', tier: 'rich' }],
         parcels: [{ id: 'p0', districtId: 'd0', type: 'offices', tier: 'rich' }],
+        transit: {
+          busStops: [{ id: 'stop_1', districtId: 'd0' }],
+          trainStations: [{ id: 'train_1', districtId: 'd0', name: 'Central Rail' }],
+          subwayStations: [{ id: 'subway_1', districtId: 'd0', name: 'Central Below' }],
+        },
       },
       'noir city',
     );
+
     expect(world.meta.naming).toEqual({ theme: 'noir city', namedAt: 'derived-from-atlas' });
     expect(world.districts[0]!.name).toBe('downtown d0');
-  });
-
-  it('preserves transit identities for quest destinations without copying geometry into the quest contract', () => {
-    const world = namedWorldFromAtlas(
-      {
-        meta: { seed: 'transit-atlas' },
-        districts: [{ id: 'd0', kind: 'downtown', tier: 'rich' }],
-        parcels: [],
-        transit: {
-          busStops: [{ id: 'stop_1', districtId: 'd0' }],
-          busRoutes: [{ id: 'bus_1', name: 'Night Loop' }],
-          trainStations: [{ id: 'train_1', districtId: 'd0', name: 'Central Rail' }],
-          trainLines: [{ id: 'rail_1', name: 'Harbor Line' }],
-          subwayStations: [{ id: 'subway_1', districtId: 'd0', name: 'Central Below' }],
-          subwayLines: [{ id: 'metro_1', name: 'Flood Line' }],
-        },
-      },
-      'noir transit city',
-    );
-
     expect(world.transit?.busStops).toEqual([{ id: 'stop_1', districtId: 'd0' }]);
     expect(world.transit?.trainStations?.[0]?.name).toBe('Central Rail');
     expect(world.transit?.subwayStations?.[0]?.id).toBe('subway_1');
@@ -64,34 +50,23 @@ describe('fixtures', () => {
 });
 
 describe('StubSimulation', () => {
-  it('resolves a vendor by type during work hours, with a gapless weekly routine', () => {
-    const sim = makeSim();
-    const barista = sim.getNPCVendor({ type: 'cafe_barista', timeMin: TUE_10 });
+  it('resolves a vendor by type on a gapless weekly routine, identically for the same seed', () => {
+    const barista = makeSim().getNPCVendor({ type: 'cafe_barista', timeMin: TUE_10 });
     expect(barista.type).toBe('cafe_barista');
     expect(barista.job?.parcelId).toBe('p4');
     for (let day = 0; day < 7; day++) {
-      const intervals = barista.routine.filter(entry => entry.days.includes(day));
+      const intervals = barista.routine.filter((entry) => entry.days.includes(day));
       expect(intervals[0]?.startMin).toBe(0);
       expect(intervals.at(-1)?.endMin).toBe(1440);
       expect(intervals.slice(1).every((entry, index) => entry.startMin === intervals[index]!.endMin)).toBe(true);
     }
+
+    const again = makeSim().getNPCVendor({ type: 'cafe_barista', timeMin: TUE_10 });
+    expect(again.name).toEqual(barista.name);
+    expect(again.home).toEqual(barista.home);
   });
 
-  it('is deterministic: same seed and call order produce the same NPC', () => {
-    const a = makeSim().getNPCVendor({ type: 'cafe_barista', timeMin: TUE_10 });
-    const b = makeSim().getNPCVendor({ type: 'cafe_barista', timeMin: TUE_10 });
-    expect(a.name).toEqual(b.name);
-    expect(a.home).toEqual(b.home);
-  });
-
-  it('throws E_NO_MATCH when nobody is on duty', () => {
-    const sim = makeSim();
-    expect(() => sim.getNPCVendor({ type: 'cafe_barista', timeMin: TUE_03 })).toThrowError(
-      expect.objectContaining({ code: 'E_NO_MATCH' }),
-    );
-  });
-
-  it('reports behavior from the routine and tracks interrupt/resume', () => {
+  it('reports behavior from the routine, tracks interrupt and resume, and reserves a fixed identity once', () => {
     const sim = makeSim();
     const barista = sim.getNPCVendor({ type: 'cafe_barista', timeMin: TUE_10 });
     const working = sim.behaviorAt(barista.npcId, TUE_10);
@@ -101,10 +76,7 @@ describe('StubSimulation', () => {
     expect(sim.behaviorAt(barista.npcId, TUE_10).interrupted).toBe(true);
     sim.resume(barista.npcId, TUE_10);
     expect(sim.behaviorAt(barista.npcId, TUE_10).interrupted).toBe(false);
-  });
 
-  it('reserves a fixed-identity NPC and rejects a duplicate reservation', () => {
-    const sim = makeSim();
     const spec = { name: { given: 'Vela', family: 'Marsh' }, type: 'corpo_exec', jobParcelId: 'p1' };
     const reserved = sim.reserveNPC(spec);
     expect(reserved.name).toEqual(spec.name);
@@ -112,22 +84,7 @@ describe('StubSimulation', () => {
     expect(() => sim.reserveNPC(spec)).toThrowError(expect.objectContaining({ code: 'E_CONFLICT' }));
   });
 
-  it('dead NPCs stop matching queries and reject behavior and flags', () => {
-    const sim = makeSim();
-    const barista = sim.getNPCVendor({ type: 'cafe_barista', timeMin: TUE_10 });
-    sim.applyFlag(barista.npcId, { kind: 'die' });
-    expect(() => sim.getNPCVendor({ parcelId: 'p4', type: 'cafe_barista', timeMin: TUE_10 })).toThrowError(
-      SimulationError,
-    );
-    expect(() => sim.behaviorAt(barista.npcId, TUE_10)).toThrowError(expect.objectContaining({ code: 'E_DEAD' }));
-    expect(() => sim.applyFlag(barista.npcId, { kind: 'resign' })).toThrowError(
-      expect.objectContaining({ code: 'E_DEAD' }),
-    );
-    expect(sim.findNPCs({ type: 'cafe_barista' })).toHaveLength(0);
-    expect(sim.findNPCs({ type: 'cafe_barista', includeDead: true })).toHaveLength(1);
-  });
-
-  it('resign clears the job and rebuilds the routine; custom tags are queryable', () => {
+  it('applies flags: resign clears the job, custom tags are queryable, death ends every query', () => {
     const sim = makeSim();
     const barista = sim.getNPCVendor({ type: 'cafe_barista', timeMin: TUE_10 });
     sim.applyFlag(barista.npcId, { kind: 'resign' });
@@ -136,11 +93,20 @@ describe('StubSimulation', () => {
     expect(jobless.routine.some((e) => e.activity === 'working')).toBe(false);
     sim.applyFlag(barista.npcId, { kind: 'custom', tag: 'quest_ally' });
     expect(sim.findNPCs({ flag: 'quest_ally' })).toHaveLength(1);
+
+    sim.applyFlag(barista.npcId, { kind: 'die' });
+    expect(() => sim.getNPCVendor({ parcelId: 'p4', type: 'cafe_barista', timeMin: TUE_10 })).toThrowError(SimulationError);
+    expect(() => sim.behaviorAt(barista.npcId, TUE_10)).toThrowError(expect.objectContaining({ code: 'E_DEAD' }));
+    expect(() => sim.applyFlag(barista.npcId, { kind: 'resign' })).toThrowError(expect.objectContaining({ code: 'E_DEAD' }));
+    expect(sim.findNPCs({ type: 'cafe_barista' })).toHaveLength(0);
+    expect(sim.findNPCs({ type: 'cafe_barista', includeDead: true })).toHaveLength(1);
   });
 
-  it('rejects unknown identities, missing query inputs and invalid time', () => {
-    expect(() => makeSim().getNPCVendor({ timeMin: TUE_10 })).toThrowError(expect.objectContaining({ code: 'E_INVALID_INPUT' }));
-    expect(() => makeSim().getNPCVendor({ type: 'cafe_barista', timeMin: -1 })).toThrowError(expect.objectContaining({ code: 'E_TIME' }));
-    expect(() => makeSim().getNPC('npc_nope')).toThrowError(expect.objectContaining({ code: 'E_UNKNOWN_ID' }));
+  it('rejects an empty query, an unknown identity, an invalid time and nobody on duty', () => {
+    const sim = makeSim();
+    expect(() => sim.getNPCVendor({ timeMin: TUE_10 })).toThrowError(expect.objectContaining({ code: 'E_INVALID_INPUT' }));
+    expect(() => sim.getNPC('npc_nope')).toThrowError(expect.objectContaining({ code: 'E_UNKNOWN_ID' }));
+    expect(() => sim.getNPCVendor({ type: 'cafe_barista', timeMin: -1 })).toThrowError(expect.objectContaining({ code: 'E_TIME' }));
+    expect(() => sim.getNPCVendor({ type: 'cafe_barista', timeMin: TUE_03 })).toThrowError(expect.objectContaining({ code: 'E_NO_MATCH' }));
   });
 });

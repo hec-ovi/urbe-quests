@@ -1,4 +1,4 @@
-# Quests 0.8.3
+# Quests 0.8.4
 
 Writes stories through injected agents, adapts them into typed quests, runs their rules in code, and prepares Engine handoffs and scoped NPC dialogue.
 

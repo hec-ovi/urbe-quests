@@ -1,4 +1,4 @@
-# urbe-quests 0.8.3
+# urbe-quests 0.8.4
 
 Writes a story from city context, adapts it to typed gameplay, and runs quest rules in code. Models are injected per creative stage. Engine receives definitions, objectives, asset requests and exact interaction bindings.
 

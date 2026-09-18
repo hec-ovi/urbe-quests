@@ -19,17 +19,14 @@ function stream(events: unknown[], done = true): Response {
 const event = (delta: object) => ({ choices: [{ index: 0, delta }] });
 
 describe('sample model client through its text and agent ports', () => {
-  it('collects streamed text without output limits or losing split UTF-8', async () => {
+  it('streams text and indexed tool calls without output limits, and replies into the next transcript', async () => {
     vi.mocked(fetch).mockResolvedValueOnce(stream([event({ content: 'María ' }), event({ content: 'keeps the receipt.' })]));
-    const result = await new OpenAICompatibleClient('fixture').complete({ system: 'context', prompt: 'story' });
-    expect(result).toBe('María keeps the receipt.');
-    const request = JSON.parse(String(vi.mocked(fetch).mock.calls[0]![1]?.body));
-    expect(request).toEqual({ model: 'fixture', stream: true, messages: [
-      { role: 'system', content: 'context' }, { role: 'user', content: 'story' },
-    ] });
-  });
+    expect(await new OpenAICompatibleClient('fixture').complete({ system: 'context', prompt: 'story' })).toBe('María keeps the receipt.');
+    expect(JSON.parse(String(vi.mocked(fetch).mock.calls[0]![1]?.body))).toEqual({
+      model: 'fixture', stream: true, messages: [{ role: 'system', content: 'context' }, { role: 'user', content: 'story' }],
+    });
 
-  it('assembles indexed tool deltas and returns their replies in the next transcript', async () => {
+    vi.mocked(fetch).mockReset();
     vi.mocked(fetch).mockResolvedValueOnce(stream([
       event({ tool_calls: [{ index: 1, id: 'b', function: { name: 'finish_questline', arguments: '{}' } }] }),
       event({ tool_calls: [{ index: 0, id: 'a', function: { name: 'add_role', arguments: '{"roleId":' } }] }),
