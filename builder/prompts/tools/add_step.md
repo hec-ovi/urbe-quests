@@ -8,7 +8,7 @@ What happens in the story at this step.
 
 ## playerHint
 
-What the player sees as the objective.
+What the player sees as the objective. Name an hour ("during the slow hour", "after dark", "before noon", "at 21:00") only when the step really is open then: the city turns those words into a gate the runtime checks, and the character is cast from whoever holds that post at that hour.
 
 ## stake
 

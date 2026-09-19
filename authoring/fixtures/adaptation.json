@@ -101,7 +101,8 @@
           "kind": "deliver",
           "itemId": "i_manifest",
           "place": {
-            "parcelId": "p_archive"
+            "parcelId": "p_archive",
+            "name": "Harbor Archive"
           }
         },
         "gives": [],

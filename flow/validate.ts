@@ -1,7 +1,8 @@
 /** Structural validation of a QuestlineDefinition. Throws E_INVALID_FLOW. */
 
 import { QuestError } from '../errors.js';
-import type { PlaceTarget, Predicate, QuestItem, QuestlineDefinition, QuestStep } from './schema.js';
+import type { PlaceTarget, Predicate, QuestItem, QuestlineDefinition, QuestStep, TimeWindow } from './schema.js';
+import { namedStepTime } from './timeWords.js';
 
 export class FlowValidator {
   validate(def: QuestlineDefinition): void {
@@ -34,6 +35,7 @@ export class FlowValidator {
         fail(`step ${step.stepId}: wanted by unknown role ${step.wantedByRoleId}`);
       }
       this.checkTarget(step, roleIds, items, fail);
+      this.checkWindow(step, fail);
       for (const itemId of [...step.gives, ...step.needs]) {
         if (!items.has(itemId)) fail(`step ${step.stepId}: unknown item ${itemId}`);
       }
@@ -107,10 +109,14 @@ export class FlowValidator {
       return item;
     };
     const requirePlace = (place: PlaceTarget): void => {
-      const entries = Object.entries(place);
-      const allowed = new Set(['parcelId', 'districtId', 'stationId', 'stopId']);
-      if (entries.length !== 1 || !allowed.has(entries[0]?.[0] ?? '') || typeof entries[0]?.[1] !== 'string' || entries[0][1].length === 0) {
+      const allowed = ['parcelId', 'districtId', 'stationId', 'stopId'];
+      const ids = Object.entries(place).filter(([key]) => allowed.includes(key));
+      const extra = Object.keys(place).filter((key) => key !== 'name' && !allowed.includes(key));
+      if (ids.length !== 1 || typeof ids[0]?.[1] !== 'string' || ids[0][1].length === 0 || extra.length > 0) {
         fail(`step ${step.stepId}: ${t.kind} has an invalid place`);
+      }
+      if (typeof place.name !== 'string' || place.name.length === 0) {
+        fail(`step ${step.stepId}: ${t.kind} place ${ids[0]?.[1]} carries no name`);
       }
     };
     switch (t.kind) {
@@ -195,6 +201,28 @@ export class FlowValidator {
     }
   }
 
+  /**
+   * A step promises an hour only when the runtime checks it: text that names
+   * one carries a window, and the window itself must be a real weekly slice.
+   */
+  private checkWindow(step: QuestStep, fail: (m: string) => never): void {
+    const window: TimeWindow | undefined = step.window;
+    if (window === undefined) {
+      const named = namedStepTime(step);
+      if (named !== undefined) {
+        fail(`step ${step.stepId}: text names "${named.phrase}" with no window the runtime checks`);
+      }
+      return;
+    }
+    if (window.label.length === 0) fail(`step ${step.stepId}: window has no label`);
+    if (window.days.length === 0 || window.days.some((day) => !Number.isInteger(day) || day < 0 || day > 6)) {
+      fail(`step ${step.stepId}: window names no weekday`);
+    }
+    if (!Number.isInteger(window.startMin) || !Number.isInteger(window.endMin) || window.startMin < 0 || window.endMin > 1440 || window.startMin >= window.endMin) {
+      fail(`step ${step.stepId}: window ${window.startMin}-${window.endMin} is not a slice of one day`);
+    }
+  }
+
   private requireCompletionEffect(step: QuestStep, completionFlag: string, fail: (m: string) => never): void {
     if (!step.effects.some((effect) => effect.kind === 'setFlag' && effect.flag === completionFlag)) {
       fail(`step ${step.stepId}: ${step.target.kind} completion flag ${completionFlag} is not set by its effects`);
@@ -263,7 +291,7 @@ export class FlowValidator {
   }
 }
 
-function samePlace(left: import('./schema.js').PlaceTarget, right: import('./schema.js').PlaceTarget): boolean {
+function samePlace(left: import('./schema.js').PlaceIdentity, right: import('./schema.js').PlaceIdentity): boolean {
   if ('parcelId' in left) return 'parcelId' in right && left.parcelId === right.parcelId;
   if ('districtId' in left) return 'districtId' in right && left.districtId === right.districtId;
   if ('stationId' in left) return 'stationId' in right && left.stationId === right.stationId;

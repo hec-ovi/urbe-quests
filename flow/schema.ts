@@ -130,12 +130,25 @@ export type StepTarget =
       completionFlag: string;
     };
 
-/** Stable world identity accepted by authored objectives. */
-export type PlaceTarget =
+/** Stable world identity, repeated by the events that complete a step. */
+export type PlaceIdentity =
   | { parcelId: string }
   | { districtId: string }
   | { stationId: string }
   | { stopId: string };
+
+/** An authored place: the world identity plus the venue's name, so a hint and a marker say where. */
+export type PlaceTarget = PlaceIdentity & { name: string };
+
+/** A weekly window a step is open in, simulation time convention (0 = Monday). */
+export interface TimeWindow {
+  /** The words the step's own text uses for this hour, for the hint and the HUD. */
+  label: string;
+  days: number[];
+  /** Minutes of the day, startMin < endMin. */
+  startMin: number;
+  endMin: number;
+}
 
 export interface QuestStep {
   stepId: string;
@@ -149,6 +162,8 @@ export interface QuestStep {
   gives: string[];
   /** Items the player must hold to act on the step. */
   needs: string[];
+  /** The hour the step's text names, checked by the runtime; absent when the text names none. */
+  window?: TimeWindow;
   /** Extra gates besides graph edges; all must pass for the step to be actionable. */
   conditions: Predicate[];
   /** Applied when the step completes. */

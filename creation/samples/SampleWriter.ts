@@ -25,11 +25,17 @@ export class SampleWriter {
     writeFileSync(new URL(file, this.dir), text);
   }
 
-  /** Engine payload: the main definition first, then side quests in situation order. */
+  /** Engine payload: the main definition first, then side quests in situation order, with the finished cast. */
   writeQuestlines(result: CreationResult): void {
     const definitions = [result.main.definition, ...result.side.map((side) => side.definition)];
     new QuestlineSetValidator().validate(definitions);
     this.write('questlines.json', JSON.stringify(definitions, null, 2) + '\n');
+    this.writeQuestline('main', result.main);
+    for (const side of result.side) this.writeQuestline(`side-${side.situationId}`, side);
+  }
+
+  private writeQuestline(label: string, result: { definition: CreationResult['main']['definition']; cast: CreationResult['main']['cast'] }): void {
+    this.write(`${label}.questline.json`, JSON.stringify({ definition: result.definition, cast: result.cast }, null, 2) + '\n');
   }
 
   onProgress(event: CreationProgress, log: Log): void {
@@ -49,7 +55,7 @@ export class SampleWriter {
         const label = event.questline === 'main' ? 'main' : `side-${event.questline}`;
         const { definition, cast } = event.result;
         this.write(`${label}.plan.md`, event.result.plan);
-        this.write(`${label}.questline.json`, JSON.stringify({ definition, cast }, null, 2) + '\n');
+        this.writeQuestline(label, { definition, cast });
         log(
           `questline ${event.questline} "${definition.title}": ${definition.steps.length} steps, ${definition.roles.length} roles, ${definition.items.length} items, ${definition.endings.length} endings`,
         );

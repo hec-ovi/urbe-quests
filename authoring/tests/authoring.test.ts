@@ -179,7 +179,7 @@ describe('gameplay stage', () => {
     expect(adapt).not.toHaveBeenCalled();
   });
 
-  it('accepts named transit identities and fails closed on places or NPC types outside the world', async () => {
+  it('names every place from the world and fails closed on places or NPC types outside it', async () => {
     const harness = new AuthoringHarness();
     const deliverStep = (output: AdaptationOutput) => {
       const publish = output.definition.steps.find((step) => step.stepId === 's_publish')!;
@@ -188,12 +188,13 @@ describe('gameplay stage', () => {
     };
 
     const station = clone(adaptation);
-    deliverStep(station).place = { stationId: 'station_harbor' };
-    await expect(harness.adaptGameplay(adaptationRequest, gameplayPort(station))).resolves.toEqual(station);
+    deliverStep(station).place = { stationId: 'station_harbor' } as never;
+    const adapted = await harness.adaptGameplay(adaptationRequest, gameplayPort(station));
+    expect(deliverStep(adapted).place).toEqual({ stationId: 'station_harbor', name: 'Harbor Station' });
 
     for (const [output, absent] of [
-      [(() => { const o = clone(adaptation); deliverStep(o).place = { parcelId: 'p_missing' }; return o; })(), 'p_missing'],
-      [(() => { const o = clone(adaptation); deliverStep(o).place = { stopId: 'stop_missing' }; return o; })(), 'stop_missing'],
+      [(() => { const o = clone(adaptation); deliverStep(o).place = { parcelId: 'p_missing' } as never; return o; })(), 'p_missing'],
+      [(() => { const o = clone(adaptation); deliverStep(o).place = { stopId: 'stop_missing' } as never; return o; })(), 'stop_missing'],
       [(() => { const o = clone(adaptation); o.definition.roles[0]!.npcType = 'invented_role'; return o; })(), 'invented_role'],
     ] as const) {
       await expect(harness.adaptGameplay(adaptationRequest, gameplayPort(output))).rejects.toMatchObject({

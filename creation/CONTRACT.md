@@ -13,6 +13,8 @@ Purpose: the questline creation workflow: one creation prompt in; the film scrip
 ## Out
 `CreationResult`: `script` (ScriptPassResult), `situations` (SituationsPassResult), `main` (TranslationResult: plan, definition, cast), `side` (one `SideQuest`, a TranslationResult with its `situationId`, per situation, in situation order).
 
+`UniqueCast` ([UniqueCast.ts](UniqueCast.ts)) recasts the finished set in one order (main, then sides in situation order): a person playing a part is held back from the next one, and a character the set already cast (same role id and NPC type, borrowed from the same script) keeps the person it has. Same inputs, same casting.
+
 `Assignments` ([Assignments.ts](Assignments.ts)) is how story becomes translator input: the main line takes the logline as synopsis, every character card and the four movements as arc; a situation takes its four parts as arc, borrowed characters with their full script card, new ones with the situation's line about them.
 
 ## Steps

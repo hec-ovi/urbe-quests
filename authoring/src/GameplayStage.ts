@@ -5,6 +5,7 @@ import { QuestGraphAudit } from './QuestGraphAudit.js';
 import { SkillResolver } from './SkillResolver.js';
 import { StoryAudit } from './StoryAudit.js';
 import { WorldAudit } from './WorldAudit.js';
+import { StepStamp } from '../../flow/StepStamp.js';
 import { WorldContextNormalizer } from '../../world/WorldContextNormalizer.js';
 import {
   MECHANICS,
@@ -64,7 +65,10 @@ export class GameplayStage {
         'https://urbe.local/quests/flow/schema/questline.schema.json',
       ]),
     });
-    const output = this.boundary.output<AdaptationOutput>('adaptation-output', await agent.adapt(gameplayRequest));
+    // Place names and hour gates are the city's to write, never the agent's.
+    const adapted = await agent.adapt(gameplayRequest);
+    const stamped = new StepStamp(request.world).adaptation(adapted);
+    const output = this.boundary.output<AdaptationOutput>('adaptation-output', stamped);
 
     this.graphAudit.validate(output.definition);
     this.worldAudit.validate(output.definition, request);

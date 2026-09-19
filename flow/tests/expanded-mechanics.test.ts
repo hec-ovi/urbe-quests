@@ -9,7 +9,9 @@ import { QuestlineRuntime } from '../QuestlineRuntime.js';
 import type { QuestlineDefinition, QuestStep, ResolvedCast } from '../schema.js';
 
 const TUE_10 = 1 * 1440 + 600;
-const P4 = { parcelId: 'p4' };
+const P4 = { parcelId: 'p4', name: 'Static Cafe' };
+const P7 = { parcelId: 'p7', name: 'Grey Market Exchange' };
+const P1 = { parcelId: 'p1', name: 'Helix Dynamics Tower' };
 
 const step = (input: Partial<QuestStep> & Pick<QuestStep, 'stepId' | 'actId' | 'target'>): QuestStep => ({
   narrative: { description: `Authored action ${input.stepId}.`, playerHint: `Complete ${input.stepId}.`, stake: 'The next consequence depends on it.' },
@@ -60,15 +62,15 @@ function expandedDefinition(): QuestlineDefinition {
         target: { kind: 'rescue', roleId: 'witness', releaseTargetId: 'restraint_witness_4', place: P4, completionFlag: 'witness_released' },
         ...flagged('witness_released', ['s_escort']) }),
       step({ stepId: 's_escort', actId: 'a_release',
-        target: { kind: 'escort', roleId: 'witness', routeId: 'route_cafe_market', mode: 'follow-player', from: P4, to: { parcelId: 'p7' }, completionFlag: 'witness_safe' },
+        target: { kind: 'escort', roleId: 'witness', routeId: 'route_cafe_market', mode: 'follow-player', from: P4, to: P7, completionFlag: 'witness_safe' },
         ...flagged('witness_safe', ['s_ride'], { conditions: [{ kind: 'flagSet', flag: 'witness_released' }] }) }),
       step({ stepId: 's_ride', actId: 'a_choice',
-        target: { kind: 'transportation', journeyId: 'ride_market_tower', mode: 'ride-hail', from: { parcelId: 'p7' }, to: { parcelId: 'p1' }, passengerRoleIds: [], cargoItemIds: [], completionFlag: 'ride_complete' },
+        target: { kind: 'transportation', journeyId: 'ride_market_tower', mode: 'ride-hail', from: P7, to: P1, passengerRoleIds: [], cargoItemIds: [], completionFlag: 'ride_complete' },
         ...flagged('ride_complete', ['s_sabotage', 's_report']) }),
       step({ stepId: 's_sabotage', actId: 'a_choice', endingId: 'e_disabled',
-        target: { kind: 'sabotage', targetId: 'relay_primary', place: { parcelId: 'p1' }, completionFlag: 'relay_disabled' },
+        target: { kind: 'sabotage', targetId: 'relay_primary', place: P1, completionFlag: 'relay_disabled' },
         ...flagged('relay_disabled', []) }),
-      step({ stepId: 's_report', actId: 'a_choice', target: { kind: 'goto', place: { parcelId: 'p8' } }, endingId: 'e_reported' }),
+      step({ stepId: 's_report', actId: 'a_choice', target: { kind: 'goto', place: { parcelId: 'p8', name: 'Precinct 9' } }, endingId: 'e_reported' }),
     ],
     endings: [
       { endingId: 'e_disabled', title: 'Dark relay', epilogue: 'The relay stops and its owners lose the live trail.' },

@@ -19,6 +19,11 @@ export interface DraftAudit {
   stepProblems(step: QuestStep): string[];
 }
 
+/** Fills what code owns in a finished questline: story venues, place names, hour gates. */
+export interface DraftStamp {
+  definition(def: QuestlineDefinition): QuestlineDefinition;
+}
+
 export class DraftError extends Error {}
 
 const SINGULAR: Record<ManifestKind, string> = { roles: 'role', items: 'item', acts: 'act', endings: 'ending', steps: 'step' };
@@ -29,6 +34,7 @@ export class QuestlineDraft {
   constructor(
     private readonly manifest: PlanManifest,
     private readonly audit: DraftAudit,
+    private readonly stamp: DraftStamp,
   ) {}
 
   create(args: { id: string; title: string; premise: string }): string {
@@ -138,9 +144,9 @@ export class QuestlineDraft {
 
   /** Missing pieces first, then full structural validation; throws with every problem on failure. */
   finish(): QuestlineDefinition {
-    const def = this.current();
     const missing = this.missingLine();
     if (missing !== undefined) throw new DraftError(`not finished; ${missing}; then call finish_questline again`);
+    const def = this.stamp.definition(this.current());
     try {
       new FlowValidator().validate(def);
     } catch (error) {

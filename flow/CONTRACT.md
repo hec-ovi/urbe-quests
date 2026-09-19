@@ -9,7 +9,8 @@ Purpose: deterministic questline state machine over a condition-gated DAG of typ
 - `ResolvedCast` ([schema.ts](schema.ts)): roleId to npcId map from the builder.
 - `SimulationPort` ([../world/types/simulation.ts](../world/types/simulation.ts)) for liveness, schedules and story-consequence flags.
 - `PlayerEvent` ([schema/player-event.schema.json](schema/player-event.schema.json), TypeScript [events.ts](events.ts)) plus current time in simulation minutes. Mechanic completion events repeat the authored interaction ids, cast NPC ids, item ids, modes, and places needed to match one target without inference.
-- Authored places are exact `parcelId`, `districtId`, `stationId`, or `stopId` identities. Arrival and delivery events repeat the same identity kind and id.
+- Authored places are exact `parcelId`, `districtId`, `stationId`, or `stopId` identities plus the venue's `name`: `{ parcelId, name }`. The name is the world's own when Naming gave it one, else the word for that kind of building. `PlaceIdentity` is the same record without the name; arrival and delivery events repeat the identity kind and id only.
+- A step whose narrative or player hint names an hour carries `window { label, days, startMin, endMin }`: the words the text used, and the weekly slice the runtime gates on. `new StepStamp(world).definition(def)` ([StepStamp.ts](StepStamp.ts)) writes both records from the world, and the validator refuses a text that names an hour with no window.
 
 Completion events:
 
@@ -36,14 +37,14 @@ Completion events:
 `QuestlineRuntime` ([QuestlineRuntime.ts](QuestlineRuntime.ts)):
 - `status()`: active, completed, or stalled (every active step targets a dead NPC).
 - `activeSteps()`, `flags()`, `ending()`, `inventory()` (items held now: taken or given by completed steps, minus delivered).
-- `stepAvailability(stepId, timeMin)`: liveness, presence, held items and condition gate, computed on demand; reasons role_dead, not_present, off_duty, missing_item, condition.
-- `windows(stepId)`: weekly availability windows derived from the target NPC's routine; undefined for schedule-free steps.
+- `stepAvailability(stepId, timeMin)`: liveness, presence, the step's own hour, held items and condition gate, computed on demand; reasons role_dead, not_present, off_duty, outside_window, missing_item, condition.
+- `windows(stepId)`: weekly windows for the step: the hour its text names, narrowed by the target NPC's routine, labelled with the text's own words; undefined when neither binds it.
 - `stepPlace(stepId, timeMin)`: where the step points, for a marker on the map: the parcel, district, station, or stop the target names, the parcel the item sits at, or the simulation's live place for the person it targets. Undefined when the simulation has no place to give.
 - `stepGuidance(stepId, timeMin)` ([schema/step-guidance.schema.json](schema/step-guidance.schema.json)): route-ready parcel, station, or stop destination. District areas, street edges, moving routes, and unavailable targets return a closed reason instead of an invalid route request. The host supplies current feet as the route origin.
 - `advance(event, timeMin)`: completes matching available steps, applies effects (quest flags, simulation flags), activates edges (parallel or exclusive branching), reports an ending on terminal steps. Talk, listen, steal, rescue, escort, and transportation enforce liveness and available presence at advance time; completing an assassinate step records the death in the simulation.
 - `serialize()` ([schema/questline-state.schema.json](schema/questline-state.schema.json)) / `QuestlineRuntime.restore(...)`. Restore accepts untrusted JSON only when step history, active frontier, ending, and replayed flags agree with the definition.
 
-`FlowValidator` ([validate.ts](validate.ts)): structural validation (ids, references, declared flags, DAG, reachability, terminal endings, role usage, item rules: information is never a pickup, deliver or steal target; a pickup item is placed at a parcel). Investigation stages must grant their declared information evidence. Access must need its key, information, or device credential. Transportation must need all physical cargo. Escort and transportation endpoints must differ. Every interaction mechanic must set its declared completion flag.
+`FlowValidator` ([validate.ts](validate.ts)): structural validation (ids, references, declared flags, DAG, reachability, terminal endings, role usage, place names, window shape and the hour a text names, item rules: information is never a pickup, deliver or steal target; a pickup item is placed at a parcel). Investigation stages must grant their declared information evidence. Access must need its key, information, or device credential. Transportation must need all physical cargo. Escort and transportation endpoints must differ. Every interaction mechanic must set its declared completion flag.
 
 `QuestlineSetValidator` ([QuestlineSet.ts](QuestlineSet.ts)): validates the engine payload as one main definition followed by side definitions, with unique questline ids. Its exact JSON shape is [../creation/schema/questline-set.schema.json](../creation/schema/questline-set.schema.json).
 
@@ -56,7 +57,10 @@ Completion events:
 - An exclusive branch may have one unconditional fallback only as its last edge, so a fallback cannot make a later outcome unreachable.
 - A dead NPC never satisfies presence or duty checks; availability and inventory are never stored, always derived.
 - Flags used anywhere must be declared in the definition.
+- A hint never promises an hour the runtime does not check: text and window are validated together.
 - Saved state cannot create steps, branches, flags, or endings that the completed history did not produce.
 
+`roles.ts`: `stepsOfRole`, `workplaceOf` and `storyWindow` read a definition for one role, for whoever places or casts it.
+
 ## Depends on
-- ../world (types, SimulationPort)
+- ../world (types, SimulationPort, [venue names, staffing and posts](../world/venues.ts))

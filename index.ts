@@ -18,6 +18,8 @@ export {
 export { QuestlineStateValidator } from './flow/state.js';
 export type { AvailabilityWindow, StepAvailability, UnavailableReason } from './flow/availability.js';
 export type { QuestPlace } from './flow/places.js';
+export { storyWindow, workplaceOf } from './flow/roles.js';
+export { StepStamp } from './flow/StepStamp.js';
 export { guidanceFor, type GuidanceReason, type RouteDestination, type StepGuidance } from './flow/guidance.js';
 
 export * from './story/schema.js';
@@ -32,7 +34,8 @@ export { TranslationPlanner, type PlanInput, type PlanResult } from './builder/T
 export { QuestlineBuilder, type BuildInput, type BuildResult } from './builder/QuestlineBuilder.js';
 export { QuestlineTranslator, type TranslateInput } from './builder/QuestlineTranslator.js';
 export { BUILDER_TOOLS } from './builder/tools.js';
-export { CastResolver } from './builder/CastResolver.js';
+export { CastResolver, type CastOptions } from './builder/CastResolver.js';
+export { StoryVenues } from './builder/StoryVenues.js';
 
 export type { CreationInput, CreationResult, SideQuest, StagePorts } from './creation/schema.js';
 export { Assignments } from './creation/Assignments.js';

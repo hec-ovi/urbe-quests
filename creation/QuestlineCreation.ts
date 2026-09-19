@@ -13,6 +13,7 @@ import { ScriptPass } from '../story/ScriptPass.js';
 import { SituationsPass } from '../story/SituationsPass.js';
 import type { SituationsPassResult } from '../story/schema.js';
 import { Assignments } from './Assignments.js';
+import { UniqueCast } from './UniqueCast.js';
 import type { CreationInput, CreationProgress, CreationResult, SideQuest } from './schema.js';
 
 export class QuestlineCreation {
@@ -79,7 +80,13 @@ export class QuestlineCreation {
       return { situations, side };
     };
 
-    const [main, { situations, side }] = await Promise.all([translate('main', assignments.main()), sideQuests()]);
+    const [built, { situations, side: builtSide }] = await Promise.all([translate('main', assignments.main()), sideQuests()]);
+    const { main, side } = new UniqueCast({
+      world,
+      types,
+      sim,
+      ...(input.referenceTimeMin !== undefined ? { referenceTimeMin: input.referenceTimeMin } : {}),
+    }).apply(built, builtSide);
     return { script, situations, main, side };
   }
 }

@@ -158,6 +158,54 @@ describe('QuestlineBuilder', () => {
     expect(prompt).not.toContain('owes the wrong lender and wants one favor');
   });
 
+  it('names every place it commits and moves a story onto a venue that staffs its character', async () => {
+    const deps = fixtureDeps();
+    // The plan sends the barista to a corporate tower; nobody pours coffee there.
+    const atTower = STEP_CALLS.map((call) =>
+      (call.input as { stepId: string }).stepId === 's_ask'
+        ? step({ ...(call.input as object), target: { kind: 'talk', roleId: 'barista', atParcelId: 'p1' } })
+        : call,
+    );
+    const { definition } = await new QuestlineBuilder().build({
+      assignment: ASSIGNMENT, plan: PLAN, manifest: MANIFEST, ...deps,
+      agent: scriptedAgent([{ kind: 'calls', calls: [...SETUP_CALLS, ...atTower, FINAL_STEP, FINISH] }]).agent,
+    });
+
+    const ask = definition.steps.find((entry) => entry.stepId === 's_ask')!;
+    expect(ask.target).toEqual({ kind: 'talk', roleId: 'barista', atParcelId: 'p4' });
+    const pay = definition.steps.find((entry) => entry.stepId === 's_pay')!;
+    expect(pay.target).toMatchObject({ place: { parcelId: 'p1', name: 'Helix Dynamics Tower' } });
+  });
+
+  it('casts a character from the post the story names at the hour it names', async () => {
+    const deps = fixtureDeps();
+    const lastCall = STEP_CALLS.map((call) =>
+      (call.input as { stepId: string }).stepId === 's_ask'
+        ? step({
+            ...(call.input as object),
+            narrative: {
+              description: 'The barista talks once the counter empties.',
+              playerHint: 'Talk to the barista during the slow hour.',
+              stake: "If the ledger surfaces, the cafe is Sable's by spring.",
+            },
+          })
+        : call,
+    );
+    const { definition, cast } = await new QuestlineBuilder().build({
+      assignment: ASSIGNMENT, plan: PLAN, manifest: MANIFEST, ...deps,
+      agent: scriptedAgent([{ kind: 'calls', calls: [...SETUP_CALLS, ...lastCall, FINAL_STEP, FINISH] }]).agent,
+    });
+
+    const ask = definition.steps.find((entry) => entry.stepId === 's_ask')!;
+    expect(ask.window).toEqual({ label: 'slow hour', days: [0, 1, 2, 3, 4, 5, 6], startMin: 960, endMin: 1410 });
+    const barista = deps.sim.getNPC(cast['barista']!);
+    expect(barista.job).toMatchObject({ parcelId: 'p4', role: 'barista', shift: { kind: 'evening' } });
+    // The hour the hint promises is an hour she is really behind the counter.
+    expect(deps.sim.behaviorAt(barista.npcId, ask.window!.startMin + 60)).toMatchObject({
+      activity: 'working', place: { kind: 'parcel', id: 'p4' },
+    });
+  });
+
   it('casts a reserved character once across questlines, anyone of the type otherwise, and throws E_CAST for nobody', async () => {
     const deps = fixtureDeps();
     const first = await new QuestlineBuilder().build({ assignment: ASSIGNMENT, plan: PLAN, manifest: MANIFEST, agent: scriptedAgent(FULL_BUILD).agent, ...deps });

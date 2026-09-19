@@ -9,6 +9,7 @@ import type { SimulationPort } from '../world/types/simulation.js';
 import { CastResolver } from './CastResolver.js';
 import { manifestSize, type PlanManifest } from './PlanManifest.js';
 import { QuestlineDraft } from './QuestlineDraft.js';
+import { StoryVenues } from './StoryVenues.js';
 import { renderAssignment } from './renderAssignment.js';
 import type { BuildProgress, QuestAssignment } from './schema.js';
 import { ToolDispatcher } from './ToolDispatcher.js';
@@ -37,7 +38,8 @@ export interface BuildResult {
   cast: ResolvedCast;
 }
 
-const DEFAULT_REFERENCE_TIME = 1 * 1440 + 600;
+/** Tuesday 10:00, when a story names no hour of its own. */
+export const DEFAULT_REFERENCE_TIME = 1 * 1440 + 600;
 /** One round per planned piece at the slowest, as many again for facts, refusals and fixes, and room to finish. */
 const roundBudget = (planned: number) => 2 * planned + 8;
 /** How many times a text-only reply is answered with a nudge back to the tools before the build fails. */
@@ -49,7 +51,8 @@ export class QuestlineBuilder {
   async build(input: BuildInput): Promise<BuildResult> {
     const system = [prompt('builder-system.md'), prompt('step-catalog.md'), prompt('artifact-catalog.md')].join('\n\n');
     const userPrompt = this.renderPrompt(input);
-    const draft = new QuestlineDraft(input.manifest, new WorldTargetAudit(input.world, input.types));
+    const venues = new StoryVenues(input.world, input.types);
+    const draft = new QuestlineDraft(input.manifest, new WorldTargetAudit(input.world, input.types), venues);
     const dispatcher = new ToolDispatcher(draft);
     const transcript: AgentTurn[] = [];
     const title = input.assignment.title;
@@ -84,7 +87,7 @@ export class QuestlineBuilder {
       throw new QuestError('E_LLM', `builder agent did not finish ${title} within ${maxRounds} rounds: ${this.standing(draft)}`);
     }
 
-    const cast = new CastResolver(input.sim).resolve(definition, input.referenceTimeMin ?? DEFAULT_REFERENCE_TIME);
+    const cast = new CastResolver(input.sim, venues).resolve(definition, input.referenceTimeMin ?? DEFAULT_REFERENCE_TIME);
     return { definition, cast };
   }
 

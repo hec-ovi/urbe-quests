@@ -1,13 +1,13 @@
-# Quests map 0.8.4
+# Quests map 0.8.5
 
 [Public contract](../CONTRACT.md), [caller skill](../SKILL.md), [integration proposals](ISSUES.md).
 
 | Folder | Purpose | Depends on | Input / output schemas |
 | --- | --- | --- | --- |
 | [authoring](../authoring/CONTRACT.md) | Story agent, mechanic resolver and gameplay agent | world, flow, injected agents | [requests and responses](../authoring/src/schema.ts), [JSON schemas](../authoring/schema/) |
-| [world](../world/CONTRACT.md) | World projections and standalone Simulation | Atlas, Naming, Simulation contracts | [world/types](../world/types/named-world.ts), [Simulation](../world/types/simulation.ts) |
+| [world](../world/CONTRACT.md) | World projections, venue names and staffing, standalone Simulation | Atlas, Naming, Simulation, Interior contracts | [world/types](../world/types/named-world.ts), [venues](../world/venues.ts), [Simulation](../world/types/simulation.ts) |
 | [story](../story/CONTRACT.md) | Text script and side situations | world, ports | [requests](../story/CONTRACT.md#in), [results](../story/schema.ts) |
-| [builder](../builder/CONTRACT.md) | Plans, tool builds and type-based casting | flow, story, world, ports | [requests](../builder/CONTRACT.md#in), [results](../builder/schema.ts) |
+| [builder](../builder/CONTRACT.md) | Plans, tool builds, story venues and casting at the story's hour | flow, story, world, ports | [requests](../builder/CONTRACT.md#in), [results](../builder/schema.ts) |
 | [creation](../creation/CONTRACT.md) | Main/side orchestration and CLI file writers | story, builder, world, ports, handoff | [creation](../creation/schema.ts), [quest set](../creation/schema/questline-set.schema.json) |
 | [flow](../flow/CONTRACT.md) | Validates definitions and runs accepted events | world | [definition](../flow/schema/questline.schema.json), [event](../flow/schema/player-event.schema.json), [save](../flow/schema/questline-state.schema.json), [guidance](../flow/schema/step-guidance.schema.json) |
 | [handoff](../handoff/CONTRACT.md) | Checks semantic asset/interaction bindings | flow, Engine investigation/mission-asset contracts | [input](../handoff/schema/handoff-input.schema.json), [bundle](../handoff/schema.ts), [manifest](../handoff/schema/quest-bundle.schema.json) |

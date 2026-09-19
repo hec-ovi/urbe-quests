@@ -61,7 +61,7 @@ function investigationQuest(): QuestlineDefinition {
     steps: [{
       stepId: 's_wall', actId: 'a_scene', wantedByRoleId: 'witness',
       narrative: { description: 'The wall carries the first arc.', playerHint: 'Inspect the scored wall.', stake: 'The witness takes the blame otherwise.' },
-      target: { kind: 'investigation', sceneId: 'scene_archive', evidenceId: 'wall_score', evidenceItemId: 'burn_origin', subjectRoleIds: ['witness'], place: { parcelId: 'p4' }, completionFlag: 'wall_read' },
+      target: { kind: 'investigation', sceneId: 'scene_archive', evidenceId: 'wall_score', evidenceItemId: 'burn_origin', subjectRoleIds: ['witness'], place: { parcelId: 'p4', name: 'Static Cafe' }, completionFlag: 'wall_read' },
       gives: ['burn_origin'], needs: [], conditions: [], effects: [{ kind: 'setFlag', flag: 'wall_read' }],
       next: [], branching: 'parallel', endingId: 'e_origin',
     }],

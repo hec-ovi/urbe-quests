@@ -111,6 +111,23 @@ describe('QuestlineCreation', () => {
     expect(warnings).toEqual([expect.stringContaining('every side quest dropped')]);
   });
 
+  it('gives every character their own person and keeps a borrowed character the same person', async () => {
+    const result = await run();
+    const questlines = [result.main, ...result.side];
+    const cast = questlines.flatMap((questline) =>
+      questline.definition.roles.map((role) => ({ character: role.roleId, npcId: questline.cast[role.roleId]! })),
+    );
+
+    const byPerson = new Map<string, Set<string>>();
+    for (const entry of cast) byPerson.set(entry.npcId, (byPerson.get(entry.npcId) ?? new Set()).add(entry.character));
+    expect([...byPerson].filter(([, characters]) => characters.size > 1)).toEqual([]);
+
+    // r_talis is borrowed by a side quest from the main line: one character, one person.
+    const talis = cast.filter((entry) => entry.character === 'r_talis');
+    expect(talis).toHaveLength(2);
+    expect(new Set(talis.map((entry) => entry.npcId)).size).toBe(1);
+  });
+
   it('fails the run with E_LLM when the script or the main line is unusable', async () => {
     await expect(run({ script: junk('no script') })).rejects.toThrowError(
       expect.objectContaining({ code: 'E_LLM', detail: expect.objectContaining({ stage: 'script' }) }),

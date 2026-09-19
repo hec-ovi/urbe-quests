@@ -1,4 +1,4 @@
-# Quests 0.8.4
+# Quests 0.8.5
 
 Writes stories through injected agents, adapts them into typed quests, runs their rules in code, and prepares Engine handoffs and scoped NPC dialogue.
 
@@ -13,7 +13,7 @@ The Node library entry is [index.ts](index.ts), compiled to `dist/index.js`; bro
 | `AuthoringHarness.skillIndex()`, `route(message)`, `resolveSkills(names)` | [Resolver queries](authoring/CONTRACT.md#inputs) | [Skill index and selected bodies](authoring/CONTRACT.md#outputs) |
 | `QuestlineCreation.run(input)` | [CreationInput](creation/schema.ts), prompt, named world/types, Simulation and per-stage model ports | [CreationResult](creation/schema.ts), script, situations, main and side translations |
 | `ScriptPass.run`, `SituationsPass.run`, `QuestlineTranslator.translate` | [Story](story/CONTRACT.md), [translation](builder/CONTRACT.md) | [Story text](story/schema.ts), [plan, definition and feasibility cast](builder/schema.ts) |
-| `CastResolver.resolve(definition, timeMin)` | [Definition](flow/schema/questline.schema.json), [SimulationPort](world/types/simulation.ts) | [ResolvedCast](flow/schema.ts), role to NPC IDs |
+| `CastResolver.resolve(definition, timeMin, options?)` | [Definition](flow/schema/questline.schema.json), [SimulationPort](world/types/simulation.ts), optional `StoryVenues(world, types)` and `{taken, characters}` | [ResolvedCast](flow/schema.ts), role to NPC IDs |
 | `QuestlineRuntime`, `advance`, `restore` | [Definition](flow/schema/questline.schema.json), cast, Simulation, [event](flow/schema/player-event.schema.json), time, [saved state](flow/schema/questline-state.schema.json) | [State and advance result](flow/QuestlineRuntime.ts), [availability](flow/availability.ts), [guidance](flow/schema/step-guidance.schema.json) |
 | `EngineHandoff.assemble(questlines, input?)` | [Quest set](creation/schema/questline-set.schema.json), [bindings and capabilities](handoff/schema/handoff-input.schema.json) | [HandoffBundle](handoff/schema.ts), definitions, objectives, investigations, assets and bindings |
 | `DialogContextService`, `Converse.reply` | [Context inputs](dialog/DialogContextService.ts), [reply input](dialog/Converse.ts), injected model | [Scoped segments and memory](dialog/schema.ts), reply string (async) |
@@ -21,7 +21,11 @@ The Node library entry is [index.ts](index.ts), compiled to `dist/index.js`; bro
 
 Creation warnings report failed side translations or unusable situations. Main/script failures reject the run. `CreationResult` has no completion marker or retained side-failure record. Naming is supplied by callers; its integration is proposed in [issues](docs/ISSUES.md).
 
-Engine receives main definition first, then side definitions, without creation-time cast IDs. The game casts against its own Simulation. The CLI writes bundle **1.1** with the [eight filenames and counts](handoff/schema/quest-bundle.schema.json). Quest definitions and saved state retain their existing shapes; bundle version and package version are separate.
+Engine receives main definition first, then side definitions, without creation-time cast IDs. The game casts against its own Simulation, through `CastResolver`, which queries each role at the hour its own steps name. The CLI writes bundle **1.1** with the [eight filenames and counts](handoff/schema/quest-bundle.schema.json). Bundle 1.1 keeps its shape: an authored place gains `name` and a step gains an optional `window`, both additive. Saved state is unchanged; bundle version and package version are separate.
+
+Hosts pass `new CastResolver(sim, new StoryVenues(world, types))`: with the world it can look past the pinned venue to the other buildings that publish the post, which is what keeps every character a different person. `options.taken` and `options.characters` carry that across a questline set.
+
+A quest place is a named place at a real hour. Every authored place is `{ <identity>, name }`: the world's own name when Naming gave it one, else the word for that kind of building ([venue table](world/venues.ts)). A step whose text names an hour carries a `window` the runtime gates on, so a hint never promises a time nothing checks. Story venues are the buildings that publish a post for the character ([Interior staffing](../interior/CONTRACT.md)), and one person plays one character across a questline set.
 
 Time is simulation minutes since Monday 00:00. Creative calls use separate contexts; graph transitions, gates, inventory and save validation use code. Quests checks semantic targets and submitted bindings. Engine owns measured placement, reach, visibility, rendering and save coordination. A passed semantic handoff alone does not establish 3D playability.
 
@@ -35,4 +39,4 @@ These are closed domain sets. Injected provider/Simulation exceptions pass throu
 
 ## Dependencies
 
-Data contracts only: [Atlas](../atlas/CONTRACT.md) (world projection), [Naming](../naming/CONTRACT.md) (names/types), [Simulation](../simulation/CONTRACT.md) (people/schedules), Engine [investigation](../engine/src/game/investigation/CONTRACT.md) (v1.1) and [mission assets](../engine/src/mission-assets/CONTRACT.md) (v1.0). Models are injected through [ports](ports/llm.ts) and [authoring ports](authoring/src/schema.ts). Ajv validates authoring and handoff schemas. Engine consumes this box.
+Data contracts only: [Atlas](../atlas/CONTRACT.md) (world projection), [Naming](../naming/CONTRACT.md) (names/types), [Simulation](../simulation/CONTRACT.md) (people/schedules), [Interior](../interior/CONTRACT.md) (the staffing roles a building publishes), Engine [investigation](../engine/src/game/investigation/CONTRACT.md) (v1.1) and [mission assets](../engine/src/mission-assets/CONTRACT.md) (v1.0). Models are injected through [ports](ports/llm.ts) and [authoring ports](authoring/src/schema.ts). Ajv validates authoring and handoff schemas. Engine consumes this box.

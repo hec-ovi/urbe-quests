@@ -13,6 +13,7 @@ export {
   type WorldContextInput,
 } from './WorldContextNormalizer.js';
 export { StubSimulation, type StubSimulationInput } from './stub/StubSimulation.js';
+export { POST_WINDOWS, VENUES, staffRoles, staffs, venueName, venueOf, type Post, type StaffRole, type Venue } from './venues.js';
 
 export type FixtureName = 'neon-bay' | 'aldermoor';
 

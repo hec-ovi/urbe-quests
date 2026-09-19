@@ -16,7 +16,7 @@ Purpose: projects validated quest definitions, physical assets, interaction anch
 `HandoffBundle` contains:
 
 - `questlines`: definitions unchanged.
-- `objectives` ([schema/objectives.schema.json](schema/objectives.schema.json)): one `{ questId, stepId, action }` per step in quest and definition order. `action` is the exact flow target, including every place, role, item, scene, evidence, access point, route, journey, passenger, cargo, mode, and completion flag field authored for that mechanic.
+- `objectives` ([schema/objectives.schema.json](schema/objectives.schema.json)): one `{ questId, stepId, action }` per step in quest and definition order. `action` is the exact flow target, including every place, role, item, scene, evidence, access point, route, journey, passenger, cargo, mode, and completion flag field authored for that mechanic. A place is `{ <identity>, name }`; the hour a step is gated on stays on the step, in `questlines`.
 - `investigations`: requests unchanged after binding validation.
 - `mechanicTargetBindings`: exact fixed mechanic asset and anchor associations.
 - `missionAssetRequests`: engine mission asset create requests unchanged after family, dimensions, material slot, interaction, clearance, and identity validation.

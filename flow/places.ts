@@ -7,7 +7,7 @@
 
 import { QuestError } from '../errors.js';
 import type { PlaceRef, SimulationPort } from '../world/types/simulation.js';
-import type { PlaceTarget, QuestItem, QuestStep, ResolvedCast } from './schema.js';
+import type { PlaceIdentity, QuestItem, QuestStep, ResolvedCast } from './schema.js';
 
 /** An authored place or whatever the simulation reports for a person. */
 export type QuestPlace = PlaceRef | { kind: 'district'; id: string } | { kind: 'station'; id: string };
@@ -65,7 +65,7 @@ export class StepPlaces {
   }
 }
 
-const fromPlaceTarget = (place: PlaceTarget): QuestPlace => {
+const fromPlaceTarget = (place: PlaceIdentity): QuestPlace => {
   if ('parcelId' in place) return { kind: 'parcel', id: place.parcelId };
   if ('districtId' in place) return { kind: 'district', id: place.districtId };
   if ('stationId' in place) return { kind: 'station', id: place.stationId };

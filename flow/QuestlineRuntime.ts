@@ -124,7 +124,7 @@ export class QuestlineRuntime {
     return this.stateGate(step, timeMin);
   }
 
-  /** Weekly windows for schedule-bound steps, derived from routines on demand. */
+  /** Weekly windows for a step: the hour its text names, narrowed by its target's routine. */
   windows(stepId: string): AvailabilityWindow[] | undefined {
     return this.availabilityService.windows(this.step(stepId));
   }
@@ -191,8 +191,9 @@ export class QuestlineRuntime {
     return { available: true };
   }
 
-  /** Quest-state gate: required items held, extra conditions passing. */
+  /** Quest-state gate: the hour the step names, required items held, extra conditions passing. */
   private stateGate(step: QuestStep, timeMin: number): StepAvailability {
+    if (!this.availabilityService.withinStepWindow(step, timeMin)) return { available: false, reason: 'outside_window' };
     const held = this.inventory();
     if (!step.needs.every((itemId) => held.has(itemId))) return { available: false, reason: 'missing_item' };
     if (!this.evaluator.all(step.conditions, timeMin)) return { available: false, reason: 'condition' };
@@ -333,7 +334,7 @@ export class QuestlineRuntime {
   }
 }
 
-function samePlace(left: import('./schema.js').PlaceTarget, right: import('./schema.js').PlaceTarget): boolean {
+function samePlace(left: import('./schema.js').PlaceIdentity, right: import('./schema.js').PlaceIdentity): boolean {
   if ('parcelId' in left) return 'parcelId' in right && left.parcelId === right.parcelId;
   if ('districtId' in left) return 'districtId' in right && left.districtId === right.districtId;
   if ('stationId' in left) return 'stationId' in right && left.stationId === right.stationId;

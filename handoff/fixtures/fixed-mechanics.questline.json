@@ -22,7 +22,7 @@
         "stake": "The witness remains sealed inside without the code."
       },
       "wantedByRoleId": "witness",
-      "target": { "kind": "hacking", "targetId": "archive_index", "place": { "parcelId": "p4" }, "completionFlag": "archive_hacked" },
+      "target": { "kind": "hacking", "targetId": "archive_index", "place": { "parcelId": "p4", "name": "Static Cafe" }, "completionFlag": "archive_hacked" },
       "gives": ["entry_code"],
       "needs": [],
       "conditions": [],
@@ -39,7 +39,7 @@
         "stake": "The witness remains trapped if the door stays locked."
       },
       "wantedByRoleId": "witness",
-      "target": { "kind": "access", "accessPointId": "archive_door", "credentialItemId": "entry_code", "place": { "parcelId": "p4" }, "completionFlag": "archive_open" },
+      "target": { "kind": "access", "accessPointId": "archive_door", "credentialItemId": "entry_code", "place": { "parcelId": "p4", "name": "Static Cafe" }, "completionFlag": "archive_open" },
       "gives": [],
       "needs": ["entry_code"],
       "conditions": [],
@@ -56,7 +56,7 @@
         "stake": "The witness cannot leave while the restraint remains active."
       },
       "wantedByRoleId": "witness",
-      "target": { "kind": "rescue", "roleId": "witness", "releaseTargetId": "witness_release_console", "place": { "parcelId": "p4" }, "completionFlag": "witness_released" },
+      "target": { "kind": "rescue", "roleId": "witness", "releaseTargetId": "witness_release_console", "place": { "parcelId": "p4", "name": "Static Cafe" }, "completionFlag": "witness_released" },
       "gives": [],
       "needs": [],
       "conditions": [],
@@ -73,7 +73,7 @@
         "stake": "A live alarm reveals the witness's route."
       },
       "wantedByRoleId": "witness",
-      "target": { "kind": "sabotage", "targetId": "alarm_relay", "place": { "parcelId": "p4" }, "completionFlag": "alarm_disabled" },
+      "target": { "kind": "sabotage", "targetId": "alarm_relay", "place": { "parcelId": "p4", "name": "Static Cafe" }, "completionFlag": "alarm_disabled" },
       "gives": [],
       "needs": [],
       "conditions": [],
@@ -94,8 +94,8 @@
         "kind": "transportation",
         "journeyId": "archive_to_market",
         "mode": "public-transit",
-        "from": { "parcelId": "p4" },
-        "to": { "parcelId": "p7" },
+        "from": { "parcelId": "p4", "name": "Static Cafe" },
+        "to": { "parcelId": "p7", "name": "Grey Market Exchange" },
         "passengerRoleIds": ["witness"],
         "cargoItemIds": [],
         "completionFlag": "journey_complete"

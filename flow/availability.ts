@@ -6,9 +6,9 @@
 
 import { QuestError } from '../errors.js';
 import type { NPCInstance, SimulationPort } from '../world/types/simulation.js';
-import type { PlaceTarget, QuestStep, ResolvedCast } from './schema.js';
+import type { PlaceIdentity, QuestStep, ResolvedCast } from './schema.js';
 
-export type UnavailableReason = 'role_dead' | 'not_present' | 'off_duty' | 'missing_item' | 'condition';
+export type UnavailableReason = 'role_dead' | 'not_present' | 'off_duty' | 'outside_window' | 'missing_item' | 'condition';
 
 export interface StepAvailability {
   available: boolean;
@@ -20,7 +20,16 @@ export interface AvailabilityWindow {
   days: number[];
   startMin: number;
   endMin: number;
+  /** The words the step's text uses for an authored hour. */
+  label?: string;
 }
+
+/** Is that minute inside the weekly window? */
+export const withinWindow = (window: AvailabilityWindow, timeMin: number): boolean => {
+  const day = Math.floor(timeMin / 1440) % 7;
+  const minute = timeMin % 1440;
+  return window.days.includes(day) && minute >= window.startMin && minute < window.endMin;
+};
 
 const APPROACHABLE = new Set(['home', 'working', 'shopping', 'leisure']);
 
@@ -84,11 +93,25 @@ export class AvailabilityService {
     }
   }
 
+  /** The authored hour gate: open when the step names no hour. */
+  withinStepWindow(step: QuestStep, timeMin: number): boolean {
+    return step.window === undefined || withinWindow(step.window, timeMin);
+  }
+
   /**
-   * Weekly windows in which the step's target can be acted on; undefined when
-   * the step is not schedule-bound. Derived from routines, never stored.
+   * Weekly windows in which the step can be acted on: the hour its text names,
+   * narrowed by its target's routine. Undefined when neither binds it.
+   * Derived on demand, never stored.
    */
   windows(step: QuestStep): AvailabilityWindow[] | undefined {
+    const authored = step.window === undefined ? undefined : [{ ...step.window }];
+    const routine = this.targetWindows(step);
+    if (authored === undefined) return routine;
+    if (routine === undefined) return authored;
+    return intersectWindows(authored, routine).map((window) => ({ ...window, label: step.window!.label }));
+  }
+
+  private targetWindows(step: QuestStep): AvailabilityWindow[] | undefined {
     const t = step.target;
     if (t.kind === 'talk') return this.roleWindows(t.roleId, t.atParcelId);
     if (t.kind === 'assassinate') return this.roleWindows(t.roleId, undefined);
@@ -106,7 +129,7 @@ export class AvailabilityService {
     return undefined;
   }
 
-  private presenceAt(roleId: string, timeMin: number, place: PlaceTarget): StepAvailability {
+  private presenceAt(roleId: string, timeMin: number, place: PlaceIdentity): StepAvailability {
     const npc = this.npc(roleId);
     if (npc.flags.dead) return { available: false, reason: 'role_dead' };
     const behavior = this.sim.behaviorAt(npc.npcId, timeMin);
@@ -120,7 +143,7 @@ export class AvailabilityService {
     return { available: true };
   }
 
-  private roleWindowsAt(roleId: string, place: PlaceTarget): AvailabilityWindow[] {
+  private roleWindowsAt(roleId: string, place: PlaceIdentity): AvailabilityWindow[] {
     const windows = this.roleWindows(roleId, 'parcelId' in place ? place.parcelId : undefined);
     if (!('stopId' in place)) return windows;
     return this.npc(roleId).routine

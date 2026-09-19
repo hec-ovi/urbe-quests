@@ -21,7 +21,7 @@ const step = (input: Partial<QuestStep> & Pick<QuestStep, 'stepId' | 'actId' | '
 });
 
 /** The chip line: a talk that opens two parallel steps, then an exclusive branch on the chip flag. */
-function definition(reportPlace: PlaceTarget = { parcelId: 'p8' }): QuestlineDefinition {
+function definition(reportPlace: PlaceTarget = { parcelId: 'p8', name: 'Precinct 9' }): QuestlineDefinition {
   return {
     id: 'q_chip',
     title: 'The Static Chip',
@@ -49,7 +49,7 @@ function definition(reportPlace: PlaceTarget = { parcelId: 'p8' }): QuestlineDef
       step({ stepId: 's_meet', actId: 'a2', wantedByRoleId: 'exec', target: { kind: 'talk', roleId: 'exec' }, branching: 'exclusive',
         next: [{ toStepId: 's_handover', when: [{ kind: 'flagSet', flag: 'has_chip' }] }, { toStepId: 's_report', when: [] }] }),
       step({ stepId: 's_handover', actId: 'a2', wantedByRoleId: 'exec', endingId: 'e_sold',
-        target: { kind: 'deliver', itemId: 'chip', place: { parcelId: 'p1' } } }),
+        target: { kind: 'deliver', itemId: 'chip', place: { parcelId: 'p1', name: 'Helix Dynamics Tower' } } }),
       step({ stepId: 's_report', actId: 'a2', wantedByRoleId: 'barista', target: { kind: 'goto', place: reportPlace }, endingId: 'e_clean' }),
     ],
     endings: [
@@ -212,7 +212,7 @@ describe('QuestlineRuntime', () => {
       return runtime;
     };
 
-    const station = reach({ stationId: 'station_central' });
+    const station = reach({ stationId: 'station_central', name: 'Central Station' });
     const guidance = station.stepGuidance('s_report', TUE_10);
     expect(guidance).toEqual({
       questId: 'q_chip', stepId: 's_report', place: { kind: 'station', id: 'station_central' },
@@ -221,13 +221,37 @@ describe('QuestlineRuntime', () => {
     expect(validate(guidance), JSON.stringify(validate.errors)).toBe(true);
     expect(station.advance({ kind: 'arrivedAt', stationId: 'station_central' }, TUE_10).endingId).toBe('e_clean');
 
-    const stop = reach({ stopId: 'stop_market' });
+    const stop = reach({ stopId: 'stop_market', name: 'Market Stop' });
     expect(stop.stepGuidance('s_report', TUE_10)).toEqual(expect.objectContaining({ destination: { kind: 'stop', id: 'stop_market' } }));
     expect(stop.advance({ kind: 'arrivedAt', stopId: 'stop_market' }, TUE_10).endingId).toBe('e_clean');
 
-    expect(reach({ districtId: 'd1' }).stepGuidance('s_report', TUE_10)).toEqual({
+    expect(reach({ districtId: 'd1', name: 'The Spine' }).stepGuidance('s_report', TUE_10)).toEqual({
       questId: 'q_chip', stepId: 's_report', place: { kind: 'district', id: 'd1' }, reason: 'district-area',
     });
+  });
+
+  it('gates a step on the hour its text names and refuses a hint the runtime does not check', () => {
+    const { sim, cast, baristaId, execId } = setup();
+    const timed = definition();
+    const report = timed.steps.find((s) => s.stepId === 's_report')!;
+    report.narrative = { ...report.narrative, playerHint: 'File it during the slow hour.' };
+    report.window = { label: 'slow hour', days: [0, 1, 2, 3, 4, 5, 6], startMin: 960, endMin: 1410 };
+
+    const runtime = new QuestlineRuntime(timed, cast, sim);
+    runtime.advance({ kind: 'talkedTo', npcId: baristaId }, TUE_10);
+    runtime.advance({ kind: 'talkedTo', npcId: execId }, TUE_10);
+
+    expect(runtime.windows('s_report')).toEqual([report.window]);
+    expect(runtime.stepAvailability('s_report', TUE_10)).toEqual({ available: false, reason: 'outside_window' });
+    expect(() => runtime.advance({ kind: 'arrivedAt', parcelId: 'p8' }, TUE_10)).toThrowError(
+      expect.objectContaining({ code: 'E_UNAVAILABLE' }),
+    );
+    expect(runtime.stepAvailability('s_report', TUE_20)).toEqual({ available: true });
+    expect(runtime.advance({ kind: 'arrivedAt', parcelId: 'p8' }, TUE_20).endingId).toBe('e_clean');
+
+    const promised = definition();
+    promised.steps.find((s) => s.stepId === 's_report')!.narrative.playerHint = 'File it after dark.';
+    expect(() => new QuestlineRuntime(promised, cast, sim)).toThrowError(/names "after dark" with no window/);
   });
 
   it('validates saved state, restores its exact history, and rejects forged steps, flags, branches and endings', () => {
