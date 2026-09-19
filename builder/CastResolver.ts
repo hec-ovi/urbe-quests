@@ -3,9 +3,11 @@
  * the story meets them: whoever holds the venue's post then, a reserved
  * identity when the character works no post, anyone of the type otherwise.
  * Two characters are never the same person. The builder never chooses ids or
- * coordinates; the simulation does. Given the world's venues it can also look
- * at the other buildings that publish the post; without them it casts at the
- * pinned venue and by type.
+ * coordinates; the simulation does, and it also says where the city hires, so
+ * a story is never met in a building nobody works in. The cast that comes back
+ * is where the questline is published: every step moves onto the parcel its
+ * own character works at. A role the city cannot fill blocks the questline
+ * with its reason instead of dropping it.
  */
 
 import { QuestError } from '../errors.js';
@@ -13,12 +15,26 @@ import type { NPCInstance, SimulationPort, VendorQuery } from '../world/types/si
 import type { QuestlineDefinition, QuestRole, ResolvedCast, TimeWindow } from '../flow/schema.js';
 import { storyWindow, workplaceOf } from '../flow/roles.js';
 import { postOf, type StoryVenues } from './StoryVenues.js';
+import { Workplaces } from './Workplaces.js';
 
 const MINUTES_PER_DAY = 1440;
 const DAYS_PER_WEEK = 7;
 
-/** Read by code, not by class: the port may be any implementation of the simulation contract. */
-const isNoMatch = (error: unknown): boolean => (error as { code?: string } | null)?.code === 'E_NO_MATCH';
+/** A role nobody can play, and why. The questline is published blocked with this. */
+export interface CastBlock {
+  roleId: string;
+  npcType: string;
+  reason: string;
+}
+
+export interface CastResult {
+  /** The questline as it is played: every step names the parcel its cast is at. */
+  definition: QuestlineDefinition;
+  /** roleId -> npcId, complete unless the questline is blocked. */
+  cast: ResolvedCast;
+  /** Present when a role could not be filled; the host shows the questline blocked with `reason`. */
+  blocked?: CastBlock;
+}
 
 export interface CastOptions {
   /** People already playing a part in this set of questlines. */
@@ -27,30 +43,61 @@ export interface CastOptions {
   characters?: Map<string, string>;
 }
 
+/** A role the city cannot fill blocks its questline; anything else is a real failure. */
+const blocks = (error: unknown): boolean =>
+  error instanceof QuestError
+    ? error.code === 'E_CAST'
+    : typeof (error as { code?: unknown } | null)?.code === 'string';
+
 export class CastResolver {
+  private readonly workplaces: Workplaces;
+
   constructor(
     private readonly sim: SimulationPort,
     private readonly venues?: StoryVenues,
-  ) {}
+  ) {
+    this.workplaces = new Workplaces(sim);
+  }
 
   /**
    * One character, one person: `taken` holds everyone already playing a part
    * so nobody plays two, and `characters` holds the people already cast for a
    * role so the same character stays one person across a set of questlines.
+   * A blocked questline commits nobody, so its people stay free for the rest.
    */
-  resolve(def: QuestlineDefinition, referenceTimeMin: number, options: CastOptions = {}): ResolvedCast {
+  cast(def: QuestlineDefinition, referenceTimeMin: number, options: CastOptions = {}): CastResult {
     const taken = options.taken ?? new Set<string>();
-    const characters = options.characters;
+    const playing = new Set(taken);
     const cast: ResolvedCast = {};
     for (const role of def.roles) {
       const character = `${role.roleId}:${role.npcType}`;
-      const already = characters?.get(character);
-      const npcId = already ?? this.resolveRole(def, role, referenceTimeMin, taken);
-      cast[role.roleId] = npcId;
-      taken.add(npcId);
-      characters?.set(character, npcId);
+      try {
+        const npcId = options.characters?.get(character) ?? this.resolveRole(def, role, referenceTimeMin, playing);
+        cast[role.roleId] = npcId;
+        playing.add(npcId);
+      } catch (error) {
+        if (!blocks(error)) throw error;
+        const reason = error instanceof Error ? error.message : String(error);
+        return { definition: def, cast, blocked: { roleId: role.roleId, npcType: role.npcType, reason } };
+      }
     }
-    return cast;
+    for (const role of def.roles) {
+      const npcId = cast[role.roleId]!;
+      taken.add(npcId);
+      options.characters?.set(`${role.roleId}:${role.npcType}`, npcId);
+    }
+    return { definition: this.pinned(def, cast), cast };
+  }
+
+  /** Where each role's person works, so the steps that meet them say so. */
+  private pinned(def: QuestlineDefinition, cast: ResolvedCast): QuestlineDefinition {
+    if (this.venues === undefined) return def;
+    const at = new Map<string, string>();
+    for (const [roleId, npcId] of Object.entries(cast)) {
+      const parcelId = this.sim.getNPC(npcId).job?.parcelId;
+      if (parcelId !== undefined) at.set(roleId, parcelId);
+    }
+    return at.size === 0 ? def : this.venues.pin(def, at);
   }
 
   private resolveRole(def: QuestlineDefinition, role: QuestRole, referenceTimeMin: number, taken: Set<string>): string {
@@ -66,11 +113,13 @@ export class CastResolver {
 
     if (role.reservedName !== undefined) {
       const staffRole = this.venues?.staffRoleFor(def, role);
+      // A job at a building the city does not hire in is no job the simulation can give.
+      const hiring = workplace !== undefined && this.workplaces.hires(workplace, timeMin);
       try {
         return this.sim.reserveNPC({
           name: role.reservedName,
           type: role.npcType,
-          ...(workplace !== undefined ? { jobParcelId: workplace, ...(staffRole !== undefined ? { role: staffRole } : {}) } : {}),
+          ...(hiring ? { jobParcelId: workplace, ...(staffRole !== undefined ? { role: staffRole } : {}) } : {}),
         }).npcId;
       } catch (error) {
         throw this.asCastError(role, error);
@@ -117,21 +166,12 @@ export class CastResolver {
     if (workplace === undefined) queries.push({ type: role.npcType, timeMin });
     let anyone: string | undefined;
     for (const query of queries) {
-      const found = this.ask(query);
+      const found = this.workplaces.vendor(query);
       if (found === undefined || found.flags.dead) continue;
       if (!taken.has(found.npcId)) return { free: found.npcId, anyone: anyone ?? found.npcId };
       anyone = anyone ?? found.npcId;
     }
     return anyone === undefined ? {} : { anyone };
-  }
-
-  private ask(query: VendorQuery): NPCInstance | undefined {
-    try {
-      return this.sim.getNPCVendor(query);
-    } catch (error) {
-      if (isNoMatch(error)) return undefined;
-      throw error;
-    }
   }
 
   private reservedPerson(role: QuestRole): NPCInstance | undefined {

@@ -24,5 +24,5 @@ export { StepStamp } from './flow/StepStamp.js';
 export { POST_WINDOWS, VENUES, venueName, type Post, type StaffRole } from './world/venues.js';
 export { guidanceFor, type GuidanceReason, type RouteDestination, type StepGuidance } from './flow/guidance.js';
 export { QuestlineStateValidator } from './flow/state.js';
-export { CastResolver, type CastOptions } from './builder/CastResolver.js';
+export { CastResolver, type CastBlock, type CastOptions, type CastResult } from './builder/CastResolver.js';
 export { StoryVenues } from './builder/StoryVenues.js';

@@ -87,8 +87,10 @@ export class QuestlineBuilder {
       throw new QuestError('E_LLM', `builder agent did not finish ${title} within ${maxRounds} rounds: ${this.standing(draft)}`);
     }
 
-    const cast = new CastResolver(input.sim, venues).resolve(definition, input.referenceTimeMin ?? DEFAULT_REFERENCE_TIME);
-    return { definition, cast };
+    const result = new CastResolver(input.sim, venues).cast(definition, input.referenceTimeMin ?? DEFAULT_REFERENCE_TIME);
+    // A questline nobody can staff is not a questline to hand on: the build says so here.
+    if (result.blocked !== undefined) throw new QuestError('E_CAST', result.blocked.reason, result.blocked);
+    return { definition: result.definition, cast: result.cast };
   }
 
   private nudgeLine(draft: QuestlineDraft): string {

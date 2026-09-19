@@ -3,7 +3,9 @@
  * word a place record falls back to when the world has no name, the staffing
  * roles the interior publishes for that kind of building
  * (../../interior/schemas/npc.schema.json), and the posts those roles are held
- * on. Quests picks story venues and story hours from this table.
+ * on. Quests picks story venues and story hours from this table. A building
+ * that publishes only `resident` or `guest` hires nobody, so it is never a
+ * story venue; the simulation has the last word on where the city hires.
  */
 
 import type { NamedWorld, NPCType, NPCTypeCategory, ParcelType } from './types/named-world.js';
@@ -35,7 +37,8 @@ export interface Venue {
 }
 
 export const VENUES: Record<ParcelType, Venue> = {
-  residential: { word: 'apartment block', roles: ['resident', 'cleaner', 'security'], posts: ['day'] },
+  /** People only live here: the city hires nobody in it, so no story is met here. */
+  residential: { word: 'apartment block', roles: ['resident'], posts: ['day'] },
   hotel: { word: 'hotel', roles: ['receptionist', 'waiter', 'security', 'cleaner', 'guest'], posts: ['day', 'evening'] },
   offices: { word: 'office building', roles: ['office_worker', 'receptionist', 'clerk', 'security', 'cleaner'], posts: ['day'] },
   corpo: { word: 'corporate tower', roles: ['executive', 'office_worker', 'receptionist', 'security', 'cleaner'], posts: ['day'] },

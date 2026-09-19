@@ -13,9 +13,11 @@ The halves run alone: `new TranslationPlanner().plan({ assignment, world, types,
 ## Out
 `TranslationResult { plan, definition, cast }`: the plan text (manifest included), a `QuestlineDefinition` that passed `FlowValidator` ([../flow/schema.ts](../flow/schema.ts)), and its `ResolvedCast`.
 
-`StoryVenues` ([StoryVenues.ts](StoryVenues.ts)) finishes the questline before it validates: each role's meeting place moves to a building that publishes a post for that character (the staffing role read from the type's own words, else its category, against the [venue table](../world/venues.ts)) and, when the role's steps name an hour, publishes that post; every parcel that role's steps named moves with it. Then every authored place gets the venue's name and every step whose text names an hour gets its window ([../flow/StepStamp.ts](../flow/StepStamp.ts)).
+`StoryVenues` ([StoryVenues.ts](StoryVenues.ts)) finishes the questline before it validates: each role's meeting place moves to a building that publishes a post for that character (the staffing role read from the type's own words, else its category, against the [venue table](../world/venues.ts)) and, when the role's steps name an hour, publishes that post; every parcel that role's steps named moves with it. A building published for residents and guests alone hires nobody, so it is never a story venue. Then every authored place gets the venue's name and every step whose text names an hour gets its window ([../flow/StepStamp.ts](../flow/StepStamp.ts)). `StoryVenues.pin(definition, workplaces)` runs the same move from a `roleId -> parcelId` map, which is how a resolved cast takes its steps with it.
 
-`CastResolver.resolve(definition, referenceTimeMin, options?)` ([CastResolver.ts](CastResolver.ts)) casts at the hour the story meets each role (the start of the first window its own steps name, on the reference day when that day has it, else the reference time): a person of that name already in the world, then whoever holds the post at that hour at the pinned venue and then at the other buildings that publish it, then a `reserveNPC` identity for a character who works no post, then anyone of that type already in the world. `options.taken` holds the people already playing a part and `options.characters` the characters already cast, so one person is one character across a set of questlines.
+`CastResolver.cast(definition, referenceTimeMin, options?)` ([CastResolver.ts](CastResolver.ts)) casts at the hour the story meets each role (the start of the first window its own steps name, on the reference day when that day has it, else the reference time): a person of that name already in the world, then whoever holds the post at that hour at the pinned venue and then at the other buildings that publish it, then a `reserveNPC` identity for a character who works no post, then anyone of that type already in the world. The simulation says where the city hires ([Workplaces.ts](Workplaces.ts)): a parcel it staffs nobody in answers "nobody" and is never asked again, and no reservation is given a job there. `options.taken` holds the people already playing a part and `options.characters` the characters already cast, so one person is one character across a set of questlines; a blocked questline commits neither.
+
+`CastResult { definition, cast, blocked? }`: `definition` is the questline as it is played, every step moved onto the parcel its own character works at with the place names moved too; `cast` is `roleId -> npcId`; `blocked` is `{ roleId, npcType, reason }` when nobody can play a role, and then `cast` holds the roles filled so far and `definition` is unchanged. Without the world (`new CastResolver(sim)`) the roles resolve the same way and nothing moves.
 
 The manifest ([PlanManifest.ts](PlanManifest.ts)): the plan's last section, `## Manifest` with one line each of `roles:`, `items:`, `acts:`, `endings:`, `steps:` listing machine ids (a kind in parentheses is ignored, `none` is an empty list). `parsePlanManifest(plan)` reads it; a plan without a usable one gets one repair round ([prompts/translate-plan-repair.md](prompts/translate-plan-repair.md)). Facts are not planned: the builder adds them freely.
 
@@ -23,7 +25,7 @@ Agent-facing surface: `BUILDER_TOOLS` ([tools.ts](tools.ts)) with narrative-firs
 
 ## Errors
 - `E_LLM`: no usable manifest after the repair round (detail: stage, raw, problems), the agent answered in words instead of tools more than three times (each such reply is answered with [prompts/builder-nudge.md](prompts/builder-nudge.md) naming what is still missing, and the loop goes on), or the round budget ran out; the message carries the committed count.
-- `E_CAST`: a role has no castable NPC (underlying simulation no-match or reserve conflict in `detail`).
+- `E_CAST`: a role has no castable NPC. The build raises it with the `CastBlock` in `detail`; a published questline carries the same reason in `blocked` instead.
 Other `SimulationError`s pass through.
 
 ## Invariants
@@ -32,6 +34,7 @@ Other `SimulationError`s pass through.
 - The planner sees the arc, the cards and the world brief (no ids); the builder sees the plan, the cards, the synopsis and the parcel, district, station, and stop catalog with ids, never the arc.
 - The manifest is the bound: the finished questline carries exactly the planned roles, items, acts, endings and steps, plus whatever facts the agent added.
 - The agent never sees or emits NPC ids or coordinates; roles bind types, the simulation resolves people. The script owns personality, needs, drives and voice; the simulation owns home, job, family and routine.
+- A published step and its cast name the same place: the questline that comes back is pinned to the buildings its people work in.
 - Flags referenced by drafted steps and facts are auto-declared; the finished definition always satisfies the flow validator.
 - Prompts live in [prompts/](prompts/), including tool descriptions under `prompts/tools/`. Step-catalog examples read want, cost, then change. Minimums are floors, story breadth has no upper count, and model output has no token, word or character cap.
 

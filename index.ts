@@ -34,7 +34,7 @@ export { TranslationPlanner, type PlanInput, type PlanResult } from './builder/T
 export { QuestlineBuilder, type BuildInput, type BuildResult } from './builder/QuestlineBuilder.js';
 export { QuestlineTranslator, type TranslateInput } from './builder/QuestlineTranslator.js';
 export { BUILDER_TOOLS } from './builder/tools.js';
-export { CastResolver, type CastOptions } from './builder/CastResolver.js';
+export { CastResolver, type CastBlock, type CastOptions, type CastResult } from './builder/CastResolver.js';
 export { StoryVenues } from './builder/StoryVenues.js';
 
 export type { CreationInput, CreationResult, SideQuest, StagePorts } from './creation/schema.js';

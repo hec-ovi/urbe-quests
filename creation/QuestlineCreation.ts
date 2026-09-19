@@ -86,6 +86,7 @@ export class QuestlineCreation {
       types,
       sim,
       ...(input.referenceTimeMin !== undefined ? { referenceTimeMin: input.referenceTimeMin } : {}),
+      ...(input.warn !== undefined ? { warn: input.warn } : {}),
     }).apply(built, builtSide);
     return { script, situations, main, side };
   }

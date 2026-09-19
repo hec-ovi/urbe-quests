@@ -3,7 +3,9 @@
  * post for its kind of work at the hour the story names: a barista story lands
  * on a coffee shop with an evening post, never on a tower that staffs nobody
  * like her. The agent keeps writing ids; this moves them onto a real venue and
- * hands the finished questline its place names and hour gates.
+ * hands the finished questline its place names and hour gates. When the cast is
+ * resolved the people have the last word: `pin` moves each step onto the parcel
+ * its own character works at, so the marked place is where they are.
  */
 
 import { namesRole, stepsOfRole, storyWindow, workplaceOf } from '../flow/roles.js';
@@ -35,6 +37,15 @@ export class StoryVenues {
     return this.stamp.definition(this.moveVenues(timed));
   }
 
+  /**
+   * Where the cast really is wins over where the story guessed: every step that
+   * meets a role moves onto the parcel that role's person works at, and the
+   * place names follow it.
+   */
+  pin(def: QuestlineDefinition, workplaces: ReadonlyMap<string, string>): QuestlineDefinition {
+    return this.stamp.definition(this.moved(def, workplaces));
+  }
+
   /** Buildings that publish a post this role can hold, in world order. */
   parcelsFor(def: QuestlineDefinition, role: QuestRole, post?: Post): NamedParcel[] {
     const type = this.types.types.find((candidate) => candidate.type === role.npcType);
@@ -57,15 +68,24 @@ export class StoryVenues {
   }
 
   private moveVenues(def: QuestlineDefinition): QuestlineDefinition {
+    const venues = new Map<string, string>();
+    for (const role of def.roles) {
+      const window = storyWindow(def, role.roleId);
+      const anchor = workplaceOf(def, role.roleId);
+      const venue = this.chooseVenue(def, role, anchor, window === undefined ? undefined : postOf(window));
+      if (venue !== undefined) venues.set(role.roleId, venue);
+    }
+    return this.moved(def, venues);
+  }
+
+  /** Every parcel a role's steps name moves from where the story pinned it to `at`. */
+  private moved(def: QuestlineDefinition, at: ReadonlyMap<string, string>): QuestlineDefinition {
     let steps = def.steps;
     for (const role of def.roles) {
+      const to = at.get(role.roleId);
       const anchor = workplaceOf({ ...def, steps }, role.roleId);
-      const window = storyWindow({ ...def, steps }, role.roleId);
-      const venue = this.chooseVenue(def, role, anchor, window === undefined ? undefined : postOf(window));
-      if (anchor === undefined || venue === undefined || venue === anchor) continue;
-      steps = steps.map((step) =>
-        namesRole(step, role.roleId) ? moveParcel(step, anchor, venue) : step,
-      );
+      if (to === undefined || anchor === undefined || anchor === to) continue;
+      steps = steps.map((step) => (namesRole(step, role.roleId) ? moveParcel(step, anchor, to) : step));
     }
     return { ...def, steps };
   }

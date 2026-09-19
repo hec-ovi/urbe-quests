@@ -3,7 +3,9 @@
  * own while it builds; this recasts the finished set in one fixed order (main,
  * then sides in situation order): a person already playing a part is held back
  * from the next one, and a character the set has already cast (same role id
- * and type, borrowed from the same script) keeps the person it has.
+ * and type, borrowed from the same script) keeps the person it has. Each
+ * questline is published where its people are; one the city cannot staff is
+ * published with its reason and a word to the caller.
  */
 
 import { CastResolver } from '../builder/CastResolver.js';
@@ -19,6 +21,8 @@ export interface CastInput {
   types: NPCTypeSet;
   sim: SimulationPort;
   referenceTimeMin?: number;
+  /** Told about a questline that keeps a role the city cannot fill. */
+  warn?: (message: string) => void;
 }
 
 export class UniqueCast {
@@ -29,10 +33,11 @@ export class UniqueCast {
     const resolver = new CastResolver(sim, new StoryVenues(world, types));
     const referenceTimeMin = this.input.referenceTimeMin ?? DEFAULT_REFERENCE_TIME;
     const options = { taken: new Set<string>(), characters: new Map<string, string>() };
-    const recast = <T extends TranslationResult>(result: T): T => ({
-      ...result,
-      cast: resolver.resolve(result.definition, referenceTimeMin, options),
-    });
+    const recast = <T extends TranslationResult>(result: T): T => {
+      const { definition, cast, blocked } = resolver.cast(result.definition, referenceTimeMin, options);
+      if (blocked !== undefined) this.input.warn?.(`${result.definition.id} is blocked: ${blocked.reason}`);
+      return { ...result, definition, cast };
+    };
     return { main: recast(main), side: side.map(recast) };
   }
 }

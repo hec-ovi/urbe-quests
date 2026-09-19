@@ -8,12 +8,12 @@ Purpose: the questline creation workflow: one creation prompt in; the film scrip
 - `world`, `types`; `sim`: `SimulationPort`.
 - `ports`: `StagePorts { script, situations, plan: LLMPort; build: AgentPort }`, one per stage so the engine chooses the model for each.
 - `minimums? { script?, situations? }`, `referenceTimeMin?`, `maxRounds?`, passed through to the inner boxes.
-- `warn?`: told about a dropped side quest, one by id or all of them when the situations text could not be read. `progress?`: told as each stage lands (`script`, `situations`, `questline` with `'main'` or the situation id and its `TranslationResult`) and on every build round (`build` carrying the builder's `BuildProgress`), so a host logs where a long run is and keeps what is already made.
+- `warn?`: told about a dropped side quest, one by id or all of them when the situations text could not be read, and about a questline the recast published blocked. `progress?`: told as each stage lands (`script`, `situations`, `questline` with `'main'` or the situation id and its `TranslationResult`) and on every build round (`build` carrying the builder's `BuildProgress`), so a host logs where a long run is and keeps what is already made.
 
 ## Out
 `CreationResult`: `script` (ScriptPassResult), `situations` (SituationsPassResult), `main` (TranslationResult: plan, definition, cast), `side` (one `SideQuest`, a TranslationResult with its `situationId`, per situation, in situation order).
 
-`UniqueCast` ([UniqueCast.ts](UniqueCast.ts)) recasts the finished set in one order (main, then sides in situation order): a person playing a part is held back from the next one, and a character the set already cast (same role id and NPC type, borrowed from the same script) keeps the person it has. Same inputs, same casting.
+`UniqueCast` ([UniqueCast.ts](UniqueCast.ts)) recasts the finished set in one order (main, then sides in situation order): a person playing a part is held back from the next one, and a character the set already cast (same role id and NPC type, borrowed from the same script) keeps the person it has. Each questline comes back pinned to where its people work; one the city cannot staff keeps its place in the set and its reason goes to `warn`. Same inputs, same casting.
 
 `Assignments` ([Assignments.ts](Assignments.ts)) is how story becomes translator input: the main line takes the logline as synopsis, every character card and the four movements as arc; a situation takes its four parts as arc, borrowed characters with their full script card, new ones with the situation's line about them.
 

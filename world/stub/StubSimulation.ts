@@ -101,7 +101,7 @@ export class StubSimulation implements SimulationPort {
     const type = this.typeByName(spec.type);
     const rng = new Rng(`${this.seed}:reserve:${spec.name.given}:${spec.name.family}`);
     const job: Job | undefined = spec.jobParcelId
-      ? { parcelId: this.parcel(spec.jobParcelId).id, role: spec.role ?? type.type, shift: DAY_SHIFT }
+      ? { parcelId: this.workplace(spec.jobParcelId).id, role: spec.role ?? type.type, shift: DAY_SHIFT }
       : undefined;
     return this.createInstance({ name: spec.name, type, job, homeDistrictId: spec.homeDistrictId, rng });
   }
@@ -145,7 +145,7 @@ export class StubSimulation implements SimulationPort {
       case 'promote': {
         if (!npc.job) throw new SimulationError('E_CONFLICT', `promote on jobless npc ${npcId}`);
         npc.job.role = `senior_${npc.job.role}`;
-        if (op.toParcelId !== undefined) npc.job.parcelId = this.parcel(op.toParcelId).id;
+        if (op.toParcelId !== undefined) npc.job.parcelId = this.workplace(op.toParcelId).id;
         npc.routine = this.routineFor(npc);
         return;
       }
@@ -173,6 +173,13 @@ export class StubSimulation implements SimulationPort {
     return parcel;
   }
 
+  /** A building people only live in staffs nobody, so it is no workplace to hire, query or promote into. */
+  private workplace(parcelId: string): NamedParcel {
+    const parcel = this.parcel(parcelId);
+    if (parcel.type === 'residential') throw new SimulationError('E_UNKNOWN_ID', `no workplace parcel ${parcelId}`);
+    return parcel;
+  }
+
   private typeByName(type: string): NPCType {
     const found = this.types.find((t) => t.type === type);
     if (!found) throw new SimulationError('E_UNKNOWN_ID', `unknown npc type ${type}`);
@@ -188,7 +195,7 @@ export class StubSimulation implements SimulationPort {
 
   /** Parcels a vendor query can staff, in stable world order. */
   private vendorParcels(query: VendorQuery): NamedParcel[] {
-    if (query.parcelId !== undefined) return [this.parcel(query.parcelId)];
+    if (query.parcelId !== undefined) return [this.workplace(query.parcelId)];
     if (query.type === undefined) {
       throw new SimulationError('E_INVALID_INPUT', 'vendor query needs parcelId or type');
     }
