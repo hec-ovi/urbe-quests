@@ -30,12 +30,14 @@ export class UniqueCast {
 
   apply(main: TranslationResult, side: SideQuest[]): { main: TranslationResult; side: SideQuest[] } {
     const { world, types, sim } = this.input;
-    const resolver = new CastResolver(sim, new StoryVenues(world, types));
+    const venues = new StoryVenues(world, types);
+    const resolver = new CastResolver(sim, venues);
     const referenceTimeMin = this.input.referenceTimeMin ?? DEFAULT_REFERENCE_TIME;
     const options = { taken: new Set<string>(), characters: new Map<string, string>() };
     const recast = <T extends TranslationResult>(result: T): T => {
-      const { definition, cast, blocked } = resolver.cast(result.definition, referenceTimeMin, options);
+      const { cast, posts, blocked } = resolver.cast(result.definition, referenceTimeMin, options);
       if (blocked !== undefined) this.input.warn?.(`${result.definition.id} is blocked: ${blocked.reason}`);
+      const definition = venues.pin(result.definition, new Map(Object.entries(posts)));
       return { ...result, definition, cast };
     };
     return { main: recast(main), side: side.map(recast) };

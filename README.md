@@ -1,4 +1,4 @@
-# urbe-quests 0.9.0
+# urbe-quests 0.9.1
 
 Writes a story from city context, adapts it to typed gameplay, and runs quest rules in code. Models are injected per creative stage. Engine receives definitions, objectives, asset requests and exact interaction bindings.
 
@@ -15,7 +15,7 @@ Start with [SKILL.md](SKILL.md) for a copyable library call, [CONTRACT.md](CONTR
 
 A quest place is a named place at a real hour: every authored place carries the venue's name (the world's own name, else the word for that kind of building), a step whose text names an hour carries the window the runtime checks, story venues are the buildings that publish a post for the character, and the cast is queried at the hour the story meets them, one person per character.
 
-A cast member stands where the step says: casting answers with the questline pinned to the buildings its people work in, and a role the city cannot fill comes back as a blocked questline with its reason rather than a questline that disappears.
+A cast member stands where the step says: the creation stage casts and pins each questline to the buildings its own people hold posts in, so the shipped bundle names the final places and play time reads them. A role the city cannot fill comes back as a blocked questline with its reason rather than a questline that disappears.
 
 Node callers import `dist/index.js` (authoring, creation, dialog, handoff). Browser hosts import `dist/runtime.js` (definitions, runtime, cast, guidance). Runtime completion requires an exact accepted event and available target. Inventory, objective location and route guidance are derived from state. Dialogue, on the Node entry, supplies scoped facts, text replies and serializable memory; the host controls the visible person and their routine.
 

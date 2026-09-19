@@ -90,7 +90,8 @@ export class QuestlineBuilder {
     const result = new CastResolver(input.sim, venues).cast(definition, input.referenceTimeMin ?? DEFAULT_REFERENCE_TIME);
     // A questline nobody can staff is not a questline to hand on: the build says so here.
     if (result.blocked !== undefined) throw new QuestError('E_CAST', result.blocked.reason, result.blocked);
-    return { definition: result.definition, cast: result.cast };
+    // Where a step happens is decided here, while it is built, so the shipped questline is the one truth.
+    return { definition: venues.pin(definition, new Map(Object.entries(result.posts))), cast: result.cast };
   }
 
   private nudgeLine(draft: QuestlineDraft): string {

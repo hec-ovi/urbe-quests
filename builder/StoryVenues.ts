@@ -38,12 +38,20 @@ export class StoryVenues {
   }
 
   /**
-   * Where the cast really is wins over where the story guessed: every step that
-   * meets a role moves onto the parcel that role's person works at, and the
-   * place names follow it.
+   * The cast has the last word on where its own story is met: a step that meets
+   * a role whose person holds a post in another building moves onto that
+   * building, and the place names move with it. A step that meets nobody stays,
+   * a role cast without a post moves nothing, and two people never pull one step
+   * in two directions.
    */
-  pin(def: QuestlineDefinition, workplaces: ReadonlyMap<string, string>): QuestlineDefinition {
-    return this.stamp.definition(this.moved(def, workplaces));
+  pin(def: QuestlineDefinition, posts: ReadonlyMap<string, string>): QuestlineDefinition {
+    if (posts.size === 0) return def;
+    const steps = def.steps.map((step) => {
+      const here = stepParcel(step);
+      const to = this.metAt(def, step, here, posts);
+      return to === undefined || to === here ? step : withParcel(step, to);
+    });
+    return this.stamp.definition({ ...def, steps });
   }
 
   /** Buildings that publish a post this role can hold, in world order. */
@@ -67,25 +75,37 @@ export class StoryVenues {
     return roles.length === 1 ? roles[0] : undefined;
   }
 
-  private moveVenues(def: QuestlineDefinition): QuestlineDefinition {
-    const venues = new Map<string, string>();
-    for (const role of def.roles) {
-      const window = storyWindow(def, role.roleId);
-      const anchor = workplaceOf(def, role.roleId);
-      const venue = this.chooseVenue(def, role, anchor, window === undefined ? undefined : postOf(window));
-      if (venue !== undefined) venues.set(role.roleId, venue);
-    }
-    return this.moved(def, venues);
+  /** The building this step's own people are met in, when every one of them holds a post in the same one. */
+  private metAt(
+    def: QuestlineDefinition,
+    step: QuestStep,
+    here: string | undefined,
+    posts: ReadonlyMap<string, string>,
+  ): string | undefined {
+    const met = rolesMet(step);
+    const roles = met.length > 0 ? met : this.walkedTo(def, step, here);
+    if (roles.length === 0) return undefined;
+    const at = roles.map((roleId) => posts.get(roleId));
+    return at.every((parcelId) => parcelId !== undefined && parcelId === at[0]) ? at[0] : undefined;
   }
 
-  /** Every parcel a role's steps name moves from where the story pinned it to `at`. */
-  private moved(def: QuestlineDefinition, at: ReadonlyMap<string, string>): QuestlineDefinition {
+  /** A step with no cast of its own follows the character who wants it, when it walks the player to their door. */
+  private walkedTo(def: QuestlineDefinition, step: QuestStep, here: string | undefined): string[] {
+    const roleId = step.wantedByRoleId;
+    if (roleId === undefined || here === undefined || here !== workplaceOf(def, roleId)) return [];
+    return [roleId];
+  }
+
+  private moveVenues(def: QuestlineDefinition): QuestlineDefinition {
     let steps = def.steps;
     for (const role of def.roles) {
-      const to = at.get(role.roleId);
       const anchor = workplaceOf({ ...def, steps }, role.roleId);
-      if (to === undefined || anchor === undefined || anchor === to) continue;
-      steps = steps.map((step) => (namesRole(step, role.roleId) ? moveParcel(step, anchor, to) : step));
+      const window = storyWindow({ ...def, steps }, role.roleId);
+      const venue = this.chooseVenue(def, role, anchor, window === undefined ? undefined : postOf(window));
+      if (anchor === undefined || venue === undefined || venue === anchor) continue;
+      steps = steps.map((step) =>
+        namesRole(step, role.roleId) ? moveParcel(step, anchor, venue) : step,
+      );
     }
     return { ...def, steps };
   }
@@ -115,6 +135,31 @@ export class StoryVenues {
     }
     return true;
   }
+}
+
+/** The people this step meets face to face. */
+function rolesMet(step: QuestStep): string[] {
+  const t = step.target;
+  if (t.kind === 'talk') return [t.roleId];
+  if (t.kind === 'listen') return [...t.roleIds];
+  return [];
+}
+
+/** The one building a step names, when it names one. */
+function stepParcel(step: QuestStep): string | undefined {
+  const t = step.target;
+  if (t.kind === 'talk' || t.kind === 'listen' || t.kind === 'work') return t.atParcelId;
+  if ('place' in t && 'parcelId' in t.place) return t.place.parcelId;
+  return undefined;
+}
+
+/** The same step, meeting its people in `parcelId` instead. */
+function withParcel(step: QuestStep, parcelId: string): QuestStep {
+  const t = step.target;
+  if (t.kind === 'talk') return { ...step, target: { ...t, atParcelId: parcelId } };
+  if (t.kind === 'listen' || t.kind === 'work') return { ...step, target: { ...t, atParcelId: parcelId } };
+  if ('place' in t && 'parcelId' in t.place) return { ...step, target: { ...t, place: { ...t.place, parcelId } } };
+  return step;
 }
 
 /** Every parcel this step names for that role, moved from the authored one to the venue. */

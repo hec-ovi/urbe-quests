@@ -4,10 +4,13 @@
  * identity when the character works no post, anyone of the type otherwise.
  * Two characters are never the same person. The builder never chooses ids or
  * coordinates; the simulation does, and it also says where the city hires, so
- * a story is never met in a building nobody works in. The cast that comes back
- * is where the questline is published: every step moves onto the parcel its
- * own character works at. A role the city cannot fill blocks the questline
- * with its reason instead of dropping it.
+ * a story is never met in a building nobody works in. A role the city cannot
+ * fill blocks the questline with its reason instead of dropping it.
+ *
+ * Casting reads the questline, it never rewrites it: `posts` reports the
+ * building each character was found holding a post in, and the creation stage
+ * pins the questline with it ([StoryVenues.pin](StoryVenues.ts)) before the
+ * bundle ships. Where a step happens is decided once, while it is built.
  */
 
 import { QuestError } from '../errors.js';
@@ -28,10 +31,15 @@ export interface CastBlock {
 }
 
 export interface CastResult {
-  /** The questline as it is played: every step names the parcel its cast is at. */
-  definition: QuestlineDefinition;
   /** roleId -> npcId, complete unless the questline is blocked. */
   cast: ResolvedCast;
+  /**
+   * roleId -> the building that character holds a post in, for the roles found
+   * on one. A role filled any other way is absent, so nothing moves onto a
+   * stranger's workplace. The creation stage pins with this; a host at load
+   * plays the questline as the bundle ships it.
+   */
+  posts: Record<string, string>;
   /** Present when a role could not be filled; the host shows the questline blocked with `reason`. */
   blocked?: CastBlock;
 }
@@ -51,6 +59,8 @@ const blocks = (error: unknown): boolean =>
 
 export class CastResolver {
   private readonly workplaces: Workplaces;
+  /** npcId -> the building they were found holding a post in, kept across a questline set. */
+  private readonly postOf = new Map<string, string>();
 
   constructor(
     private readonly sim: SimulationPort,
@@ -69,16 +79,19 @@ export class CastResolver {
     const taken = options.taken ?? new Set<string>();
     const playing = new Set(taken);
     const cast: ResolvedCast = {};
+    const posts: Record<string, string> = {};
     for (const role of def.roles) {
       const character = `${role.roleId}:${role.npcType}`;
       try {
         const npcId = options.characters?.get(character) ?? this.resolveRole(def, role, referenceTimeMin, playing);
         cast[role.roleId] = npcId;
+        const post = this.postOf.get(npcId);
+        if (post !== undefined) posts[role.roleId] = post;
         playing.add(npcId);
       } catch (error) {
         if (!blocks(error)) throw error;
         const reason = error instanceof Error ? error.message : String(error);
-        return { definition: def, cast, blocked: { roleId: role.roleId, npcType: role.npcType, reason } };
+        return { cast, posts, blocked: { roleId: role.roleId, npcType: role.npcType, reason } };
       }
     }
     for (const role of def.roles) {
@@ -86,18 +99,7 @@ export class CastResolver {
       taken.add(npcId);
       options.characters?.set(`${role.roleId}:${role.npcType}`, npcId);
     }
-    return { definition: this.pinned(def, cast), cast };
-  }
-
-  /** Where each role's person works, so the steps that meet them say so. */
-  private pinned(def: QuestlineDefinition, cast: ResolvedCast): QuestlineDefinition {
-    if (this.venues === undefined) return def;
-    const at = new Map<string, string>();
-    for (const [roleId, npcId] of Object.entries(cast)) {
-      const parcelId = this.sim.getNPC(npcId).job?.parcelId;
-      if (parcelId !== undefined) at.set(roleId, parcelId);
-    }
-    return at.size === 0 ? def : this.venues.pin(def, at);
+    return { cast, posts };
   }
 
   private resolveRole(def: QuestlineDefinition, role: QuestRole, referenceTimeMin: number, taken: Set<string>): string {
@@ -116,11 +118,13 @@ export class CastResolver {
       // A job at a building the city does not hire in is no job the simulation can give.
       const hiring = workplace !== undefined && this.workplaces.hires(workplace, timeMin);
       try {
-        return this.sim.reserveNPC({
+        const reserved = this.sim.reserveNPC({
           name: role.reservedName,
           type: role.npcType,
           ...(hiring ? { jobParcelId: workplace, ...(staffRole !== undefined ? { role: staffRole } : {}) } : {}),
-        }).npcId;
+        });
+        if (hiring) this.postOf.set(reserved.npcId, workplace!);
+        return reserved.npcId;
       } catch (error) {
         throw this.asCastError(role, error);
       }
@@ -168,6 +172,9 @@ export class CastResolver {
     for (const query of queries) {
       const found = this.workplaces.vendor(query);
       if (found === undefined || found.flags.dead) continue;
+      // Found on a post: this is the building the story meets them in.
+      if (query.parcelId !== undefined) this.postOf.set(found.npcId, query.parcelId);
+      else if (found.job !== undefined) this.postOf.set(found.npcId, found.job.parcelId);
       if (!taken.has(found.npcId)) return { free: found.npcId, anyone: anyone ?? found.npcId };
       anyone = anyone ?? found.npcId;
     }
