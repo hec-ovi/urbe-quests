@@ -26,6 +26,8 @@ export interface BuildInput {
   types: NPCTypeSet;
   sim: SimulationPort;
   agent: AgentPort;
+  /** The parcels the story may use; every place lands inside it. Omitted, the whole world is open. */
+  parcels?: readonly string[];
   /** Simulation time used to resolve on-duty cast; defaults to Tuesday 10:00. */
   referenceTimeMin?: number;
   /** Overrides the budget the plan sets (two rounds per planned piece plus eight). */
@@ -51,7 +53,7 @@ export class QuestlineBuilder {
   async build(input: BuildInput): Promise<BuildResult> {
     const system = [prompt('builder-system.md'), prompt('step-catalog.md'), prompt('artifact-catalog.md')].join('\n\n');
     const userPrompt = this.renderPrompt(input);
-    const venues = new StoryVenues(input.world, input.types);
+    const venues = new StoryVenues(input.world, input.types, input.parcels);
     const draft = new QuestlineDraft(input.manifest, new WorldTargetAudit(input.world, input.types), venues);
     const dispatcher = new ToolDispatcher(draft);
     const transcript: AgentTurn[] = [];

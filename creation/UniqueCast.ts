@@ -20,6 +20,8 @@ export interface CastInput {
   world: NamedWorld;
   types: NPCTypeSet;
   sim: SimulationPort;
+  /** The parcels the story may use; a character's post outside it moves no step. */
+  parcels?: readonly string[];
   referenceTimeMin?: number;
   /** Told about a questline that keeps a role the city cannot fill. */
   warn?: (message: string) => void;
@@ -30,7 +32,7 @@ export class UniqueCast {
 
   apply(main: TranslationResult, side: SideQuest[]): { main: TranslationResult; side: SideQuest[] } {
     const { world, types, sim } = this.input;
-    const venues = new StoryVenues(world, types);
+    const venues = new StoryVenues(world, types, this.input.parcels);
     const resolver = new CastResolver(sim, venues);
     const referenceTimeMin = this.input.referenceTimeMin ?? DEFAULT_REFERENCE_TIME;
     const options = { taken: new Set<string>(), characters: new Map<string, string>() };

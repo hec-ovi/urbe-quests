@@ -26,6 +26,8 @@ export interface CreationInput {
   sim: SimulationPort;
   ports: StagePorts;
   minimums?: { script?: Partial<ScriptMinimums>; situations?: Partial<SituationMinimums> };
+  /** The parcels the story may use, when the host opens only some of the city; every place lands inside it. */
+  parcels?: readonly string[];
   referenceTimeMin?: number;
   maxRounds?: number;
   /** Told about a side quest that failed to build and was dropped. */

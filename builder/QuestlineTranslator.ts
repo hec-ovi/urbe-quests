@@ -18,6 +18,8 @@ export interface TranslateInput {
   types: NPCTypeSet;
   sim: SimulationPort;
   ports: { plan: LLMPort; build: AgentPort };
+  /** The parcels the story may use; every place lands inside it. */
+  parcels?: readonly string[];
   referenceTimeMin?: number;
   maxRounds?: number;
   progress?: (event: BuildProgress) => void;
@@ -25,7 +27,7 @@ export interface TranslateInput {
 
 export class QuestlineTranslator {
   async translate(input: TranslateInput): Promise<TranslationResult> {
-    const { assignment, world, types, sim, ports, referenceTimeMin, maxRounds, progress } = input;
+    const { assignment, world, types, sim, ports, parcels, referenceTimeMin, maxRounds, progress } = input;
     const plan = await new TranslationPlanner().plan({ assignment, world, types, llm: ports.plan });
     const built = await new QuestlineBuilder().build({
       assignment,
@@ -35,6 +37,7 @@ export class QuestlineTranslator {
       types,
       sim,
       agent: ports.build,
+      ...(parcels !== undefined ? { parcels } : {}),
       ...(referenceTimeMin !== undefined ? { referenceTimeMin } : {}),
       ...(maxRounds !== undefined ? { maxRounds } : {}),
       ...(progress !== undefined ? { progress } : {}),

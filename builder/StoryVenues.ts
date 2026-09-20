@@ -6,6 +6,10 @@
  * hands the finished questline its place names and hour gates. When the cast is
  * resolved the people have the last word: `pin` moves each step onto the parcel
  * its own character works at, so the marked place is where they are.
+ *
+ * Given a set of parcels the story may use, every place stays inside it: venues
+ * are chosen from it, a building outside it moves to one of the same kind that
+ * is in it, and `outside` names whatever still falls out.
  */
 
 import { namesRole, stepsOfRole, storyWindow, workplaceOf } from '../flow/roles.js';
@@ -23,18 +27,36 @@ export const postOf = (window: TimeWindow): Post =>
 
 export class StoryVenues {
   private readonly stamp: StepStamp;
+  /** The parcels the story may use, when the caller names a set; every place lands inside it. */
+  private readonly allowed?: ReadonlySet<string>;
 
   constructor(
     private readonly world: NamedWorld,
     private readonly types: NPCTypeSet,
+    allowed?: Iterable<string>,
   ) {
     this.stamp = new StepStamp(world);
+    this.allowed = allowed === undefined ? undefined : new Set(allowed);
   }
 
-  /** Hour gates first, then every role's venue, then the place names of where it all lands. */
+  /** Hour gates first, then every role's venue, then the set, then the place names of where it all lands. */
   definition(def: QuestlineDefinition): QuestlineDefinition {
     const timed = this.stamp.definition(def);
-    return this.stamp.definition(this.moveVenues(timed));
+    return this.stamp.definition(this.within(this.moveVenues(timed)));
+  }
+
+  /** Every building the questline names from outside the set, by the step or item that names it. */
+  outside(def: QuestlineDefinition): { at: string; parcelId: string }[] {
+    if (this.allowed === undefined) return [];
+    const out: { at: string; parcelId: string }[] = [];
+    for (const step of def.steps) {
+      const parcelId = stepParcel(step);
+      if (parcelId !== undefined && !this.allowed.has(parcelId)) out.push({ at: step.stepId, parcelId });
+    }
+    for (const item of def.items) {
+      if (item.atParcelId !== undefined && !this.allowed.has(item.atParcelId)) out.push({ at: item.itemId, parcelId: item.atParcelId });
+    }
+    return out;
   }
 
   /**
@@ -49,12 +71,12 @@ export class StoryVenues {
     const steps = def.steps.map((step) => {
       const here = stepParcel(step);
       const to = this.metAt(def, step, here, posts);
-      return to === undefined || to === here ? step : withParcel(step, to);
+      return to === undefined || to === here || !this.usable(to) ? step : withParcel(step, to);
     });
     return this.stamp.definition({ ...def, steps });
   }
 
-  /** Buildings that publish a post this role can hold, in world order. */
+  /** Buildings that publish a post this role can hold, in world order, inside the set when there is one. */
   parcelsFor(def: QuestlineDefinition, role: QuestRole, post?: Post): NamedParcel[] {
     const type = this.types.types.find((candidate) => candidate.type === role.npcType);
     if (type === undefined) return [];
@@ -62,7 +84,9 @@ export class StoryVenues {
     const eligible = (roles: StaffRole[]) =>
       roles.filter(HIRED).length === 0
         ? []
-        : this.world.parcels.filter((parcel) => staffs(parcel.type, roles.filter(HIRED)) && this.grounded(type, parcel) && byPost(parcel));
+        : this.world.parcels.filter(
+            (parcel) => this.usable(parcel.id) && staffs(parcel.type, roles.filter(HIRED)) && this.grounded(type, parcel) && byPost(parcel),
+          );
     const narrow = eligible(staffRoles(type, this.roleText(def, role)));
     return narrow.length > 0 ? narrow : eligible(staffRoles(type));
   }
@@ -94,6 +118,35 @@ export class StoryVenues {
     const roleId = step.wantedByRoleId;
     if (roleId === undefined || here === undefined || here !== workplaceOf(def, roleId)) return [];
     return [roleId];
+  }
+
+  /** Places that fell outside the set move to a building of the same kind inside it. */
+  private within(def: QuestlineDefinition): QuestlineDefinition {
+    if (this.allowed === undefined) return def;
+    const moved = (parcelId: string | undefined): string | undefined =>
+      parcelId === undefined || this.allowed!.has(parcelId) ? undefined : this.sameKindInSet(parcelId);
+    const steps = def.steps.map((step) => {
+      const to = moved(stepParcel(step));
+      return to === undefined ? step : withParcel(step, to);
+    });
+    const items = def.items.map((item) => {
+      const to = moved(item.atParcelId);
+      return to === undefined ? item : { ...item, atParcelId: to };
+    });
+    return { ...def, steps, items };
+  }
+
+  /** The building of that kind inside the set, its own district first, then world order. */
+  private sameKindInSet(parcelId: string): string | undefined {
+    const from = this.world.parcels.find((parcel) => parcel.id === parcelId);
+    if (from === undefined) return undefined;
+    const eligible = this.world.parcels.filter((parcel) => this.allowed!.has(parcel.id) && parcel.type === from.type);
+    return (eligible.find((parcel) => parcel.districtId === from.districtId) ?? eligible[0])?.id;
+  }
+
+  /** Is this a building the story may use? */
+  private usable(parcelId: string): boolean {
+    return this.allowed === undefined || this.allowed.has(parcelId);
   }
 
   private moveVenues(def: QuestlineDefinition): QuestlineDefinition {

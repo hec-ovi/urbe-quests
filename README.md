@@ -1,4 +1,4 @@
-# urbe-quests 0.9.1
+# urbe-quests 0.10.0
 
 Writes a story from city context, adapts it to typed gameplay, and runs quest rules in code. Models are injected per creative stage. Engine receives definitions, objectives, asset requests and exact interaction bindings.
 
@@ -24,10 +24,10 @@ Node callers import `dist/index.js` (authoring, creation, dialog, handoff). Brow
 ```sh
 npm run sample -- "A debt threatens a night-shift worker" local-story
 npm run replay -- creation/samples/urbe-small/recording.json local-replay
-npm run materialize -- <recording.json> <profile> <atlas-or-named-world.json> <npc-types.json> <questlines.json> [<handoff-input.json>]
+npm run materialize -- <recording.json> <profile> <atlas-or-named-world.json> <npc-types.json> <questlines.json> [<handoff-input.json>] [--parcels=<ids|@file>]
 npm run bundle -- <sample-directory> [<questlines.json>] [<handoff-input.json>]
 ```
 
-The live sample streams text and tool calls without output caps. It takes `LLM_BASE_URL` (default `http://localhost:8080/v1`), `LLM_MODEL` (default first listed model), and optional `LLM_API_KEY`. Replay and materialize run without a model. Named input retains its metadata; raw Atlas input receives deterministic fallback district labels.
+The live sample streams text and tool calls without output caps. It takes `LLM_BASE_URL` (default `http://localhost:8080/v1`), `LLM_MODEL` (default first listed model), and optional `LLM_API_KEY`. Replay and materialize run without a model. Named input retains its metadata; raw Atlas input receives deterministic fallback district labels. `--parcels` names the buildings the story may use (`p0,p3,p12`, or `@file` holding a JSON array or a plain list), so a host that opens part of the city gets a bundle that only names buildings the player can walk into.
 
 Engine bundle **1.1** has [eight stable JSON files](handoff/CONTRACT.md#out). Place names and step windows are additive fields inside it. The host declares supported transportation modes. Quests validates semantic bindings; Engine validates physical placement and playability. [Creation](creation/CONTRACT.md) documents CLI defaults and partial side results.

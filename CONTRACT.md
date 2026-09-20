@@ -1,4 +1,4 @@
-# Quests 0.9.1
+# Quests 0.10.0
 
 Writes stories through injected agents, adapts them into typed quests, runs their rules in code, and prepares Engine handoffs and scoped NPC dialogue.
 
@@ -11,7 +11,7 @@ The Node library entry is [index.ts](index.ts), compiled to `dist/index.js`; bro
 | `AuthoringHarness.writeStory(input, agent)` | [Story request](authoring/schema/story-request.schema.json), [agent port](authoring/src/schema.ts) | [Story](authoring/schema/story-output.schema.json), narrative only |
 | `AuthoringHarness.adaptGameplay(input, agent)` | [Adaptation request](authoring/schema/adaptation-request.schema.json), [agent port](authoring/src/schema.ts) | [Definition and narrative trace](authoring/schema/adaptation-output.schema.json) |
 | `AuthoringHarness.skillIndex()`, `route(message)`, `resolveSkills(names)` | [Resolver queries](authoring/CONTRACT.md#inputs) | [Skill index and selected bodies](authoring/CONTRACT.md#outputs) |
-| `QuestlineCreation.run(input)` | [CreationInput](creation/schema.ts), prompt, named world/types, Simulation and per-stage model ports | [CreationResult](creation/schema.ts), script, situations, main and side translations |
+| `QuestlineCreation.run(input)` | [CreationInput](creation/schema.ts), prompt, named world/types, Simulation, per-stage model ports and the parcels the story may use | [CreationResult](creation/schema.ts), script, situations, main and side translations |
 | `ScriptPass.run`, `SituationsPass.run`, `QuestlineTranslator.translate` | [Story](story/CONTRACT.md), [translation](builder/CONTRACT.md) | [Story text](story/schema.ts), [plan, definition and feasibility cast](builder/schema.ts) |
 | `CastResolver.cast(definition, timeMin, options?)` | [Definition](flow/schema/questline.schema.json), [SimulationPort](world/types/simulation.ts), optional `StoryVenues(world, types)` and `{taken, characters}` | [CastResult](builder/CastResolver.ts): `cast` role to NPC IDs, `posts` role to the building it holds a post in, `blocked` when a role cannot be filled |
 | `QuestlineRuntime`, `advance`, `restore` | [Definition](flow/schema/questline.schema.json), cast, Simulation, [event](flow/schema/player-event.schema.json), time, [saved state](flow/schema/questline-state.schema.json) | [State and advance result](flow/QuestlineRuntime.ts), [availability](flow/availability.ts), [guidance](flow/schema/step-guidance.schema.json) |
@@ -26,6 +26,8 @@ Engine receives main definition first, then side definitions, without creation-t
 Hosts pass `new CastResolver(sim, new StoryVenues(world, types))`: with the world it looks past the pinned venue to the other buildings that publish the post, which is what keeps every character a different person, and it can move a step onto the building its character really works in. `options.taken` and `options.characters` carry both across a questline set.
 
 A cast member stands where the step says, and where that is gets settled while the questline is built, never at play time. The creation stage casts and then pins the questline with `StoryVenues.pin(definition, posts)`, so the shipped bundle names the final buildings and a host that opens interiors from the steps opens the right ones. `cast(definition, timeMin, options?)` answers `{ cast, posts, blocked? }` and rewrites nothing: `cast` is `roleId -> npcId`, `posts` is `roleId -> the building that character was found holding a post in` and is absent for a role filled any other way, and `blocked` is `{ roleId, npcType, reason }` when nobody can play a role. A host casting at load plays the definitions the bundle carries and lists a blocked questline with its `reason` instead of dropping it.
+
+A host that opens only part of the city names it: `parcels` on a creation run, `--parcels` on the materialize CLI. Every place then lands inside that set, a building outside it moves to one of the same kind that is in it, and a questline with nowhere to go is named with its reason instead of shipped, so the bundle only ever points at buildings the player can walk into.
 
 A step moves for the people it meets and nobody else: the role a `talk` names, both roles a `listen` names, or the character a step is wanted by while the step stands at that character's own meeting place. It moves only to the building where that character holds a post, and only when everyone the step meets agrees on one building. A role found off a post moves nothing, so two stories never collapse onto one address because a lookup fell through.
 

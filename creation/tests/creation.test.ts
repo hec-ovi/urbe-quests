@@ -1,7 +1,8 @@
 /**
  * Contract-surface tests for quests/creation, run on the sample recording the
  * launcher replays: the whole workflow with no model present, its warn and
- * E_LLM paths, the materialize entry, and the engine questline set.
+ * E_LLM paths, the materialize entry with and without a set of open parcels,
+ * and the engine questline set.
  */
 
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -31,6 +32,16 @@ const SOURCE_TYPES = read<NPCTypeSet>(typesPath);
 const { world, types } = new WorldContextNormalizer().normalize({ world: SOURCE_WORLD, types: SOURCE_TYPES });
 
 const junk = (text: string) => ({ complete: async () => text });
+
+/** Every building a questline names, by step and by item. */
+const parcelsNamed = (definition: QuestlineDefinition): string[] => [
+  ...definition.steps.flatMap((step) => {
+    const t = step.target;
+    if (t.kind === 'talk' || t.kind === 'listen' || t.kind === 'work') return t.atParcelId === undefined ? [] : [t.atParcelId];
+    return 'place' in t && 'parcelId' in t.place ? [t.place.parcelId] : [];
+  }),
+  ...definition.items.flatMap((item) => (item.atParcelId === undefined ? [] : [item.atParcelId])),
+];
 
 /** Replays the recorded run; overrides swap one stage for a failing one. */
 function run(overrides: Partial<StagePorts> = {}, extra: Record<string, unknown> = {}) {
@@ -157,6 +168,37 @@ describe('materialize entry', () => {
       expect(fallback.world.districts[0]!.name).toBe('commercial d0');
       expect(fallback.questlines).toHaveLength(4);
       expect(readFileSync(join(dirname(fallback.outputPath), 'questlines.meta.json'), 'utf8')).toContain('"profile": "atlas"');
+    } finally {
+      log.mockRestore();
+      rmSync(outputDir, { recursive: true, force: true });
+    }
+  });
+
+  it('keeps every place inside the parcels it is given, and stops when one has nowhere to go', async () => {
+    const outputDir = mkdtempSync(join(tmpdir(), 'quests-parcels-'));
+    const log = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    try {
+      // What the assembler opened. The corporate tower the story wrote, p2, is not one of them.
+      const open = ['p0', 'p1', 'p4', 'p6', 'p7', 'p10', 'p11', 'p32', 'p40'];
+      const openFile = join(outputDir, 'open-parcels.json');
+      writeFileSync(openFile, JSON.stringify(open));
+      const run = await materialize([
+        recordingPath, 'open', namedWorldPath, typesPath, join(outputDir, 'open', 'questlines.json'), `--parcels=@${openFile}`,
+      ]);
+
+      const named = run.questlines.flatMap(parcelsNamed);
+      expect(named.length).toBeGreaterThan(0);
+      expect([...new Set(named)].filter((id) => !open.includes(id))).toEqual([]);
+      expect(named).not.toContain('p2');
+      expect(run.blocked).toEqual([]);
+
+      // The city's one clinic stayed shut, and the main line has to meet its doctor somewhere.
+      await expect(
+        materialize([
+          recordingPath, 'shut', namedWorldPath, typesPath, join(outputDir, 'shut', 'questlines.json'),
+          '--parcels=p0,p1,p4,p6,p7,p10,p11,p40',
+        ]),
+      ).rejects.toThrow(/main questline cannot be placed.*s_doc \(p32\)/);
     } finally {
       log.mockRestore();
       rmSync(outputDir, { recursive: true, force: true });

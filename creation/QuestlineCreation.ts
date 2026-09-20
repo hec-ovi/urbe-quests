@@ -38,6 +38,7 @@ export class QuestlineCreation {
         sim,
         ports: { plan: ports.plan, build: ports.build },
         progress: (build) => progress({ kind: 'build', questline, build }),
+        ...(input.parcels !== undefined ? { parcels: input.parcels } : {}),
         ...(input.referenceTimeMin !== undefined ? { referenceTimeMin: input.referenceTimeMin } : {}),
         ...(input.maxRounds !== undefined ? { maxRounds: input.maxRounds } : {}),
       });
@@ -85,6 +86,7 @@ export class QuestlineCreation {
       world,
       types,
       sim,
+      ...(input.parcels !== undefined ? { parcels: input.parcels } : {}),
       ...(input.referenceTimeMin !== undefined ? { referenceTimeMin: input.referenceTimeMin } : {}),
       ...(input.warn !== undefined ? { warn: input.warn } : {}),
     }).apply(built, builtSide);
