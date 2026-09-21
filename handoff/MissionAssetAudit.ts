@@ -52,6 +52,19 @@ export class MissionAssetAudit {
       if (!requestIds.has(binding.assetId)) this.fail(`mission item binding names unknown asset ${binding.assetId}`);
       if (embeddedAssetIds.has(binding.assetId)) this.fail(`investigation asset ${binding.assetId} cannot also bind a quest item`);
     }
+    const requestById = new Map(requests.map((request) => [request.assetId, request]));
+    const bindingByItem = new Map(bindings.map((binding) => [`${binding.questId}\u0000${binding.itemId}`, binding]));
+    for (const definition of definitions) {
+      for (const step of definition.steps) {
+        if (step.target.kind !== 'pickup') continue;
+        const binding = bindingByItem.get(`${definition.id}\u0000${step.target.itemId}`);
+        if (binding === undefined) this.fail(`pickup ${definition.id}/${step.stepId} has no mission asset binding`);
+        const request = requestById.get(binding.assetId)!;
+        if (!['document', 'data-drive', 'tool', 'package'].includes(request.family) || !request.requiredInteractions.includes('take')) {
+          this.fail(`pickup ${definition.id}/${step.stepId} requires a portable mission asset with a take interaction anchor`);
+        }
+      }
+    }
   }
 
   private validateRequest(request: MissionAssetCreateRequest): void {

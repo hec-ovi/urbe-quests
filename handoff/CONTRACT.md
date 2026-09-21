@@ -33,6 +33,7 @@ The CLI writer emits the questlines file at the given path plus `objectives.json
 ## Invariants
 
 - Every investigation step has exactly one v1.1 scene binding. Every scene evidence entry has exactly one quest step binding. Evidence prerequisites exist and are acyclic.
+- Every pickup step has an exact quest/item binding to a portable mission asset declaring a `take` interaction. An empty asset catalog cannot publish a quest that needs a physical pickup.
 - Investigation placement and full mission asset assemblies remain outside this box. Engine investigation validates geometry, visibility, reachability, materials, media, and persistence.
 - Investigation assets embedded in scene props are not also quest item bindings.
 - Every rescue, access, hacking, and sabotage step has exactly one binding, unique by `(questId, stepId)`. Assassination, escort, investigation, and transportation do not use this mapping.

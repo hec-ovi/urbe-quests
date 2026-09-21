@@ -92,15 +92,20 @@ const assetRequest = (): MissionAssetCreateRequest => ({
   clearance: { approachDepth: 0.8, sideMargin: 0.2, overhead: 0.1 },
 });
 
+const pickupHandoff = (): HandoffInput => ({
+  missionAssetRequests: [assetRequest()],
+  missionItemBindings: [{ questId: 'q_last_manifest', itemId: 'i_manifest', assetId: assetRequest().assetId }],
+});
+
 describe('EngineHandoff', () => {
   it('projects every authored target in stable order and writes the stable engine files', () => {
-    const bundle = new EngineHandoff().assemble(fixtureQuestlines);
+    const bundle = new EngineHandoff().assemble(fixtureQuestlines, pickupHandoff());
     expect(bundle.objectives).toEqual(fixtureQuestlines.flatMap((questline) => questline.steps.map((step) => ({
       questId: questline.id, stepId: step.stepId, action: step.target,
     }))));
     expect(bundle.investigations).toEqual([]);
     expect(bundle.mechanicTargetBindings).toEqual([]);
-    expect(bundle.missionAssetRequests).toEqual([]);
+    expect(bundle.missionAssetRequests).toEqual(pickupHandoff().missionAssetRequests);
     expect(bundle.hostCapabilities).toEqual({ transportationModes: [] });
 
     const ajv = validators();
@@ -112,9 +117,11 @@ describe('EngineHandoff', () => {
     const dir = join(outputPath, '..');
     const validateBundle = new Ajv2020({ strict: true }).compile(bundleSchema);
     expect(validateBundle(manifest), JSON.stringify(validateBundle.errors)).toBe(true);
-    for (const file of ['investigations', 'mechanicTargetBindings', 'missionAssetRequests', 'missionItemBindings'] as const) {
+    for (const file of ['investigations', 'mechanicTargetBindings'] as const) {
       expect(readFile(dir, HANDOFF_FILES[file])).toEqual([]);
     }
+    expect(readFile(dir, HANDOFF_FILES.missionAssetRequests)).toEqual(bundle.missionAssetRequests);
+    expect(readFile(dir, HANDOFF_FILES.missionItemBindings)).toEqual(bundle.missionItemBindings);
     expect(readFile(dir, HANDOFF_FILES.hostCapabilities)).toEqual({ transportationModes: [] });
     expect(readFile(dir, HANDOFF_FILES.objectives)).toHaveLength(manifest.counts.objectives);
     expect(readFile(dir, HANDOFF_FILES.manifest)).toEqual(manifest);
@@ -142,6 +149,20 @@ describe('EngineHandoff', () => {
       missionAssetRequests: bundle.missionAssetRequests,
       missionItemBindings: bundle.missionItemBindings,
     }), JSON.stringify(input.errors)).toBe(true);
+  });
+
+  it('rejects a pickup without a bound portable asset and a take anchor', () => {
+    const handoff = new EngineHandoff();
+    expect(() => handoff.assemble(fixtureQuestlines)).toThrowError(/pickup .* has no mission asset binding/);
+    const missingTake = pickupHandoff();
+    missingTake.missionAssetRequests![0]!.requiredInteractions = ['inspect', 'read'];
+    expect(() => handoff.assemble(fixtureQuestlines, missingTake)).toThrowError(/portable mission asset with a take interaction anchor/);
+    const fixed = pickupHandoff();
+    fixed.missionAssetRequests![0] = {
+      ...assetRequest(), family: 'table', dimensions: { width: 1, height: 0.8, depth: 0.6 },
+      requiredInteractions: ['inspect'],
+    };
+    expect(() => handoff.assemble(fixtureQuestlines, fixed)).toThrowError(/portable mission asset with a take interaction anchor/);
   });
 
   it('writes exact fixed mechanic anchors and negotiated transportation capabilities', () => {

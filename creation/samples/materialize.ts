@@ -15,6 +15,7 @@ import { QuestlineCreation } from '../QuestlineCreation.js';
 import { EngineHandoff } from '../../handoff/EngineHandoff.js';
 import { readHandoffInput, writeEngineHandoff } from './EngineHandoffWriter.js';
 import { recordedPorts, type Recording } from './RecordedPorts.js';
+import { pickupAssetRequests } from './PickupAssetRequests.js';
 
 export interface MaterializeResult {
   world: NamedWorld;
@@ -113,7 +114,8 @@ export async function materialize(args: readonly string[]): Promise<MaterializeR
     console.error(`side quest ${side.definition.id} blocked: ${reason}`);
   }
   new QuestlineSetValidator().validate(questlines);
-  const bundle = new EngineHandoff().assemble(questlines, readHandoffInput(handoffArg));
+  const bundle = new EngineHandoff().assemble(questlines,
+    pickupAssetRequests(questlines, readHandoffInput(handoffArg), recording.missionItemTemplates));
   writeEngineHandoff(outputPath, bundle);
   writeFileSync(
     resolve(dirname(outputPath), 'questlines.meta.json'),

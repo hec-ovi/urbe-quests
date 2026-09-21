@@ -19,6 +19,8 @@ import { questlineSetFromSample, writeQuestlineSet } from '../samples/QuestlineS
 import { materialize } from '../samples/materialize.js';
 import { recordedPorts, type Recording } from '../samples/RecordedPorts.js';
 import type { CreationProgress, StagePorts } from '../schema.js';
+import { pickupAssetRequests } from '../samples/PickupAssetRequests.js';
+import { EngineHandoff } from '../../handoff/EngineHandoff.js';
 
 const sampleDir = fileURLToPath(new URL('../samples/urbe-small/', import.meta.url));
 const recordingPath = join(sampleDir, 'recording.json');
@@ -156,6 +158,11 @@ describe('materialize entry', () => {
       expect(named.world.meta.naming).toEqual(SOURCE_WORLD.meta.naming);
       expect(named.types.namePool.givenByGender).toEqual(SOURCE_TYPES.namePool.givenByGender);
       expect(named.questlines).toHaveLength(4);
+      const assets = read<{ assetId: string; family: string; requiredInteractions: string[] }[]>(join(dirname(named.outputPath), 'mission-assets.json'));
+      const bindings = read<{ questId: string; itemId: string; assetId: string }[]>(join(dirname(named.outputPath), 'mission-item-bindings.json'));
+      expect(bindings).toEqual([{ questId: 'q_weir_line', itemId: 'i_drive', assetId: assets[0]!.assetId }]);
+      expect(assets).toHaveLength(1);
+      expect(assets[0]).toMatchObject({ family: 'data-drive', requiredInteractions: ['inspect', 'take', 'use'] });
 
       const atlasSource = structuredClone(SOURCE_WORLD) as { meta: { naming?: unknown }; districts: { name?: string }[] };
       delete atlasSource.meta.naming;
@@ -167,6 +174,8 @@ describe('materialize entry', () => {
       expect(fallback.world.meta.naming).toEqual({ theme: SOURCE_TYPES.meta.theme, namedAt: 'derived-from-atlas' });
       expect(fallback.world.districts[0]!.name).toBe('commercial d0');
       expect(fallback.questlines).toHaveLength(4);
+      expect(readFileSync(join(dirname(fallback.outputPath), 'mission-assets.json'), 'utf8'))
+        .toBe(readFileSync(join(dirname(named.outputPath), 'mission-assets.json'), 'utf8'));
       expect(readFileSync(join(dirname(fallback.outputPath), 'questlines.meta.json'), 'utf8')).toContain('"profile": "atlas"');
     } finally {
       log.mockRestore();
@@ -203,6 +212,35 @@ describe('materialize entry', () => {
       log.mockRestore();
       rmSync(outputDir, { recursive: true, force: true });
     }
+  });
+});
+
+describe('recorded pickup appearance templates', () => {
+  it('uses quest and item identities, keeps explicit assets, and refuses unrenderable pickups', () => {
+    const definition = structuredClone(MAIN);
+    definition.id = 'another_quest';
+    const pickup = definition.steps.find((step) => step.target.kind === 'pickup')!;
+    if (pickup.target.kind !== 'pickup') throw new Error('missing fixture pickup');
+    const oldId = pickup.target.itemId;
+    const item = definition.items.find((candidate) => candidate.itemId === oldId)!;
+    item.itemId = 'another_device';
+    pickup.target.itemId = item.itemId;
+    for (const step of definition.steps) {
+      step.gives = step.gives.map((id) => id === oldId ? item.itemId : id);
+      step.needs = step.needs.map((id) => id === oldId ? item.itemId : id);
+    }
+    const generated = pickupAssetRequests([definition], {}, RECORDING.missionItemTemplates);
+    expect(generated.missionItemBindings).toEqual([{
+      questId: 'another_quest', itemId: 'another_device', assetId: generated.missionAssetRequests![0]!.assetId,
+    }]);
+    expect(generated.missionAssetRequests![0]!.assetId).not.toBe(
+      pickupAssetRequests([MAIN], {}, RECORDING.missionItemTemplates).missionAssetRequests![0]!.assetId,
+    );
+    expect(new EngineHandoff().assemble([definition], generated).missionItemBindings).toEqual(generated.missionItemBindings);
+    expect(pickupAssetRequests([definition], generated, {})).toEqual(generated);
+    expect(() => pickupAssetRequests([definition], {}, {})).toThrowError(/no mission asset binding or device template/);
+    expect(() => pickupAssetRequests([definition], { missionItemBindings: 'invalid' }, RECORDING.missionItemTemplates))
+      .toThrowError(expect.objectContaining({ code: 'E_HANDOFF' }));
   });
 });
 

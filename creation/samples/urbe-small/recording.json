@@ -1268,5 +1268,37 @@
         }
       ]
     ]
+  },
+  "missionItemTemplates": {
+    "device": {
+      "family": "data-drive",
+      "dimensions": {
+        "width": 0.12,
+        "height": 0.025,
+        "depth": 0.075
+      },
+      "materials": [
+        {
+          "slot": "surface",
+          "key": "cyberpunk/metal/mid",
+          "variantId": "paint"
+        },
+        {
+          "slot": "accent",
+          "key": "cyberpunk/metal/mid",
+          "variantId": "zinc"
+        }
+      ],
+      "requiredInteractions": [
+        "inspect",
+        "take",
+        "use"
+      ],
+      "clearance": {
+        "approachDepth": 0.8,
+        "sideMargin": 0.2,
+        "overhead": 0.1
+      }
+    }
   }
 }
