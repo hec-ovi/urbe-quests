@@ -124,6 +124,26 @@ export class QuestlineRuntime {
     return this.stateGate(step, timeMin);
   }
 
+  /**
+   * May a live host arrange this authored talk/listen appointment? This is
+   * not permission to advance: the host must first place the exact living
+   * cast, then report its physical presence through its SimulationPort.
+   * Authored hours, inventory and predicates still gate the appointment.
+   */
+  stepPlacementAvailability(stepId: string, timeMin: number): StepAvailability {
+    const step = this.step(stepId);
+    if (!this.active.has(stepId)) return { available: false, reason: 'condition' };
+    const target = step.target;
+    if (target.kind !== 'listen' && !(target.kind === 'talk' && target.atParcelId !== undefined)) {
+      return this.stepAvailability(stepId, timeMin);
+    }
+    const roleIds = target.kind === 'listen' ? target.roleIds : [target.roleId];
+    if (roleIds.some((roleId) => !this.availabilityService.isRoleAlive(roleId))) {
+      return { available: false, reason: 'role_dead' };
+    }
+    return this.stateGate(step, timeMin);
+  }
+
   /** Weekly windows for a step: the hour its text names, narrowed by its target's routine. */
   windows(stepId: string): AvailabilityWindow[] | undefined {
     return this.availabilityService.windows(this.step(stepId));

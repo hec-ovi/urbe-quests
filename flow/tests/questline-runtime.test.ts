@@ -93,6 +93,26 @@ describe('FlowValidator and cast resolution via runtime construction', () => {
 });
 
 describe('QuestlineRuntime', () => {
+  it('lets a live host arrange a pinned appointment without bypassing presence, time, items or death', () => {
+    const { sim, cast, baristaId } = setup();
+    const def = definition();
+    def.steps[0]!.target = { kind: 'talk', roleId: 'barista', atParcelId: 'p8' };
+    def.steps[0]!.window = { days: [1], startMin: 540, endMin: 660, label: 'meeting' };
+    const runtime = new QuestlineRuntime(def, cast, sim);
+    expect(runtime.stepAvailability('s_talk', TUE_10)).toEqual({ available: false, reason: 'off_duty' });
+    expect(runtime.stepPlacementAvailability('s_talk', TUE_10)).toEqual({ available: true });
+    expect(() => runtime.advance({ kind: 'talkedTo', npcId: baristaId }, TUE_10)).toThrowError(
+      expect.objectContaining({ code: 'E_UNAVAILABLE' }),
+    );
+    expect(runtime.stepPlacementAvailability('s_talk', TUE_03)).toEqual({ available: false, reason: 'outside_window' });
+    expect(runtime.stepPlacementAvailability('s_meet', TUE_10)).toEqual({ available: false, reason: 'condition' });
+    def.steps[0]!.needs = ['chip'];
+    expect(new QuestlineRuntime(def, cast, sim).stepPlacementAvailability('s_talk', TUE_10))
+      .toEqual({ available: false, reason: 'missing_item' });
+    sim.applyFlag(baristaId, { kind: 'die' });
+    expect(runtime.stepPlacementAvailability('s_talk', TUE_10)).toEqual({ available: false, reason: 'role_dead' });
+  });
+
   it('gates steps on schedule, presence, held items and conditions, and stalls once the target is dead', () => {
     const { sim, cast, baristaId, execId } = setup();
     const runtime = new QuestlineRuntime(definition(), cast, sim);

@@ -83,7 +83,11 @@ export class CastResolver {
     for (const role of def.roles) {
       const character = `${role.roleId}:${role.npcType}`;
       try {
-        const npcId = options.characters?.get(character) ?? this.resolveRole(def, role, referenceTimeMin, playing);
+        const shared = options.characters?.get(character);
+        const npcId = shared ?? this.resolveRole(def, role, referenceTimeMin, playing);
+        if (shared === undefined && playing.has(npcId)) {
+          throw this.asCastError(role, undefined, 'the matching person already plays a different character');
+        }
         cast[role.roleId] = npcId;
         const post = this.postOf.get(npcId);
         if (post !== undefined) posts[role.roleId] = post;
@@ -103,15 +107,22 @@ export class CastResolver {
   }
 
   private resolveRole(def: QuestlineDefinition, role: QuestRole, referenceTimeMin: number, taken: Set<string>): string {
-    const timeMin = this.storyTime(def, role.roleId, referenceTimeMin);
+    const times = this.storyTimes(def, role.roleId, referenceTimeMin);
+    const timeMin = times[0]!;
     const workplace = workplaceOf(def, role.roleId);
 
     // The same character across questlines is the same person, whoever else is cast.
     const known = this.reservedPerson(role);
-    if (known !== undefined) return known.npcId;
+    if (known !== undefined && !taken.has(known.npcId)) return known.npcId;
 
-    const atWork = workplace === undefined ? {} : this.fromPost(def, role, workplace, timeMin, taken);
-    if (atWork.free !== undefined) return atWork.free;
+    // Loading after closing time does not erase a city's day staff. Search
+    // the weekly posts before reserving or reusing an established person.
+    if (workplace !== undefined) {
+      for (const at of times) {
+        const found = this.fromPost(def, role, workplace, at, taken);
+        if (found !== undefined) return found;
+      }
+    }
 
     if (role.reservedName !== undefined) {
       const staffRole = this.venues?.staffRoleFor(def, role);
@@ -130,23 +141,22 @@ export class CastResolver {
       }
     }
 
-    const elsewhere = this.fromPost(def, role, undefined, timeMin, taken);
-    if (elsewhere.free !== undefined) return elsewhere.free;
+    for (const at of times) {
+      const found = this.fromPost(def, role, undefined, at, taken);
+      if (found !== undefined) return found;
+    }
 
     // Nobody of that type holds a post at that hour: someone of that type already in the world can play the part.
     const living = this.sim.findNPCs({ type: role.npcType }).filter((npc) => !npc.flags.dead);
     const free = living.find((npc) => !taken.has(npc.npcId));
     if (free !== undefined) return free.npcId;
 
-    // Last resort: a part played by someone already cast beats a questline nobody can start.
-    const anyone = atWork.anyone ?? elsewhere.anyone ?? living[0]?.npcId;
-    if (anyone !== undefined) return anyone;
-    throw this.asCastError(role, undefined, 'a role who is not someone at work needs a reservedName');
+    throw this.asCastError(role, undefined, 'no unassigned living person matches; a role who is not someone at work needs a reservedName');
   }
 
   /**
    * Whoever holds the post at the story's hour: the pinned venue first, then
-   * the others that publish it. `free` is nobody else's character yet.
+   * the others that publish it. Never borrows another character's person.
    */
   private fromPost(
     def: QuestlineDefinition,
@@ -154,7 +164,7 @@ export class CastResolver {
     workplace: string | undefined,
     timeMin: number,
     taken: Set<string>,
-  ): { free?: string; anyone?: string } {
+  ): string | undefined {
     const staffRole = this.venues?.staffRoleFor(def, role);
     const window = storyWindow(def, role.roleId);
     const venues = (this.venues?.parcelsFor(def, role, window === undefined ? undefined : postOf(window)) ?? [])
@@ -168,24 +178,46 @@ export class CastResolver {
     });
     const queries: VendorQuery[] = [...(workplace === undefined ? [] : [workplace]), ...venues].map(post);
     if (workplace === undefined) queries.push({ type: role.npcType, timeMin });
-    let anyone: string | undefined;
     for (const query of queries) {
       const found = this.workplaces.vendor(query);
-      if (found === undefined || found.flags.dead) continue;
+      if (found === undefined || found.flags.dead || taken.has(found.npcId)) continue;
       // Found on a post: this is the building the story meets them in.
       if (query.parcelId !== undefined) this.postOf.set(found.npcId, query.parcelId);
       else if (found.job !== undefined) this.postOf.set(found.npcId, found.job.parcelId);
-      if (!taken.has(found.npcId)) return { free: found.npcId, anyone: anyone ?? found.npcId };
-      anyone = anyone ?? found.npcId;
+      return found.npcId;
     }
-    return anyone === undefined ? {} : { anyone };
+    return undefined;
   }
 
   private reservedPerson(role: QuestRole): NPCInstance | undefined {
     if (role.reservedName === undefined) return undefined;
     return this.sim
       .findNPCs({ type: role.npcType })
-      .find((npc) => npc.name.given === role.reservedName!.given && npc.name.family === role.reservedName!.family);
+      .find((npc) => !npc.flags.dead && npc.name.given === role.reservedName!.given && npc.name.family === role.reservedName!.family);
+  }
+
+  /** Authored hours first, then representative hours across the recurring week. */
+  private storyTimes(def: QuestlineDefinition, roleId: string, referenceTimeMin: number): number[] {
+    const times = new Set<number>([this.storyTime(def, roleId, referenceTimeMin)]);
+    const window = storyWindow(def, roleId);
+    if (window !== undefined) {
+      for (const day of window.days) {
+        times.add(day * MINUTES_PER_DAY + window.startMin);
+        for (let minute = Math.ceil(window.startMin / 60) * 60; minute < window.endMin; minute += 60) {
+          times.add(day * MINUTES_PER_DAY + minute);
+        }
+      }
+    }
+    const referenceDay = Math.floor(referenceTimeMin / MINUTES_PER_DAY) % DAYS_PER_WEEK;
+    for (let offset = 0; offset < DAYS_PER_WEEK; offset++) {
+      const day = (referenceDay + offset) % DAYS_PER_WEEK;
+      // Typical day, evening and night posts find ordinary staff quickly;
+      // the remaining hours cover staggered shifts and weekend-only posts.
+      for (const hour of [9, 17, 1, ...Array.from({ length: 24 }, (_, hour) => hour)]) {
+        times.add(day * MINUTES_PER_DAY + hour * 60);
+      }
+    }
+    return [...times];
   }
 
   /** The minute the story meets this role: the hour its steps name, on the reference day when that day has it. */

@@ -5,8 +5,9 @@
  * found anywhere but on a post moves nothing.
  */
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { loadFixtureWorld, StubSimulation } from '../../world/index.js';
+import { SimulationError } from '../../world/types/simulation.js';
 import type { QuestlineDefinition, QuestRole, QuestStep, StepTarget } from '../../flow/schema.js';
 import { CastResolver } from '../CastResolver.js';
 import { StoryVenues } from '../StoryVenues.js';
@@ -113,7 +114,10 @@ describe('CastResolver', () => {
     ];
     const options = { taken: new Set<string>(), characters: new Map<string, string>() };
 
-    // 03:00: no post is held anywhere, so every role falls through to the people already in the world.
+    // This host publishes no posts at any hour; existing off-post people remain valid fallbacks.
+    vi.spyOn(sim, 'getNPCVendor').mockImplementation(() => {
+      throw new SimulationError('E_NO_MATCH', 'no published posts');
+    });
     const published = set.map((def) => {
       const { cast, posts } = resolver.cast(def, TUE_03, options);
       expect(posts).toEqual({});
@@ -123,5 +127,81 @@ describe('CastResolver', () => {
 
     expect(published.map(places)).toEqual([['p4', 'p4'], ['p3'], ['p8']]);
     expect(new Set(published.flatMap(places))).toEqual(new Set(['p4', 'p3', 'p8']));
+  });
+
+  it('casts distinct day and evening staff when the game opens after closing time', () => {
+    const { sim, resolver } = city();
+    const authored = questline('q_night', [role('first', 'cafe_barista'), role('second', 'cafe_barista')], [
+      step('s_first', { kind: 'talk', roleId: 'first', atParcelId: 'p4' }),
+      step('s_second', { kind: 'talk', roleId: 'second', atParcelId: 'p4' }),
+    ]);
+
+    const result = resolver.cast(authored, TUE_03);
+
+    expect(result.blocked).toBeUndefined();
+    expect(new Set(Object.values(result.cast)).size).toBe(2);
+    expect(Object.values(result.cast).map((id) => sim.getNPC(id).job?.shift.kind)).toEqual(['day', 'evening']);
+    expect(result.posts).toEqual({ first: 'p4', second: 'p4' });
+  });
+
+  it('searches later times inside the authored window before other weekly posts', () => {
+    const { sim, resolver } = city();
+    const vendor = sim.getNPCVendor.bind(sim);
+    vi.spyOn(sim, 'getNPCVendor').mockImplementation((query) => {
+      if (query.timeMin % 1440 < 600) throw new SimulationError('E_NO_MATCH', 'late opening');
+      return vendor(query);
+    });
+    const meeting = step('s_talk', { kind: 'talk', roleId: 'barista', atParcelId: 'p4' });
+    meeting.window = { days: [2], startMin: 480, endMin: 720, label: 'morning appointment' };
+
+    const result = resolver.cast(questline('q_window', [role('barista', 'cafe_barista')], [meeting]), TUE_03);
+
+    expect(result.blocked).toBeUndefined();
+    expect(sim.getNPC(result.cast['barista']!).job?.shift.kind).toBe('day');
+    expect(sim.getNPCVendor).toHaveBeenCalledWith(expect.objectContaining({ timeMin: 2 * 1440 + 600 }));
+  });
+
+  it('finds a post on another weekday before declaring a role uncastable', () => {
+    const { sim, resolver } = city();
+    const vendor = sim.getNPCVendor.bind(sim);
+    vi.spyOn(sim, 'getNPCVendor').mockImplementation((query) => {
+      if (Math.floor(query.timeMin / 1440) % 7 !== 4) throw new SimulationError('E_NO_MATCH', 'Friday post');
+      return vendor(query);
+    });
+    const authored = questline('q_weekly', [role('barista', 'cafe_barista')], [
+      step('s_talk', { kind: 'talk', roleId: 'barista', atParcelId: 'p4' }),
+    ]);
+
+    const result = resolver.cast(authored, TUE_03);
+
+    expect(result.blocked).toBeUndefined();
+    expect(sim.getNPC(result.cast['barista']!).job?.parcelId).toBe('p4');
+  });
+
+  it('blocks an exhausted cast instead of giving two characters the same person', () => {
+    const { sim, resolver } = city();
+    const person = sim.getNPCVendor({ parcelId: 'p4', type: 'cafe_barista', timeMin: TUE_10 });
+    vi.spyOn(sim, 'getNPCVendor').mockReturnValue(person);
+    const options = { taken: new Set<string>(), characters: new Map<string, string>() };
+    const first = questline('q_first', [role('barista', 'cafe_barista')], [
+      step('s_talk', { kind: 'talk', roleId: 'barista', atParcelId: 'p4' }),
+    ]);
+    expect(resolver.cast(first, TUE_10, options).cast['barista']).toBe(person.npcId);
+    expect(resolver.cast({ ...first, id: 'q_shared' }, TUE_03, options).cast['barista']).toBe(person.npcId);
+
+    const other = questline('q_other', [role('other', 'cafe_barista')], [
+      step('s_other', { kind: 'talk', roleId: 'other', atParcelId: 'p4' }),
+    ]);
+    const result = resolver.cast(other, TUE_03, options);
+
+    expect(result.cast).toEqual({});
+    expect(result.blocked).toMatchObject({ roleId: 'other', npcType: 'cafe_barista' });
+    expect(options.characters.has('other:cafe_barista')).toBe(false);
+
+    // A reservation port returning an already retained person is still not
+    // permission to assign that body a second character.
+    other.roles[0]!.reservedName = { given: 'Another', family: 'Character' };
+    vi.spyOn(sim, 'reserveNPC').mockReturnValue(person);
+    expect(resolver.cast(other, TUE_03, options).blocked?.reason).toContain('already plays a different character');
   });
 });
