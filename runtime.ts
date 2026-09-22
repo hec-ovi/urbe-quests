@@ -14,6 +14,7 @@ export { QuestlineSetValidator, type QuestlineSet } from './flow/QuestlineSet.js
 export {
   QuestlineRuntime,
   type AdvanceResult,
+  type DialogueChoiceResult,
   type QuestlineState,
   type QuestlineStatus,
 } from './flow/QuestlineRuntime.js';

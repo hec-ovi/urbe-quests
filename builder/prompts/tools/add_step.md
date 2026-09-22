@@ -18,6 +18,10 @@ What this step means to the person who wants it and what it costs them if it doe
 
 The role whose want this step serves; they speak the stake to the player.
 
+## dialogue
+
+For talk targets, author the conversation the player actually reads: opening in the named character's voice, then choices with unique id, the player's spoken text, the NPC's reply, and completesStep. Include a question with completesStep false and an explicit commitment with completesStep true. The commitment reply explains the next lead or the ending's consequences. Do not copy the objective or retrospective narrative into the opening. All completing choices on a step have that step's outcome; represent different outcomes with separate graph steps, and name the consequences in their choices. Opening, typing free chat, or closing the conversation never commits a choice. No dialogue on other mechanic targets.
+
 ## target
 
 The typed objective. Use the exact fields in the step catalog. Investigation, rescue, escort, access, hacking, sabotage, and transportation require a completionFlag set by the step effects.

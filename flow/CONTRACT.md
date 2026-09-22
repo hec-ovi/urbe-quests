@@ -8,6 +8,7 @@ Purpose: deterministic questline state machine over a condition-gated DAG of typ
 - Interaction targets are fully authored. Investigation names a scene, clue, information item, subject cast, and place. Rescue names the cast role and release target. Escort names the cast role, follow mode, route, and endpoints. Access names the access point and credential. Hacking and sabotage name their interaction target. Transportation names the journey, mode, endpoints, exact cast passengers, and cargo. Each names a declared completion flag which its step must set.
 - `ResolvedCast` ([schema.ts](schema.ts)): roleId to npcId map from the builder.
 - A role may publish `characterName { given, family }`, the authored name shown in player labels and dialog. It is presentation metadata only: casting, runtime events, schedules, saves and consequences still use the same resolved `npcId`. It neither reserves nor renames a simulation person. A role without it keeps that person's generated name.
+- A talk may publish `dialogue { opening, choices: [{ id, text, reply, completesStep }] }`. `text` is the player's reply and `reply` is the NPC's answer. A false choice provides information; a true choice commits this talk's existing graph outcome. Different endings use separate graph steps, each with a clear commitment. Choices have unique IDs, nonempty text and at least one completing choice; dialogue is invalid on other target kinds.
 - `SimulationPort` ([../world/types/simulation.ts](../world/types/simulation.ts)) for liveness, schedules and story-consequence flags.
 - `PlayerEvent` ([schema/player-event.schema.json](schema/player-event.schema.json), TypeScript [events.ts](events.ts)) plus current time in simulation minutes. Mechanic completion events repeat the authored interaction ids, cast NPC ids, item ids, modes, and places needed to match one target without inference.
 - Authored places are exact `parcelId`, `districtId`, `stationId`, or `stopId` identities plus the venue's `name`: `{ parcelId, name }`. The name is the world's own when Naming gave it one, else the word for that kind of building. `PlaceIdentity` is the same record without the name; arrival and delivery events repeat the identity kind and id only.
@@ -19,7 +20,8 @@ Completion events:
 | --- | --- | --- |
 | `goto` | `arrivedAt` | `place` |
 | `observe` | `observed` | `districtId` |
-| `talk` | `talkedTo` | resolved `npcId` |
+| legacy `talk` without authored dialogue | `talkedTo` | resolved `npcId` |
+| `talk` with authored dialogue | `chooseDialogue` | exact `stepId`, resolved `npcId`, declared `choiceId` |
 | `listen` | `overheard` | resolved `npcIds` |
 | `pickup` | `pickedUp` | `itemId` |
 | `deliver` | `delivered` | `itemId`, `place` |
@@ -43,6 +45,8 @@ Completion events:
 - `windows(stepId)`: weekly windows for the step: the hour its text names, narrowed by the target NPC's routine, labelled with the text's own words; undefined when neither binds it.
 - `stepPlace(stepId, timeMin)`: where the step points, for a marker on the map: the parcel, district, station, or stop the target names, the parcel the item sits at, or the simulation's live place for the person it targets. Undefined when the simulation has no place to give.
 - `stepGuidance(stepId, timeMin)` ([schema/step-guidance.schema.json](schema/step-guidance.schema.json)): route-ready parcel, station, or stop destination. District areas, street edges, moving routes, and unavailable targets return a closed reason instead of an invalid route request. The host supplies current feet as the route origin.
+- `dialogueFor(stepId, npcId, timeMin) -> QuestDialogue | undefined`: read-only conversation for one active talk and its exact cast. The DTO carries `questlineId`, `stepId`, `roleId`, `npcId`, optional `characterName`, `opening`, copied `choices`, and `availability`. Legacy steps receive deterministic fallback dialogue. Inactive, ended, wrong-person and non-talk queries return undefined. Opening and closing require no event or saved state.
+- `chooseDialogue(stepId, npcId, choiceId, timeMin) -> DialogueChoiceResult`: rechecks the exact active step, cast, choice and all normal availability gates. Accepted: `{ accepted: true, reply, advanceResult? }`, where `advanceResult` is present only for a completing choice and contains `{ completedStepIds, activatedStepIds, endingId? }`. Rejected: `{ accepted: false, reason: 'stale' | 'wrong_npc' | 'unknown_choice' | 'unavailable', availability? }`; unavailable results include the current gate. Rejections and informational choices have no quest or Simulation effects. A committing choice completes exactly one step even when other active talks share that NPC. The host preserves choices after information, displays the chosen reply and newly active objectives after commitment, and offers separate topics when several questlines use that NPC.
 - `advance(event, timeMin)`: completes matching available steps, applies effects (quest flags, simulation flags), activates edges (parallel or exclusive branching), reports an ending on terminal steps. Talk, listen, steal, rescue, escort, and transportation enforce liveness and available presence at advance time; completing an assassinate step records the death in the simulation.
 - `serialize()` ([schema/questline-state.schema.json](schema/questline-state.schema.json)) / `QuestlineRuntime.restore(...)`. Restore accepts untrusted JSON only when step history, active frontier, ending, and replayed flags agree with the definition.
 
@@ -56,6 +60,7 @@ Completion events:
 ## Invariants
 - Same definition, cast, event order and times: identical state. No wall clock, no randomness, no I/O.
 - Completed evidence and interaction flags survive serialization, so revisiting cannot duplicate a reward or reopen a finished stage.
+- Authored talks progress only through declared completing choices. Opening, reopening, closing, typing optional free chat and informational answers never progress them. Neither the choices nor their replies need an LLM. Legacy hosts retain `talkedTo` compatibility only for steps without authored dialogue; new hosts use explicit choices for both.
 - An exclusive branch may have one unconditional fallback only as its last edge, so a fallback cannot make a later outcome unreachable.
 - A dead NPC never satisfies presence or duty checks; availability and inventory are never stored, always derived.
 - Flags used anywhere must be declared in the definition.

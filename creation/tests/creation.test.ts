@@ -12,6 +12,8 @@ import { fileURLToPath } from 'node:url';
 import { Ajv2020 } from 'ajv/dist/2020.js';
 import { describe, expect, it, vi } from 'vitest';
 import { QuestlineSetValidator } from '../../flow/QuestlineSet.js';
+import { QuestlineRuntime } from '../../flow/QuestlineRuntime.js';
+import type { PlayerEvent } from '../../flow/events.js';
 import type { QuestlineDefinition } from '../../flow/schema.js';
 import { StubSimulation, WorldContextNormalizer, type NamedWorld, type NPCTypeSet } from '../../world/index.js';
 import { QuestlineCreation } from '../QuestlineCreation.js';
@@ -141,6 +143,70 @@ describe('QuestlineCreation', () => {
     expect(new Set(talis.map((entry) => entry.npcId)).size).toBe(1);
   });
 
+  it('plays every recorded conversation offline through both main endings and all side endings, preserving saves', async () => {
+    const sim = new StubSimulation({ seed: 'recorded-dialogue-test', world, types });
+    const result = await run({}, { sim });
+    const authored = [result.main, ...result.side];
+    expect(authored.flatMap((quest) => quest.definition.steps).filter((step) => step.dialogue)).toHaveLength(15);
+    expect(authored.flatMap((quest) => quest.definition.steps.flatMap((step) => step.dialogue?.choices ?? [])))
+      .toHaveLength(32);
+
+    // A host's appointment projection: the exact cast is physically present at the current authored target.
+    let currentParcel = 'p0';
+    vi.spyOn(sim, 'behaviorAt').mockImplementation(() => ({
+      mode: 'interior', activity: 'working', place: { kind: 'parcel', id: currentParcel }, interrupted: false,
+    }));
+    const journeys = [
+      { quest: result.main, endingStepId: 's_expose', endingId: 'e_on_record' },
+      { quest: result.main, endingStepId: 's_sellout', endingId: 'e_payout' },
+      ...result.side.map((quest) => ({ quest, endingStepId: '', endingId: quest.definition.endings[0]!.endingId })),
+    ];
+    for (const { quest, endingStepId, endingId } of journeys) {
+      let runtime = new QuestlineRuntime(quest.definition, quest.cast, sim);
+      for (let count = 0; count < 25 && runtime.status() !== 'completed'; count++) {
+        const steps = runtime.activeSteps();
+        const step = steps.find((candidate) => candidate.stepId === endingStepId) ?? steps[0]!;
+        const target = step.target;
+        const timeMin = step.window === undefined ? 600 : step.window.days[0]! * 1440 + step.window.startMin;
+        if ((target.kind === 'talk' || target.kind === 'listen') && target.atParcelId !== undefined) {
+          currentParcel = target.atParcelId;
+        }
+        if (target.kind === 'talk') {
+          expect(step.dialogue, `${quest.definition.id}/${step.stepId}`).toBeDefined();
+          const npcId = quest.cast[target.roleId]!;
+          const before = runtime.serialize();
+          const dialogue = runtime.dialogueFor(step.stepId, npcId, timeMin)!;
+          expect(dialogue.characterName).toEqual(quest.definition.roles.find((role) => role.roleId === target.roleId)?.characterName);
+          expect(dialogue.opening).not.toBe(step.narrative.description);
+          for (const question of dialogue.choices.filter((choice) => !choice.completesStep)) {
+            expect(runtime.chooseDialogue(step.stepId, npcId, question.id, timeMin)).toEqual({ accepted: true, reply: question.reply });
+            expect(runtime.serialize()).toEqual(before);
+          }
+          const commitment = dialogue.choices.find((choice) => choice.completesStep)!;
+          expect(runtime.chooseDialogue(step.stepId, npcId, commitment.id, timeMin)).toMatchObject({
+            accepted: true, reply: commitment.reply, advanceResult: { completedStepIds: [step.stepId] },
+          });
+        } else {
+          let event: PlayerEvent;
+          switch (target.kind) {
+            case 'goto': event = { kind: 'arrivedAt', ...target.place }; break;
+            case 'pickup': event = { kind: 'pickedUp', itemId: target.itemId }; break;
+            case 'observe': event = { kind: 'observed', districtId: target.districtId }; break;
+            case 'listen': event = { kind: 'overheard', npcIds: target.roleIds.map((role) => quest.cast[role]!) }; break;
+            case 'steal': event = { kind: 'stole', itemId: target.itemId }; break;
+            case 'work': event = { kind: 'workedShift', parcelId: target.atParcelId }; break;
+            case 'deliver': event = { kind: 'delivered', itemId: target.itemId, ...target.place }; break;
+            default: throw new Error(`Uncovered recorded mechanic: ${target.kind}`);
+          }
+          runtime.advance(event, timeMin);
+        }
+        runtime = QuestlineRuntime.restore(quest.definition, quest.cast, sim, runtime.serialize());
+      }
+      expect(runtime.ending()?.endingId).toBe(endingId);
+      expect(runtime.activeSteps()).toEqual([]);
+    }
+  });
+
   it('keeps recorded character names without reserving or renaming the generated cast', async () => {
     const sim = new StubSimulation({ seed: 'character-name-test', world, types });
     const reserve = vi.spyOn(sim, 'reserveNPC');
@@ -184,6 +250,7 @@ describe('materialize entry', () => {
       expect(named.world.meta.naming).toEqual(SOURCE_WORLD.meta.naming);
       expect(named.types.namePool.givenByGender).toEqual(SOURCE_TYPES.namePool.givenByGender);
       expect(named.questlines).toHaveLength(4);
+      expect(named.questlines.flatMap((quest) => quest.steps).filter((step) => step.dialogue)).toHaveLength(15);
       const assets = read<{ assetId: string; family: string; requiredInteractions: string[] }[]>(join(dirname(named.outputPath), 'mission-assets.json'));
       const bindings = read<{ questId: string; itemId: string; assetId: string }[]>(join(dirname(named.outputPath), 'mission-item-bindings.json'));
       expect(bindings).toEqual([{ questId: 'q_weir_line', itemId: 'i_drive', assetId: assets[0]!.assetId }]);

@@ -1,5 +1,7 @@
 # Changelog
 
+0.10.4: talk steps carry authored offline openings, informational replies and explicit commitments. Runtime conversations bind one quest step to its exact cast, return current availability, and reject stale or blocked selections without mutation. Only a completing choice advances that one step; opening, closing and typed chat do not. The Weir Line and all three recorded side stories cover all 15 talks, including explicit expose and settlement endings. Legacy definitions receive fallback choices; bundle 1.1 and saved-state shapes are unchanged.
+
 0.10.3: roles preserve authored character names as optional display metadata independently of generated NPC identities. Recorded unreserved roles retain the script's names without reserving people. Scoped dialog context and replies use the same character name while simulation names, cast IDs, routines and bystanders remain unchanged.
 
 0.10.2: materialize creates exact portable pickup assets from authored item-kind templates and preserves explicit bindings. Handoffs reject missing pickup bindings or assets without a portable take anchor instead of publishing an impossible collection step.

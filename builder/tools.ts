@@ -170,6 +170,28 @@ export const BUILDER_TOOLS: AgentTool[] = [
           required: ['description', 'playerHint', 'stake'],
         },
         wantedByRoleId: { type: 'string', description: prompt('tools/add_step.md#wantedByRoleId').trim() },
+        dialogue: {
+          type: 'object',
+          description: prompt('tools/add_step.md#dialogue').trim(),
+          additionalProperties: false,
+          required: ['opening', 'choices'],
+          properties: {
+            opening: { type: 'string', minLength: 1 },
+            choices: {
+              type: 'array', minItems: 1,
+              items: {
+                type: 'object', additionalProperties: false,
+                required: ['id', 'text', 'reply', 'completesStep'],
+                properties: {
+                  id: { type: 'string', minLength: 1 },
+                  text: { type: 'string', minLength: 1 },
+                  reply: { type: 'string', minLength: 1 },
+                  completesStep: { type: 'boolean' },
+                },
+              },
+            },
+          },
+        },
         stepId: { type: 'string' },
         actId: { type: 'string' },
         target: {

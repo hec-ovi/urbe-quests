@@ -35,6 +35,7 @@ export class FlowValidator {
         fail(`step ${step.stepId}: wanted by unknown role ${step.wantedByRoleId}`);
       }
       this.checkTarget(step, roleIds, items, fail);
+      this.checkDialogue(step, fail);
       this.checkWindow(step, fail);
       for (const itemId of [...step.gives, ...step.needs]) {
         if (!items.has(itemId)) fail(`step ${step.stepId}: unknown item ${itemId}`);
@@ -93,6 +94,30 @@ export class FlowValidator {
     for (const id of ids) {
       if (seen.has(id)) fail(`duplicate ${kind} id ${id}`);
       seen.add(id);
+    }
+  }
+
+  private checkDialogue(step: QuestStep, fail: (m: string) => never): void {
+    const dialogue = step.dialogue;
+    if (dialogue === undefined) return;
+    if (step.target.kind !== 'talk') fail(`step ${step.stepId}: dialogue requires a talk target`);
+    if (typeof dialogue.opening !== 'string' || dialogue.opening.trim().length === 0) {
+      fail(`step ${step.stepId}: dialogue has no opening`);
+    }
+    if (!Array.isArray(dialogue.choices) || dialogue.choices.length === 0) {
+      fail(`step ${step.stepId}: dialogue has no choices`);
+    }
+    this.checkUnique(dialogue.choices.map((choice) => choice.id), `dialogue choice in ${step.stepId}`, fail);
+    for (const choice of dialogue.choices) {
+      for (const key of ['id', 'text', 'reply'] as const) {
+        if (typeof choice[key] !== 'string' || choice[key].trim().length === 0) {
+          fail(`step ${step.stepId}: dialogue choice has no ${key}`);
+        }
+      }
+      if (typeof choice.completesStep !== 'boolean') fail(`step ${step.stepId}: dialogue choice has no completion decision`);
+    }
+    if (!dialogue.choices.some((choice) => choice.completesStep)) {
+      fail(`step ${step.stepId}: dialogue has no completing choice`);
     }
   }
 

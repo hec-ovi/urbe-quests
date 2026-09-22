@@ -6,11 +6,12 @@
 import { QuestError } from '../errors.js';
 import type { SimulationPort } from '../world/types/simulation.js';
 import { AvailabilityService, type AvailabilityWindow, type StepAvailability } from './availability.js';
+import { stepDialogue } from './dialogue.js';
 import type { PlayerEvent } from './events.js';
 import { guidanceFor, type StepGuidance } from './guidance.js';
 import { StepPlaces, type QuestPlace } from './places.js';
 import { PredicateEvaluator } from './predicates.js';
-import type { QuestEnding, QuestlineDefinition, QuestStep, ResolvedCast } from './schema.js';
+import type { QuestDialogue, QuestEnding, QuestlineDefinition, QuestStep, ResolvedCast } from './schema.js';
 import { QuestlineStateValidator, type QuestlineState } from './state.js';
 import { FlowValidator } from './validate.js';
 
@@ -21,6 +22,10 @@ export interface AdvanceResult {
   activatedStepIds: string[];
   endingId?: string;
 }
+
+export type DialogueChoiceResult =
+  | { accepted: true; reply: string; advanceResult?: AdvanceResult }
+  | { accepted: false; reason: 'stale' | 'wrong_npc' | 'unknown_choice' | 'unavailable'; availability?: StepAvailability };
 
 export type QuestlineStatus = 'active' | 'completed' | 'stalled';
 
@@ -160,6 +165,41 @@ export class QuestlineRuntime {
     return guidanceFor(this.def.id, stepId, this.stepPlace(stepId, timeMin));
   }
 
+  /** Read only. Opening, reopening and closing a dialogue never completes a step. */
+  dialogueFor(stepId: string, npcId: string, timeMin: number): QuestDialogue | undefined {
+    if (!this.active.has(stepId) || this.endingId !== undefined) return undefined;
+    const step = this.step(stepId);
+    if (step.target.kind !== 'talk' || this.cast[step.target.roleId] !== npcId) return undefined;
+    const roleId = step.target.roleId;
+    const role = this.def.roles.find((entry) => entry.roleId === roleId)!;
+    const dialogue = stepDialogue(this.def, step);
+    return {
+      questlineId: this.def.id, stepId, roleId: role.roleId, npcId,
+      availability: this.stepAvailability(stepId, timeMin),
+      ...(role.characterName !== undefined ? { characterName: { ...role.characterName } } : {}),
+      opening: dialogue.opening,
+      choices: dialogue.choices.map((choice) => ({ ...choice })),
+    };
+  }
+
+  /** Select a declared reply for this exact cast person and step, rechecking all runtime gates. */
+  chooseDialogue(stepId: string, npcId: string, choiceId: string, timeMin: number): DialogueChoiceResult {
+    if (!this.active.has(stepId) || this.endingId !== undefined) return { accepted: false, reason: 'stale' };
+    const step = this.step(stepId);
+    if (step.target.kind !== 'talk') return { accepted: false, reason: 'stale' };
+    if (this.cast[step.target.roleId] !== npcId) return { accepted: false, reason: 'wrong_npc' };
+    const dialogue = this.dialogueFor(stepId, npcId, timeMin)!;
+    const choice = dialogue.choices.find((entry) => entry.id === choiceId);
+    if (choice === undefined) return { accepted: false, reason: 'unknown_choice' };
+    const gate = this.advanceGate(step, timeMin);
+    if (!gate.available) return { accepted: false, reason: 'unavailable', availability: gate };
+    if (!choice.completesStep) return { accepted: true, reply: choice.reply };
+    const advanceResult: AdvanceResult = { completedStepIds: [], activatedStepIds: [] };
+    this.complete(step, timeMin, advanceResult);
+    if (this.endingId !== undefined) advanceResult.endingId = this.endingId;
+    return { accepted: true, reply: choice.reply, advanceResult };
+  }
+
   advance(event: PlayerEvent, timeMin: number): AdvanceResult {
     if (this.endingId !== undefined) {
       throw new QuestError('E_WRONG_STATE', `${this.def.id}: questline already ended`);
@@ -263,7 +303,8 @@ export class QuestlineRuntime {
     const t = step.target;
     switch (t.kind) {
       case 'talk':
-        return event.kind === 'talkedTo' && event.npcId === this.cast[t.roleId];
+        // Authored talks must be committed through chooseDialogue, never by opening/closing a chat.
+        return step.dialogue === undefined && event.kind === 'talkedTo' && event.npcId === this.cast[t.roleId];
       case 'listen':
         return event.kind === 'overheard' && t.roleIds.every((r) => event.npcIds.includes(this.cast[r]!));
       case 'goto':

@@ -1,4 +1,4 @@
-# Quests 0.10.3
+# Quests 0.10.4
 
 Writes stories through injected agents, adapts them into typed quests, runs their rules in code, and prepares Engine handoffs and scoped NPC dialogue.
 
@@ -15,6 +15,7 @@ The Node library entry is [index.ts](index.ts), compiled to `dist/index.js`; bro
 | `ScriptPass.run`, `SituationsPass.run`, `QuestlineTranslator.translate` | [Story](story/CONTRACT.md), [translation](builder/CONTRACT.md) | [Story text](story/schema.ts), [plan, definition and feasibility cast](builder/schema.ts) |
 | `CastResolver.cast(definition, timeMin, options?)` | [Definition](flow/schema/questline.schema.json), [SimulationPort](world/types/simulation.ts), optional `StoryVenues(world, types)` and `{taken, characters}` | [CastResult](builder/CastResolver.ts): `cast` role to NPC IDs, `posts` role to the building it holds a post in, `blocked` when a role cannot be filled |
 | `QuestlineRuntime`, `advance`, `restore` | [Definition](flow/schema/questline.schema.json), cast, Simulation, [event](flow/schema/player-event.schema.json), time, [saved state](flow/schema/questline-state.schema.json) | [State and advance result](flow/QuestlineRuntime.ts), [availability](flow/availability.ts), [guidance](flow/schema/step-guidance.schema.json) |
+| `QuestlineRuntime.dialogueFor`, `chooseDialogue` | Exact active step, resolved NPC, current time; declared choice ID for selection | [Authored dialogue and explicit choice result](flow/CONTRACT.md), offline, scoped to one step |
 | `EngineHandoff.assemble(questlines, input?)` | [Quest set](creation/schema/questline-set.schema.json), [bindings and capabilities](handoff/schema/handoff-input.schema.json) | [HandoffBundle](handoff/schema.ts), definitions, objectives, investigations, assets and bindings |
 | `DialogContextService`, `Converse.reply` | [Context inputs](dialog/DialogContextService.ts), [reply input](dialog/Converse.ts), injected model | [Scoped segments and memory](dialog/schema.ts), reply string (async) |
 | `WorldContextNormalizer.normalize`, fixture loaders | [World and type projections](world/types/named-world.ts), [world calls](world/CONTRACT.md) | [Normalized context](world/WorldContextNormalizer.ts), standalone world/story fixtures |
@@ -24,6 +25,8 @@ Creation warnings report failed side translations or unusable situations. Main/s
 Engine receives main definition first, then side definitions, without creation-time cast IDs. The game casts against its own Simulation, through `CastResolver`, which queries each role at the hour its own steps name. The CLI writes bundle **1.1** with the [eight filenames and counts](handoff/schema/quest-bundle.schema.json). Bundle 1.1 keeps its shape: an authored place gains `name` and a step gains an optional `window`, both additive. Saved state is unchanged; bundle version and package version are separate.
 
 An optional role `characterName { given, family }` carries the script's authored identity into player labels and scoped dialog without changing the resolved NPC, its simulation name, routine, family or saved history. Recorded `unreservedRoles` preserve their prior fixed names in this field while removing the reservation request. Dialog context and reply prompts use the same authored name; unnamed roles and bystanders keep generated names. The field is additive within bundle 1.1 and requires no saved-state migration.
+
+Talk steps may carry `dialogue { opening, choices: [{ id, text, reply, completesStep }] }`. The recorded Weir Line and all three side stories author every talk with character speech, informational questions and explicit commitments. `dialogueFor(stepId, npcId, timeMin)` is read-only; `chooseDialogue(stepId, npcId, choiceId, timeMin)` rechecks presence, items and gates and completes only the selected step. Opening, dismissing, free chat and informational replies never progress the quest. Authored talks reject raw `talkedTo`; legacy definitions retain that event for compatibility and receive deterministic fallback choices through the same dialogue API. This optional field stays within bundle 1.1 and changes neither step IDs nor saved-state shape.
 
 Materialize builds exact physical pickup requests and bindings from a recording's authored item-kind templates, while preserving explicit handoff bindings. The handoff rejects pickups without a portable asset and `take` anchor, so an otherwise valid story cannot silently ship an impossible collection step.
 

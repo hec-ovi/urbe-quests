@@ -379,11 +379,38 @@
         "when": { "type": "array", "items": { "$ref": "#/$defs/predicate" } }
       }
     },
+    "dialogue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["opening", "choices"],
+      "properties": {
+        "opening": { "$ref": "#/$defs/text" },
+        "choices": {
+          "type": "array",
+          "minItems": 1,
+          "contains": { "type": "object", "required": ["completesStep"], "properties": { "completesStep": { "const": true } } },
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "text", "reply", "completesStep"],
+            "properties": {
+              "id": { "$ref": "#/$defs/id" },
+              "text": { "$ref": "#/$defs/text" },
+              "reply": { "$ref": "#/$defs/text" },
+              "completesStep": { "type": "boolean" }
+            }
+          }
+        }
+      }
+    },
     "step": {
       "type": "object",
       "additionalProperties": false,
       "required": ["stepId", "actId", "narrative", "target", "gives", "needs", "conditions", "effects", "next", "branching"],
+      "if": { "required": ["dialogue"], "properties": { "dialogue": {} } },
+      "then": { "properties": { "target": { "type": "object", "properties": { "kind": { "const": "talk" } } } } },
       "properties": {
+        "dialogue": { "$ref": "#/$defs/dialogue" },
         "stepId": { "$ref": "#/$defs/id" },
         "actId": { "$ref": "#/$defs/id" },
         "narrative": {

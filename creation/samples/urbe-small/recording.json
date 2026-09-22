@@ -270,6 +270,23 @@
           "tool": "add_step",
           "input": {
             "stepId": "s_grief",
+            "dialogue": {
+              "opening": "Before you ask: Sable knew those cranes. Fifteen years, and the power goes out in the middle of his lift. They had 'weather' on the form before I got through the door.",
+              "choices": [
+                {
+                  "id": "ask_about_sable",
+                  "text": "What makes you sure it wasn't the storm?",
+                  "reply": "His shift logs. He counted every lift, every fault. The ration dropped, the gantry died, and nobody will show me the power record. Rain doesn't decide which page goes missing.",
+                  "completesStep": false
+                },
+                {
+                  "id": "follow_kips_lead",
+                  "text": "I'll follow the evidence. Tell me where to start.",
+                  "reply": "Find Kip Thorn at the stalls. He found something in the wreckage and wouldn't leave it with me. Tell him you're asking for Sable, not buying salvage. Make him tell you where it is.",
+                  "completesStep": true
+                }
+              ]
+            },
             "actId": "a1_grief",
             "entry": true,
             "wantedByRoleId": "r_petra",
@@ -297,6 +314,23 @@
           "tool": "add_step",
           "input": {
             "stepId": "s_kip",
+            "dialogue": {
+              "opening": "Petra sent you? Right. Then this isn't a sale. There's a company drive in that wreckage, and I don't fancy meeting the company while I'm holding it.",
+              "choices": [
+                {
+                  "id": "ask_about_drive",
+                  "text": "Why leave the drive in the debris?",
+                  "reply": "A pocket gets searched. A flooded stall gets ignored. The casing's split, but the core looks whole. I put it back somewhere I could find it. Wasn't sure who else should.",
+                  "completesStep": false
+                },
+                {
+                  "id": "recover_sables_drive",
+                  "text": "I'll recover it for Petra. Point it out.",
+                  "reply": "Loose board under the stall, right here. Lift it and take the drive out of the debris. That's the one. Don't leave without it; Petra's had enough people come back empty-handed.",
+                  "completesStep": true
+                }
+              ]
+            },
             "actId": "a1_grief",
             "wantedByRoleId": "r_kip",
             "narrative": {
@@ -350,6 +384,23 @@
           "tool": "add_step",
           "input": {
             "stepId": "s_doc",
+            "dialogue": {
+              "opening": "Close the storage-room door. These are treatment dates, not rumors. Dock workers, the same cough, the same weeks the ration fell. Sable wasn't the first person I counted.",
+              "choices": [
+                {
+                  "id": "ask_about_pattern",
+                  "text": "Does your list prove what caused it?",
+                  "reply": "It proves who came in and what I treated. The dates line up with the cuts. That's a pattern worth investigating, not permission to invent the rest. Keep the distinction when you use it.",
+                  "completesStep": false
+                },
+                {
+                  "id": "carry_medical_evidence",
+                  "text": "Let me take the list and check who scheduled those cuts.",
+                  "reply": "Take it. Find Talis Rook, the analyst who wrote the ration model, and show her Sable's drive. Ask her to explain the dates. I've spent a year counting; she can spend a minute looking.",
+                  "completesStep": true
+                }
+              ]
+            },
             "actId": "a1_grief",
             "wantedByRoleId": "r_doc",
             "narrative": {
@@ -378,6 +429,23 @@
           "tool": "add_step",
           "input": {
             "stepId": "s_confront_talis1",
+            "dialogue": {
+              "opening": "That drive is from the gantry? Leave it there. I recognize the allocation table. I approved the summary that week. The table underneath it is... considerably less reassuring.",
+              "choices": [
+                {
+                  "id": "ask_about_signoff",
+                  "text": "What did you approve?",
+                  "reply": "A cut described as necessary for grid stability. I read the totals. I didn't follow the redirection down to the storm pumps. That's an explanation of what I did, not a defense of it.",
+                  "completesStep": false
+                },
+                {
+                  "id": "verify_drone_pattern",
+                  "text": "I'll check the drone pattern against your model.",
+                  "reply": "Observe the district from street level. Watch the six maintenance drones and record their redirection pattern while I check the feed. If the routes agree, take that schedule to Cross Ivanov; he filed the gantry's power log.",
+                  "completesStep": true
+                }
+              ]
+            },
             "actId": "a2_glass",
             "wantedByRoleId": "r_talis",
             "narrative": {
@@ -439,6 +507,23 @@
           "tool": "add_step",
           "input": {
             "stepId": "s_cross",
+            "dialogue": {
+              "opening": "You have the redirection schedule. Good. This folder is the report I filed that night. By morning I was told there was no report. Apparently somebody forgot to tell my locker.",
+              "choices": [
+                {
+                  "id": "ask_about_missing_report",
+                  "text": "What did they want removed from the record?",
+                  "reply": "The power log. The time of the failure. My signature saying I'd checked both. Keep those together and weather stops being an adequate answer. Separate them and you've got three pieces of paper nobody remembers seeing.",
+                  "completesStep": false
+                },
+                {
+                  "id": "take_report_to_lunch_lead",
+                  "text": "I'll keep your report intact and follow the authorization.",
+                  "reply": "Then take my copy, signature included. Ilona Vale will be at the board lunch with Talis Rook. Find their meeting and listen from nearby. Use the schedule to be there at the right hour; we need to hear what Ilona knew.",
+                  "completesStep": true
+                }
+              ]
+            },
             "actId": "a2_glass",
             "wantedByRoleId": "r_cross",
             "narrative": {
@@ -511,6 +596,29 @@
           "tool": "add_step",
           "input": {
             "stepId": "s_expose",
+            "dialogue": {
+              "opening": "The drive, the medical list, the schedule, my report, Ilona's own words. That's a case. Before I read it into the log: are you asking me to put all of it on record?",
+              "choices": [
+                {
+                  "id": "ask_cost_of_exposure",
+                  "text": "What happens if we expose the company?",
+                  "reply": "The evidence starts an inquiry, with my name attached. My pension won't survive it. Petra gets responsibility written into Sable's file, and the ration schedule gets scrutiny. Ilona's quiet payout goes away. Know which bargain you're making.",
+                  "completesStep": false
+                },
+                {
+                  "id": "consider_ilona_offer",
+                  "text": "Hold the filing. I need to hear Ilona's offer first.",
+                  "reply": "Nothing is filed yet. Speak to Ilona Vale if you need to hear her terms. You can come back with the evidence. Once we put it on record, I won't pretend I never saw it.",
+                  "completesStep": false
+                },
+                {
+                  "id": "expose_company_on_record",
+                  "text": "Expose the redirection. File the evidence and start the inquiry.",
+                  "reply": "On the record, then. I'll read every page into the log, with my signature on the report. No quiet settlement. Petra gets a name behind the order that killed Sable, and they'll have to answer for the next ration schedule in public.",
+                  "completesStep": true
+                }
+              ]
+            },
             "actId": "a4_choice",
             "wantedByRoleId": "r_cross",
             "narrative": {
@@ -539,6 +647,29 @@
           "tool": "add_step",
           "input": {
             "stepId": "s_sellout",
+            "dialogue": {
+              "opening": "You have enough to make this very public. I can also offer enough to rebuild Petra's whole block above the flood line. A settlement, without an admission. You see what that would buy, don't you?",
+              "choices": [
+                {
+                  "id": "ask_settlement_terms",
+                  "text": "What does accepting the payout do to Sable's case?",
+                  "reply": "It closes quietly. The block is rebuilt three floors higher; the death remains recorded as an accident. There is no public inquiry into my signature. The money is real, and so is that condition.",
+                  "completesStep": false
+                },
+                {
+                  "id": "reconsider_with_cross",
+                  "text": "I won't agree yet. Cross should hear the evidence too.",
+                  "reply": "Then go to Cross Ivanov before you decide. I haven't bought your agreement by describing an offer. But if you put this on record, you understand that a quiet settlement is no longer possible, don't you?",
+                  "completesStep": false
+                },
+                {
+                  "id": "accept_payout_close_case",
+                  "text": "Accept the payout for the block and close Sable's case as an accident.",
+                  "reply": "Then those are the terms. I'll bring the settlement to Petra: the block rebuilt above the flood line, no admission, no inquiry. Sable stays recorded as an accident. I know exactly what it was. That won't be on the form.",
+                  "completesStep": true
+                }
+              ]
+            },
             "actId": "a4_choice",
             "wantedByRoleId": "r_ilona",
             "narrative": {
@@ -693,6 +824,23 @@
           "tool": "add_step",
           "input": {
             "stepId": "s1_ask",
+            "dialogue": {
+              "opening": "Keep your voice under the steamer. Talis writes figures on her cups and leaves them full. I saved the cups. Security saved me the trouble of finding somewhere to put them.",
+              "choices": [
+                {
+                  "id": "ask_why_keep_cups",
+                  "text": "What made those cups worth keeping?",
+                  "reply": "Same dates, different sums. Two cups some mornings, neither touched. You learn what an ordinary bad day looks like behind a counter. This kept happening. The sweep called them unauthorized documents; apparently I wasn't imagining it.",
+                  "completesStep": false
+                },
+                {
+                  "id": "recover_cup_notes",
+                  "text": "I'll get the notes out before the sweep report is filed.",
+                  "reply": "Start by observing the guard's rounds in the district. Find the gap between checking the confiscation bin and moving it. Once you know the rotation, recover the cup notes from the floor guard. Don't make a guess with my name on it.",
+                  "completesStep": true
+                }
+              ]
+            },
             "actId": "b1_counter",
             "wantedByRoleId": "r_denna",
             "narrative": {
@@ -776,6 +924,23 @@
           "tool": "add_step",
           "input": {
             "stepId": "s1_final",
+            "dialogue": {
+              "opening": "Those are mine. The handwriting, I mean. I thought I'd thrown them away. Seeing the dates together is rather different from leaving one cup on a counter each morning.",
+              "choices": [
+                {
+                  "id": "ask_about_cup_figures",
+                  "text": "What were you trying to calculate?",
+                  "reply": "Whether the cut still looked reasonable when I used the numbers underneath the summary. It didn't. I kept trying a different morning, as if the date was the mistake. I didn't have to write any of it on a cup.",
+                  "completesStep": false
+                },
+                {
+                  "id": "return_notes_to_talis",
+                  "text": "Take the notes back. Someone thought they mattered.",
+                  "reply": "All right. Leave them with me. I won't ask where they went. Someone read them, and now I have to admit I wrote them. You did what you came to do; the next cup can wait.",
+                  "completesStep": true
+                }
+              ]
+            },
             "actId": "b2_recovery",
             "wantedByRoleId": "r_talis",
             "narrative": {
@@ -918,6 +1083,23 @@
           "tool": "add_step",
           "input": {
             "stepId": "s2_ask",
+            "dialogue": {
+              "opening": "Listen under the water. That hum? Junction box, still live, feeding a line none of my maps admit is there. I've got a key. What I haven't got is someone who reads wiring.",
+              "choices": [
+                {
+                  "id": "ask_about_wick",
+                  "text": "Why trust Wick with it?",
+                  "reply": "His mother's block floods too. He'll want an answer before he wants a buyer. He knows the line, but nobody's rostered him to open that hatch. A spare key only solves half the problem.",
+                  "completesStep": false
+                },
+                {
+                  "id": "take_hatch_key",
+                  "text": "Give me the key. I'll get near the hatch and find Wick.",
+                  "reply": "Here. Work a maintenance shift at the junction office; that'll give you a reason to be near the overnight hatch. Then talk to Wick Talbot about the routing. Bring me what it means, not what somebody would pay for it.",
+                  "completesStep": true
+                }
+              ]
+            },
             "actId": "c1_tip",
             "wantedByRoleId": "r_kip",
             "narrative": {
@@ -974,6 +1156,23 @@
           "tool": "add_step",
           "input": {
             "stepId": "s2_talk_wick",
+            "dialogue": {
+              "opening": "Input: storm-pump supply. Output: somewhere the storm pumps aren't. I've traced it twice. The switch times match the low-tide cuts. Give me a moment. My mother's under six blocks of this.",
+              "choices": [
+                {
+                  "id": "ask_routing_meaning",
+                  "text": "Could the box just be malfunctioning?",
+                  "reply": "A fault doesn't keep a calendar. This switches the same supply along the same route at the scheduled times. The box is doing its job. The question is who decided that was its job.",
+                  "completesStep": false
+                },
+                {
+                  "id": "carry_routing_to_kip",
+                  "text": "Write down the routing. I'll take your reading back to Kip.",
+                  "reply": "Supply, destination, switch times. Plain enough to read without a schematic. Take this back to Kip Thorn at the stalls and tell him the storm-pump power is being redirected on purpose. He was right to get another pair of eyes.",
+                  "completesStep": true
+                }
+              ]
+            },
             "actId": "c2_tunnel",
             "wantedByRoleId": "r_wick",
             "narrative": {
@@ -1002,6 +1201,23 @@
           "tool": "add_step",
           "input": {
             "stepId": "s2_final",
+            "dialogue": {
+              "opening": "You've got Wick's writing. I can tell; even his letters look like they're wired together. Tell me straight. Is that box taking power out from under us?",
+              "choices": [
+                {
+                  "id": "ask_kip_intentions",
+                  "text": "What will you do with the reading?",
+                  "reply": "Keep it where a buyer can't make it disappear. I thought finding the line was the clever part. Wick putting his name to what it does? That's somebody else's skin beside mine. I'm not pricing that.",
+                  "completesStep": false
+                },
+                {
+                  "id": "confirm_deliberate_routing",
+                  "text": "Yes. Take Wick's reading: the storm-pump power is redirected on schedule.",
+                  "reply": "Right. Not a bad wire, not me hearing things. I'll keep the reading with Wick's name on it. You got the answer back here. For once, that's enough without anyone counting out money.",
+                  "completesStep": true
+                }
+              ]
+            },
             "actId": "c2_tunnel",
             "wantedByRoleId": "r_kip",
             "narrative": {
@@ -1153,6 +1369,23 @@
           "tool": "add_step",
           "input": {
             "stepId": "s3_ask",
+            "dialogue": {
+              "opening": "If you're here about the ration chit, so is everyone suddenly. Milo says its serial belongs to a destroyed batch. Looks solid enough on my counter. I'd like that contradiction somewhere useful.",
+              "choices": [
+                {
+                  "id": "ask_chit_supplier",
+                  "text": "Who brought you the batch?",
+                  "reply": "A dock worker brought me the tip. The chits move through the transit tunnels; that's the route I know. Don't turn that into a supplier's name I never gave you. Milo can read the serial better than either of us.",
+                  "completesStep": false
+                },
+                {
+                  "id": "take_chit_to_milo",
+                  "text": "I'll take the chit to Milo and have him check the record.",
+                  "reply": "Take the chit, and this stim kit from under the counter. Keep the kit with you; the people buying these haven't looked well. Find Milo Draeger at the junction booth and show him the serial. He checks everything twice. Make him earn the habit.",
+                  "completesStep": true
+                }
+              ]
+            },
             "actId": "d1_stall",
             "wantedByRoleId": "r_yara",
             "narrative": {
@@ -1182,6 +1415,23 @@
           "tool": "add_step",
           "input": {
             "stepId": "s3_confront",
+            "dialogue": {
+              "opening": "Let me see that serial. Same batch. I'll check it again... yes. Logged as destroyed three weeks ago. I bought my mother one of these. Didn't think to check what I carried home.",
+              "choices": [
+                {
+                  "id": "ask_batch_record",
+                  "text": "Does the log tell us who put the chits back in circulation?",
+                  "reply": "It tells us they shouldn't be circulating. It doesn't name whoever moved them through the tunnels. A destroyed-batch entry and a chit in your hand prove a contradiction, not a culprit. That's all the batch reading can establish.",
+                  "completesStep": false
+                },
+                {
+                  "id": "take_reading_prioritize_worker",
+                  "text": "Give me the batch reading. What needs doing now?",
+                  "reply": "Take it. Word just came from Yara: the dock worker who tipped her off has collapsed in her queue. Deliver her stim kit to the clinic's after-hours intake. Get that done, then come back to me with the batch reading. The serials can wait for someone to breathe.",
+                  "completesStep": true
+                }
+              ]
+            },
             "actId": "d2_reckoning",
             "wantedByRoleId": "r_milo",
             "narrative": {
@@ -1242,6 +1492,23 @@
           "tool": "add_step",
           "input": {
             "stepId": "s3_wrap",
+            "dialogue": {
+              "opening": "The kit reached the clinic? Good. The nurse is treating him. I've opened a notebook. Turns out checking a number twice isn't much use if I stop caring after the second look.",
+              "choices": [
+                {
+                  "id": "ask_unanswered_origin",
+                  "text": "Do we know where the batch really came from?",
+                  "reply": "No. Yara knows the route, I know the entry is wrong, and a man needed treatment before either of us found a name. I won't fill that gap with a guess. I will keep the serials where they can't be quietly corrected.",
+                  "completesStep": false
+                },
+                {
+                  "id": "record_batch_and_close",
+                  "text": "Keep the batch reading in your notebook. The worker got help.",
+                  "reply": "I'll copy the batch and the dates, exactly as we found them. He's getting treated, and this record stays with me. That's what we could finish today. Next time I buy something for my mother, I'll know what I checked and why.",
+                  "completesStep": true
+                }
+              ]
+            },
             "actId": "d2_reckoning",
             "wantedByRoleId": "r_milo",
             "narrative": {

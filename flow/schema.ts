@@ -6,6 +6,7 @@
  */
 
 import type { FlagOp } from '../world/types/simulation.js';
+import type { StepAvailability } from './availability.js';
 
 export interface QuestlineDefinition {
   id: string;
@@ -157,6 +158,8 @@ export interface QuestStep {
   actId: string;
   /** Story text first: what happens, what the player sees, and the stake: what it means to whoever wants it and what it costs them if it fails. */
   narrative: { description: string; playerHint: string; stake: string };
+  /** Authored NPC speech and explicit player replies for a talk. Opening or dismissing it has no effect. */
+  dialogue?: QuestStepDialogue;
   /** The role whose want this step serves; their dialog carries the stake while the step is active. */
   wantedByRoleId?: string;
   target: StepTarget;
@@ -175,6 +178,31 @@ export interface QuestStep {
   /** parallel: every passing edge activates. exclusive: only the first passing edge. */
   branching: 'parallel' | 'exclusive';
   endingId?: string;
+}
+
+export interface QuestStepDialogue {
+  opening: string;
+  choices: QuestDialogueChoice[];
+}
+
+export interface QuestDialogueChoice {
+  id: string;
+  /** The player's spoken response, shown on a selectable button. */
+  text: string;
+  /** The NPC's deterministic response; never requires a model call. */
+  reply: string;
+  /** False answers a question without changing state; true completes this exact talk step. */
+  completesStep: boolean;
+}
+
+/** A conversation bound to one currently active step and its exact cast person. */
+export interface QuestDialogue extends QuestStepDialogue {
+  questlineId: string;
+  stepId: string;
+  roleId: string;
+  npcId: string;
+  availability: StepAvailability;
+  characterName?: { given: string; family: string };
 }
 
 export interface NextEdge {
