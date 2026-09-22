@@ -15,10 +15,12 @@ Then:
 - `recordTurn(npcId, { speaker, text, atMin })`: async; appends memory and folds the oldest window into a digest note through the LLM when the tail overflows.
 - `serializeMemory()` / `restoreMemory(data)`.
 
-`new Converse(llm).reply({ context, name, line })` ([Converse.ts](Converse.ts)): returns a `Promise<string>`, the NPC's text reply to the player's typed `line`, asked from the context segments joined in order as the system prompt plus [prompts/reply.md](prompts/reply.md). The only path that produces NPC reply text.
+`new Converse(llm).reply({ context, name, line })` ([Converse.ts](Converse.ts)): returns a `Promise<string>`, the NPC's text reply to the player's typed `line`, asked from the context segments joined in order as the system prompt plus [prompts/reply.md](prompts/reply.md). The reply uses `context.characterName` when supplied, otherwise the caller's `name`, so an authored character identity stays consistent between the context and reply request. The only path that produces NPC reply text.
 
 ## Out
 `DialogContext`: ordered `segments`, each `{ id, text, shared }`, in fixed order world, type, npc, quest, memory, turns. Quest is omitted when this NPC has no attached quest knowledge; memory is omitted when the digest is empty. `shared: true` segments (world, type) are byte-stable across calls and across NPCs of a type: the engine concatenates segments in order and may place provider cache breakpoints after shared ones. The world segment carries the character-play, register and deflection rules ([prompts/dialog-system.md](prompts/dialog-system.md)); npc carries the deterministic background (home, job, shift, family, haunts) plus quest personas; quest carries facts whose gate flag is set, the active steps this NPC wants (what happens and what it means to them), and the epilogue of an ending this NPC's questline reached; turns carries the volatile now line and the verbatim tail.
+
+The context retains its actual `npcId` and optionally carries `characterName { given, family }` from that person's attached cast role. The NPC background projection and explicit character prompt use that authored name consistently; the stored simulation name, body identity, schedules, relationships and memory keys are unchanged. The first attached matching named role supplies the presentation name. Unnamed roles and bystanders retain their generated identities.
 
 ## Errors
 - `E_WRONG_STATE`: contextFor on a dead NPC (the dead do not talk).

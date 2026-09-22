@@ -35,6 +35,8 @@ export interface QuestRole {
   npcType: string;
   /** Personality, needs and story overlay the LLM wrote for this role. */
   persona: string;
+  /** Authored name shown and spoken for this character; does not rename or reserve the cast NPC. */
+  characterName?: { given: string; family: string };
   /** Fixed identity for pre-instanced story NPCs (reserveNPC); otherwise the vendor query resolves whoever is on duty. */
   reservedName?: { given: string; family: string };
 }

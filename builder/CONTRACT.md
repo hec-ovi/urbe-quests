@@ -34,6 +34,7 @@ Other `SimulationError`s pass through.
 - The planner sees the arc, the cards and the world brief (no ids); the builder sees the plan, the cards, the synopsis and the parcel, district, station, and stop catalog with ids, never the arc.
 - The manifest is the bound: the finished questline carries exactly the planned roles, items, acts, endings and steps, plus whatever facts the agent added.
 - The agent never sees or emits NPC ids or coordinates; roles bind types, the simulation resolves people. The script owns personality, needs, drives and voice; the simulation owns home, job, family and routine.
+- `add_role.characterName` preserves the script's given and family name for dialog and player labels without requiring a reserved identity. `reservedName` remains the separate request for a fixed simulation identity; the presentation name never influences cast selection.
 - A published step and its cast name the same place: the built questline is pinned to the buildings its own people hold posts in, and a role filled off a post moves no step.
 - Flags referenced by drafted steps and facts are auto-declared; the finished definition always satisfies the flow validator.
 - Prompts live in [prompts/](prompts/), including tool descriptions under `prompts/tools/`. Step-catalog examples read want, cost, then change. Minimums are floors, story breadth has no upper count, and model output has no token, word or character cap.

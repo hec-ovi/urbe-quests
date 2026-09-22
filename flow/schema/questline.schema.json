@@ -29,6 +29,12 @@
         "roleId": { "$ref": "#/$defs/id" },
         "npcType": { "$ref": "#/$defs/id" },
         "persona": { "$ref": "#/$defs/text" },
+        "characterName": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["given", "family"],
+          "properties": { "given": { "$ref": "#/$defs/text" }, "family": { "$ref": "#/$defs/text" } }
+        },
         "reservedName": {
           "type": "object",
           "additionalProperties": false,

@@ -3,6 +3,7 @@
 import { QuestError } from '../errors.js';
 import { promptLoader } from '../prompts.js';
 import type { QuestlineRuntime } from '../flow/QuestlineRuntime.js';
+import type { QuestRole } from '../flow/schema.js';
 import type { LLMPort } from '../ports/llm.js';
 import type { NamedWorld, NPCType, NPCTypeSet } from '../world/types/named-world.js';
 import type { SimulationPort } from '../world/types/simulation.js';
@@ -51,11 +52,12 @@ export class DialogContextService {
   contextFor(npcId: string, timeMin: number): DialogContext {
     const npc = this.sim.getNPC(npcId);
     if (npc.flags.dead) throw new QuestError('E_WRONG_STATE', `npc ${npcId} is dead`);
+    const characterName = this.characterName(npcId);
 
     const segments: ContextSegment[] = [
       { id: 'world', text: this.renderWorld(), shared: true },
       { id: 'type', text: this.renderType(npc.type), shared: true },
-      { id: 'npc', text: this.renderNpc(npcId), shared: false },
+      { id: 'npc', text: this.renderNpc(npcId, characterName), shared: false },
     ];
     const quest = this.renderQuestKnowledge(npcId);
     if (quest.length > 0) segments.push({ id: 'quest', text: quest, shared: false });
@@ -64,7 +66,7 @@ export class DialogContextService {
       segments.push({ id: 'memory', text: prompt('context.md#memory', { notes: memory.digest.map((n) => `- ${n}`).join('\n') }), shared: false });
     }
     segments.push({ id: 'turns', text: this.renderNow(npcId, timeMin, memory.turns), shared: false });
-    return { npcId, segments };
+    return { npcId, ...(characterName ? { characterName: { ...characterName } } : {}), segments };
   }
 
   async recordTurn(npcId: string, turn: DialogTurn): Promise<void> {
@@ -96,8 +98,20 @@ export class DialogContextService {
     return segment;
   }
 
-  private renderNpc(npcId: string): string {
-    const parts = [this.background.render(this.sim.getNPC(npcId))];
+  private characterName(npcId: string): QuestRole['characterName'] {
+    for (const runtime of this.questlines) {
+      const role = runtime.def.roles.find((role) => runtime.cast[role.roleId] === npcId && role.characterName !== undefined);
+      if (role?.characterName) return role.characterName;
+    }
+    return undefined;
+  }
+
+  private renderNpc(npcId: string, characterName: QuestRole['characterName']): string {
+    const npc = this.sim.getNPC(npcId);
+    // Only the dialog projection uses the story name. Identity, routines,
+    // relations, saved conversation and simulation state retain this npcId.
+    const parts = [this.background.render(characterName ? { ...npc, name: characterName } : npc)];
+    if (characterName) parts.push(prompt('context.md#character', characterName));
     for (const runtime of this.questlines) {
       for (const role of runtime.def.roles) {
         if (runtime.cast[role.roleId] === npcId) parts.push(prompt('context.md#persona', { persona: role.persona }));

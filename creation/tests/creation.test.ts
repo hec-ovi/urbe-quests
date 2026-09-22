@@ -141,6 +141,32 @@ describe('QuestlineCreation', () => {
     expect(new Set(talis.map((entry) => entry.npcId)).size).toBe(1);
   });
 
+  it('keeps recorded character names without reserving or renaming the generated cast', async () => {
+    const sim = new StubSimulation({ seed: 'character-name-test', world, types });
+    const reserve = vi.spyOn(sim, 'reserveNPC');
+    const result = await run({}, { sim });
+    const authored = new Map(Object.values(RECORDING.builds).flat(2)
+      .filter((call) => call.tool === 'add_role')
+      .map((call) => {
+        const input = call.input as { roleId: string; reservedName?: { given: string; family: string } };
+        return [input.roleId, input.reservedName] as const;
+      }));
+    const questlines = [result.main, ...result.side];
+
+    for (const questline of questlines) for (const role of questline.definition.roles) {
+      expect(role.reservedName).toBeUndefined();
+      expect(role.characterName).toEqual(authored.get(role.roleId));
+      const person = sim.getNPC(questline.cast[role.roleId]!);
+      if (role.characterName) expect(person.name).not.toEqual(role.characterName);
+    }
+    expect(reserve).not.toHaveBeenCalled();
+    expect(result.main.definition.roles.find((role) => role.roleId === 'r_petra')?.characterName)
+      .toEqual({ given: 'Petra', family: 'Moss' });
+    expect(authored.get('r_petra')).toEqual({ given: 'Petra', family: 'Moss' });
+    expect(questlines.flatMap((questline) => questline.definition.roles).find((role) => role.roleId === 'r_guard')?.characterName)
+      .toBeUndefined();
+  });
+
   it('fails the run with E_LLM when the script or the main line is unusable', async () => {
     await expect(run({ script: junk('no script') })).rejects.toThrowError(
       expect.objectContaining({ code: 'E_LLM', detail: expect.objectContaining({ stage: 'script' }) }),

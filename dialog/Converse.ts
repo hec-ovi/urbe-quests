@@ -19,7 +19,9 @@ export class Converse {
 
   async reply(input: ConverseInput): Promise<string> {
     const system = input.context.segments.map((segment) => segment.text).join('\n\n');
-    const prompt = prompts('reply.md', { name: input.name, line: input.line });
+    const character = input.context.characterName;
+    const name = character ? `${character.given} ${character.family}` : input.name;
+    const prompt = prompts('reply.md', { name, line: input.line });
     return (await this.llm.complete({ system, prompt })).trim();
   }
 }

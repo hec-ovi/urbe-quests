@@ -1,5 +1,9 @@
 # Changelog
 
+0.10.3: roles preserve authored character names as optional display metadata independently of generated NPC identities. Recorded unreserved roles retain the script's names without reserving people. Scoped dialog context and replies use the same character name while simulation names, cast IDs, routines and bystanders remain unchanged.
+
+0.10.2: materialize creates exact portable pickup assets from authored item-kind templates and preserves explicit bindings. Handoffs reject missing pickup bindings or assets without a portable take anchor instead of publishing an impossible collection step.
+
 0.10.1: casting searches real weekly staffing posts when a game opens outside business hours and never assigns different characters to the same person. Live hosts can check authored talk/listen appointment eligibility before placing the cast, while quest completion still requires their exact physical presence, the authored hour, items and conditions.
 
 0.10.0: a creation run takes the buildings the story may use (`parcels`, `--parcels=<ids|@file>` on materialize) and keeps every place inside them: venues are chosen from the set, a building outside it moves to one of the same kind that is in it, and a questline with nowhere to go is named with its reason instead of shipped. A host that opens part of the city gets a bundle that only points at buildings the player can walk into.

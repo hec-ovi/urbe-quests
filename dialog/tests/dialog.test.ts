@@ -110,6 +110,39 @@ describe('DialogContextService', () => {
     expect(wants.length).toBe(new Set(wants).size);
   });
 
+  it('uses the authored character name in context and replies without changing the cast or bystanders', async () => {
+    const { service, runtime, informerId, sim } = setup();
+    const definition = structuredClone(runtime.def);
+    definition.roles[0]!.characterName = { given: 'Petra', family: 'Moss' };
+    definition.roles[0]!.persona = 'Petra keeps her brother’s shift logs and wants his case heard.';
+    service.attachQuestline(new QuestlineRuntime(definition, runtime.cast, sim));
+    const original = structuredClone(sim.getNPC(informerId));
+    const bystander = sim.getNPCVendor({ type: 'cafe_barista', timeMin: TUE_10 + 8 * 60 });
+
+    const context = service.contextFor(informerId, TUE_10);
+    const identity = context.segments.find((segment) => segment.id === 'npc')!.text;
+    expect(context.npcId).toBe(informerId);
+    expect(context.characterName).toEqual({ given: 'Petra', family: 'Moss' });
+    expect(identity).toContain('You are Petra Moss.');
+    expect(identity).toContain('Your name is Petra Moss.');
+    expect(identity).toContain('Petra keeps her brother’s shift logs');
+    expect(identity).not.toContain(`You are ${original.name.given} ${original.name.family}.`);
+    expect(sim.getNPC(informerId)).toEqual(original);
+
+    const other = service.contextFor(bystander.npcId, TUE_10);
+    expect(other.characterName).toBeUndefined();
+    expect(other.segments.find((segment) => segment.id === 'npc')!.text)
+      .toContain(`You are ${bystander.name.given} ${bystander.name.family}.`);
+    expect(other.segments[0]!.text).toBe(context.segments[0]!.text);
+    expect(other.segments[1]!.text).toBe(context.segments[1]!.text);
+
+    const calls: { system: string; prompt: string }[] = [];
+    await new Converse({ complete: async (request) => { calls.push(request); return 'My name is Petra Moss.'; } })
+      .reply({ context, name: `${original.name.given} ${original.name.family}`, line: 'Are you Petra?' });
+    expect(calls[0]!.prompt).toContain('Answer as Petra Moss');
+    expect(calls[0]!.system).toContain('Your name is Petra Moss.');
+  });
+
   it('keeps a verbatim tail, folds overflow into a digest through the LLM, and round-trips memory', async () => {
     const { service, informerId, llmCalls } = setup({ tailSize: 4, foldSize: 2 });
     for (let i = 1; i <= 5; i++) {

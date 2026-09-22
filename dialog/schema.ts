@@ -16,6 +16,8 @@ export interface ContextSegment {
 
 export interface DialogContext {
   npcId: string;
+  /** Authored identity used in dialog while npcId and simulation records remain unchanged. */
+  characterName?: { given: string; family: string };
   segments: ContextSegment[];
 }
 

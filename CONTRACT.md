@@ -1,4 +1,4 @@
-# Quests 0.10.1
+# Quests 0.10.3
 
 Writes stories through injected agents, adapts them into typed quests, runs their rules in code, and prepares Engine handoffs and scoped NPC dialogue.
 
@@ -22,6 +22,8 @@ The Node library entry is [index.ts](index.ts), compiled to `dist/index.js`; bro
 Creation warnings report failed side translations or unusable situations. Main/script failures reject the run. `CreationResult` has no completion marker or retained side-failure record. Naming is supplied by callers; its integration is proposed in [issues](docs/ISSUES.md).
 
 Engine receives main definition first, then side definitions, without creation-time cast IDs. The game casts against its own Simulation, through `CastResolver`, which queries each role at the hour its own steps name. The CLI writes bundle **1.1** with the [eight filenames and counts](handoff/schema/quest-bundle.schema.json). Bundle 1.1 keeps its shape: an authored place gains `name` and a step gains an optional `window`, both additive. Saved state is unchanged; bundle version and package version are separate.
+
+An optional role `characterName { given, family }` carries the script's authored identity into player labels and scoped dialog without changing the resolved NPC, its simulation name, routine, family or saved history. Recorded `unreservedRoles` preserve their prior fixed names in this field while removing the reservation request. Dialog context and reply prompts use the same authored name; unnamed roles and bystanders keep generated names. The field is additive within bundle 1.1 and requires no saved-state migration.
 
 Materialize builds exact physical pickup requests and bindings from a recording's authored item-kind templates, while preserving explicit handoff bindings. The handoff rejects pickups without a portable asset and `take` anchor, so an otherwise valid story cannot silently ship an impossible collection step.
 

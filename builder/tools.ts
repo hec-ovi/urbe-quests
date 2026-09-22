@@ -80,6 +80,12 @@ export const BUILDER_TOOLS: AgentTool[] = [
         persona: { type: 'string', description: prompt('tools/add_role.md#persona').trim() },
         roleId: { type: 'string' },
         npcType: { type: 'string', description: prompt('tools/add_role.md#npcType').trim() },
+        characterName: {
+          type: 'object',
+          description: prompt('tools/add_role.md#characterName').trim(),
+          properties: { given: { type: 'string' }, family: { type: 'string' } },
+          required: ['given', 'family'],
+        },
         reservedName: {
           type: 'object',
           description: prompt('tools/add_role.md#reservedName').trim(),

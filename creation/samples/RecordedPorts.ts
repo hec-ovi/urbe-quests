@@ -15,7 +15,7 @@ export interface RecordingBindings {
   districts?: Record<string, { kinds: NamedWorld['districts'][number]['kind'][]; tiers?: Tier[]; ordinal?: number }>;
   /** Fallback NPC type per role when replaying without a naming-generated type set. */
   roleTypes?: Record<string, string>;
-  /** Roles whose fixed story names yield to the target city's generated identities. */
+  /** Roles played by the city's generated identities, retaining their authored display names. */
   unreservedRoles?: string[];
 }
 
@@ -103,6 +103,7 @@ function rewriteCalls(
       input.npcType = roleTypes[input.roleId];
     }
     if (call.tool === 'add_role' && typeof input.roleId === 'string' && unreservedRoles.has(input.roleId)) {
+      if (input.characterName === undefined && input.reservedName !== undefined) input.characterName = input.reservedName;
       delete input.reservedName;
     }
     return { ...call, input };
