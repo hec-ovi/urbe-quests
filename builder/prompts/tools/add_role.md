@@ -4,7 +4,7 @@ Add a character role. Bind it to an NPC type from the catalog, never to an id or
 
 ## persona
 
-Personality, needs and story on top of the mathematical background.
+Personality, needs, drives and voice, written as story in the script's voice. The simulation supplies this person's home, job, family and schedule, so leave those out.
 
 ## npcType
 
@@ -12,7 +12,7 @@ Type string from the NPC type catalog.
 
 ## reservedName
 
-Only for a pre-instanced story NPC with a fixed identity.
+A fixed identity in the simulation: a living person of this type with this name is reused, and when no one holds a post for the role the city creates one with this name. Set it for a character who must stay the same person across questlines, and for anyone the player meets away from a workplace (a neighbour, a relative, someone at home), since people without it are found by where they work. The name shown in dialog comes from characterName.
 
 ## characterName
 

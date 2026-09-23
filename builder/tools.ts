@@ -25,7 +25,11 @@ const effect = {
     kind: { enum: ['setFlag', 'clearFlag', 'simFlag'] },
     flag: { type: 'string' },
     roleId: { type: 'string' },
-    op: { type: 'object' },
+    op: {
+      type: 'object',
+      properties: { kind: { enum: ['resign', 'promote', 'die', 'custom'] }, toParcelId: { type: 'string' }, tag: { type: 'string' } },
+      required: ['kind'],
+    },
   },
   required: ['kind'],
 };

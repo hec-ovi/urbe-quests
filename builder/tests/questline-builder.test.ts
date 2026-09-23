@@ -112,6 +112,27 @@ describe('QuestlineBuilder', () => {
     expect(definition.steps).toHaveLength(3);
   });
 
+  it('answers a target or an effect missing a field its kind needs with a tool result, never an abort', async () => {
+    const ask = STEP_CALLS[0]!.input as object;
+    const { agent, requests } = scriptedAgent([
+      { kind: 'calls', calls: [
+        ...SETUP_CALLS,
+        step({ ...ask, target: { kind: 'listen', atParcelId: 'p4' } }),
+        step({ ...ask, target: { kind: 'goto' } }),
+        step({ ...ask, effects: [{ kind: 'simFlag', roleId: 'barista' }] }),
+      ] },
+      { kind: 'calls', calls: [...STEP_CALLS, FINAL_STEP, FINISH] },
+    ]);
+    const { definition } = await build(agent);
+
+    expect(toolResults(requests[1]!.transcript)).toEqual(expect.arrayContaining([
+      'error: step s_ask not added: target.roleIds is missing',
+      'error: step s_ask not added: target.place is missing',
+      'error: step s_ask not added: effects[0].op is missing',
+    ]));
+    expect(definition.steps).toHaveLength(3);
+  });
+
   it('reports E_LLM when the configured build round budget is exhausted', async () => {
     const stuck: AgentPort = { step: async () => ({ kind: 'calls', calls: [] }) };
     await expect(build(stuck, { maxRounds: 1 })).rejects.toMatchObject({ code: 'E_LLM' });
@@ -156,6 +177,19 @@ describe('QuestlineBuilder', () => {
     expect(prompt).toContain('Mara Vex');
     expect(prompt).toContain('[parcelId p4]');
     expect(prompt).not.toContain('owes the wrong lender and wants one favor');
+  });
+
+  it('replaces a planned piece added again under its id, so a problem finish reports is fixed with the tools', async () => {
+    const endless = step({ ...(FINAL_STEP.input as object), endingId: undefined });
+    const { agent, requests } = scriptedAgent([
+      { kind: 'calls', calls: [...SETUP_CALLS, ...STEP_CALLS, endless, FINISH] },
+      { kind: 'calls', calls: [FINAL_STEP, FINISH] },
+    ]);
+    const { definition } = await build(agent);
+
+    expect(toolResults(requests[1]!.transcript)).toContain('error: q_kettle: terminal step s_pay has no ending');
+    expect(definition.steps.map((s) => s.stepId)).toEqual(['s_ask', 's_fetch', 's_pay']);
+    expect(definition.steps[2]).toMatchObject({ endingId: 'e_paid' });
   });
 
   it('names every place it commits and moves a story onto a venue that staffs its character', async () => {
@@ -262,11 +296,12 @@ describe('QuestlineTranslator', () => {
     const result = await new QuestlineTranslator().translate({ assignment: ASSIGNMENT, ports: { plan: plan.port, build: agent }, ...fixtureDeps() });
 
     expect(plan.prompts).toHaveLength(1);
-    expect(plan.prompts[0]!.system).toContain('Question yourself');
+    expect(plan.prompts[0]!.system).toContain('Write the plan in these sections');
     expect(plan.prompts[0]!.system).toContain('## Manifest');
     expect(plan.prompts[0]!.prompt).toContain('owes the wrong lender and wants one favor');
     expect(plan.prompts[0]!.prompt).toContain('Static Cafe (coffee shop)');
     expect(plan.prompts[0]!.prompt).not.toMatch(/parcelId|districtId/);
+    expect(plan.prompts[0]!.system).toContain('# Step catalog');
     expect(result.plan).toBe(PLAN);
     expect(requests[0]!.prompt).toContain(PLAN);
     expect(result.definition.id).toBe('q_kettle');

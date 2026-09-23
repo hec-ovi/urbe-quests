@@ -33,7 +33,7 @@ export class TranslationPlanner {
     }).trim();
     const { value, raw } = await completeWithRepair({
       llm: input.llm,
-      system: prompt('translate-plan.md'),
+      system: [prompt('translate-plan.md'), prompt('step-catalog.md')].join('\n\n'),
       prompt: body,
       parse: parsePlanManifest,
       repair: (problems) => prompt('translate-plan-repair.md', { shortfalls: problems.map((p) => `- ${p}`).join('\n') }),

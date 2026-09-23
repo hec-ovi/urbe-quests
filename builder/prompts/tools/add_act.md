@@ -1,1 +1,1 @@
-Add an act: a movement of the questline.
+Add one act from the plan: a movement of the questline that groups its steps; each step joins an act through its actId. actId must be one of the manifest's acts; any other id is refused. Give the act's title and a summary of what it is about underneath its events and how it turns.

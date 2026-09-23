@@ -1,1 +1,1 @@
-Applied when the step completes. kinds: setFlag, clearFlag, simFlag (op: resign, promote, die, custom)
+Applied when the step completes. setFlag and clearFlag take flag, a quest flag name. simFlag takes roleId and op and pushes a story consequence into the simulation for the person cast in that role: op.kind is resign, promote (optional toParcelId, a parcel from the world catalog), die, or custom (tag, a short label).

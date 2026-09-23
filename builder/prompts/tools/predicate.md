@@ -1,1 +1,1 @@
-Pure condition. kinds: flagSet, flagNotSet, stepDone, roleAlive, roleOnDuty
+A pure condition over quest state, checked without side effects. flagSet and flagNotSet take flag; stepDone takes stepId, a step from the plan; roleAlive and roleOnDuty take roleId, a role from the plan.

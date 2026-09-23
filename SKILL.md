@@ -1,4 +1,4 @@
-# Quests API 0.10.0
+# Quests API
 
 Quests writes narrative with injected agents, adapts it into typed quests, runs the rules in code and prepares Engine handoffs.
 

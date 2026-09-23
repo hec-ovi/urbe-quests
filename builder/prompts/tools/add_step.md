@@ -1,6 +1,6 @@
 ## description
 
-Add a step. Write the narrative and the stake first, then the mechanics. Every step names the role who wants it. Steps connect through next edges; a step with no edges is terminal and needs an endingId. Mark starting steps with entry: true.
+Add a step. Write the narrative and the stake first, then the mechanics. Every step names the role who wants it. Steps connect through next edges; a step with no edges is terminal and needs an endingId. Mark starting steps with entry: true. Calling it again with a stepId already added replaces that step.
 
 ## narrative
 
@@ -24,7 +24,23 @@ For talk targets, author the conversation the player actually reads: opening in 
 
 ## target
 
-The typed objective. Use the exact fields in the step catalog. Investigation, rescue, escort, access, hacking, sabotage, and transportation require a completionFlag set by the step effects.
+The typed objective: kind plus the fields that kind takes. Every place (place, from, to) holds exactly one parcelId, districtId, stationId or stopId from the world catalog.
+- goto: place.
+- observe: districtId.
+- talk: roleId; optional atParcelId, the parcel where the talk happens.
+- listen: roleIds, exactly two different roles; atParcelId.
+- pickup: itemId, a physical item that has an atParcelId.
+- deliver: itemId (physical), place.
+- steal: itemId (physical), fromRoleId.
+- assassinate: roleId.
+- work: atParcelId, role (the job the player takes there).
+- investigation: sceneId, evidenceId, evidenceItemId (an information item this step gives), subjectRoleIds (the roles the clue implicates; an empty list when none), place, completionFlag.
+- rescue: roleId, releaseTargetId, place, completionFlag.
+- escort: roleId, routeId, mode (follow-player or lead-player), from and to (two different places), completionFlag.
+- access: accessPointId, credentialItemId (a key, information or device item this step needs), place, completionFlag.
+- hacking, sabotage: targetId, place, completionFlag.
+- transportation: journeyId, mode (ride-hail, public-transit, vehicle, animal or aircraft), from and to (two different places), passengerRoleIds (roles travelling with the player; an empty list when the player travels alone), cargoItemIds (physical items this step needs; an empty list when none), completionFlag.
+sceneId, evidenceId, releaseTargetId, routeId, accessPointId, targetId and journeyId are short ids you author for this questline; the host's completion event repeats them exactly. Each completionFlag must be set by a setFlag in this step's effects.
 
 ## gives
 
@@ -40,11 +56,11 @@ Extra gates; usually empty.
 
 ## next
 
-Outgoing edges. Empty means terminal (set endingId).
+Outgoing edges. Each goes to a step from the plan (toStepId) and activates when every predicate in its when passes; an empty when always passes. The flow runs one way: no edge points to the step itself or back to a step that leads here, and every step must be reachable from an entry step. A step with edges names no endingId; with no edges the step is terminal and names its endingId.
 
 ## branching
 
-exclusive: only the first passing edge activates.
+parallel (the default): every passing edge activates. exclusive: only the first passing edge activates, so an edge with an empty when must come last; use it where the story diverges for good.
 
 ## entry
 

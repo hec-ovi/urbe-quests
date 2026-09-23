@@ -10,7 +10,7 @@ Each movement is made of passages. Every passage turns: something is revealed, g
 
 Characters come first. Before the movements, give every named character a card: what they are in this city (one of the kinds of people listed, in plain words: a barista, a precinct officer, an executive), their background, what they want and what they fear, and the tone of their lines with one or two example lines in their own voice. The city decides where people live and work and what their days look like; the story owns who they are inside.
 
-Size: this is a full story, not a synopsis. At least {{characters}} named characters and at least {{passagesPerMovement}} passages in each movement; more of either is welcome whenever the story asks for it. A thin story fails no matter how well it is formatted.
+Size: this is a full story, not a synopsis. At least {{characters}} named characters and at least {{passagesPerMovement}} passages in each movement; more of either is welcome whenever the story asks for it.
 
 Ground everything in the named places you are given, used the way locals would say them. Nothing in the story may depend on knowledge the city does not contain. Never mention system ids, coordinates or numbers about the city.
 

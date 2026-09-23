@@ -10,6 +10,7 @@ import type {
   QuestlineDefinition,
   QuestRole,
   QuestStep,
+  StepTarget,
 } from '../flow/schema.js';
 import { MANIFEST_KINDS, manifestSize, type ManifestKind, type PlanManifest } from './PlanManifest.js';
 
@@ -27,6 +28,26 @@ export interface DraftStamp {
 export class DraftError extends Error {}
 
 const SINGULAR: Record<ManifestKind, string> = { roles: 'role', items: 'item', acts: 'act', endings: 'ending', steps: 'step' };
+
+/** The fields each target kind needs; a target missing one is refused before any check reads it. */
+const TARGET_FIELDS: Record<StepTarget['kind'], string[]> = {
+  goto: ['place'],
+  observe: ['districtId'],
+  talk: ['roleId'],
+  listen: ['roleIds', 'atParcelId'],
+  pickup: ['itemId'],
+  deliver: ['itemId', 'place'],
+  steal: ['itemId', 'fromRoleId'],
+  assassinate: ['roleId'],
+  work: ['atParcelId', 'role'],
+  investigation: ['sceneId', 'evidenceId', 'evidenceItemId', 'subjectRoleIds', 'place', 'completionFlag'],
+  rescue: ['roleId', 'releaseTargetId', 'place', 'completionFlag'],
+  escort: ['roleId', 'routeId', 'mode', 'from', 'to', 'completionFlag'],
+  access: ['accessPointId', 'credentialItemId', 'place', 'completionFlag'],
+  hacking: ['targetId', 'place', 'completionFlag'],
+  sabotage: ['targetId', 'place', 'completionFlag'],
+  transportation: ['journeyId', 'mode', 'from', 'to', 'passengerRoleIds', 'cargoItemIds', 'completionFlag'],
+};
 
 export class QuestlineDraft {
   private def: QuestlineDefinition | undefined;
@@ -57,49 +78,50 @@ export class QuestlineDraft {
 
   addRole(role: QuestRole): string {
     const def = this.current();
-    this.accept('roles', role.roleId, def.roles.map((r) => r.roleId));
+    this.accept('roles', role.roleId);
     this.rejectAudit(this.audit.roleProblems(role));
-    def.roles.push(role);
-    return `role ${role.roleId} added; ${this.status()}`;
+    const replaced = put(def.roles, role, (r) => r.roleId === role.roleId);
+    return `role ${role.roleId} ${verb(replaced)}; ${this.status()}`;
   }
 
   addItem(item: QuestItem): string {
     const def = this.current();
-    this.accept('items', item.itemId, def.items.map((i) => i.itemId));
+    this.accept('items', item.itemId);
     this.rejectAudit(this.audit.itemProblems(item));
-    def.items.push(item);
-    return `item ${item.itemId} added; ${this.status()}`;
+    const replaced = put(def.items, item, (i) => i.itemId === item.itemId);
+    return `item ${item.itemId} ${verb(replaced)}; ${this.status()}`;
   }
 
   addFact(fact: QuestFact): string {
     const def = this.current();
-    if (def.facts.some((f) => f.factId === fact.factId)) throw new DraftError(`duplicate fact id ${fact.factId}`);
     const problems: string[] = [];
     this.reference('roles', fact.roleId, problems);
     if (problems.length > 0) throw new DraftError(`fact ${fact.factId}: ${problems.join('; ')}`);
     if (fact.gateFlag !== undefined) this.declareFlag(fact.gateFlag);
-    def.facts.push(fact);
-    return `fact ${fact.factId} added`;
+    const replaced = put(def.facts, fact, (f) => f.factId === fact.factId);
+    return `fact ${fact.factId} ${verb(replaced)}`;
   }
 
   addAct(act: QuestAct): string {
     const def = this.current();
-    this.accept('acts', act.actId, def.acts.map((a) => a.actId));
-    def.acts.push(act);
-    return `act ${act.actId} added; ${this.status()}`;
+    this.accept('acts', act.actId);
+    const replaced = put(def.acts, act, (a) => a.actId === act.actId);
+    return `act ${act.actId} ${verb(replaced)}; ${this.status()}`;
   }
 
   addEnding(ending: QuestEnding): string {
     const def = this.current();
-    this.accept('endings', ending.endingId, def.endings.map((e) => e.endingId));
-    def.endings.push(ending);
-    return `ending ${ending.endingId} added; ${this.status()}`;
+    this.accept('endings', ending.endingId);
+    const replaced = put(def.endings, ending, (e) => e.endingId === ending.endingId);
+    return `ending ${ending.endingId} ${verb(replaced)}; ${this.status()}`;
   }
 
   addStep(step: QuestStep & { entry?: boolean }): string {
     const def = this.current();
-    this.accept('steps', step.stepId, def.steps.map((s) => s.stepId));
+    this.accept('steps', step.stepId);
     const { entry, ...rest } = step;
+    const missing = this.missingFields(rest);
+    if (missing.length > 0) throw new DraftError(`step ${rest.stepId} not added: ${missing.join('; ')}`);
     const problems = [...this.stepProblems(rest), ...this.audit.stepProblems(rest)];
     if (problems.length > 0) throw new DraftError(`step ${rest.stepId} not added: ${problems.join('; ')}`);
     for (const p of [...rest.conditions, ...rest.next.flatMap((e) => e.when)]) {
@@ -108,9 +130,11 @@ export class QuestlineDraft {
     for (const effect of rest.effects) {
       if (effect.kind === 'setFlag' || effect.kind === 'clearFlag') this.declareFlag(effect.flag);
     }
-    def.steps.push(rest);
-    if (entry === true) def.entryStepIds.push(rest.stepId);
-    return `step ${rest.stepId} added${entry === true ? ' (entry)' : ''}; ${this.status()}`;
+    const replaced = put(def.steps, rest, (s) => s.stepId === rest.stepId);
+    const listed = def.entryStepIds.indexOf(rest.stepId);
+    if (entry === true && listed < 0) def.entryStepIds.push(rest.stepId);
+    if (entry !== true && listed >= 0) def.entryStepIds.splice(listed, 1);
+    return `step ${rest.stepId} ${verb(replaced)}${entry === true ? ' (entry)' : ''}; ${this.status()}`;
   }
 
   /** Planned pieces not yet added, by kind. */
@@ -169,9 +193,8 @@ export class QuestlineDraft {
     return `${committed} of ${planned} planned pieces in`;
   }
 
-  /** An id may enter only when the plan lists it and it is not in yet. */
-  private accept(kind: ManifestKind, id: string, present: string[]): void {
-    if (present.includes(id)) throw new DraftError(`duplicate ${SINGULAR[kind]} id ${id}`);
+  /** An id may enter only when the plan lists it; adding it again replaces the piece already in. */
+  private accept(kind: ManifestKind, id: string): void {
     if (!this.manifest[kind].includes(id)) throw new DraftError(`${SINGULAR[kind]} ${id} is not in the plan; ${this.plannedLine(kind)}`);
   }
 
@@ -184,6 +207,16 @@ export class QuestlineDraft {
     const missing = this.missing()[kind];
     const planned = `planned ${kind}: ${this.manifest[kind].join(', ') || 'none'}`;
     return missing.length > 0 ? `${planned}; not yet added: ${missing.join(', ')}` : planned;
+  }
+
+  /** Fields the step's target and effects need before any other check can read them. */
+  private missingFields(step: QuestStep): string[] {
+    const target = step.target as unknown as Record<string, unknown>;
+    const missing = TARGET_FIELDS[step.target.kind].filter((field) => target[field] === undefined).map((field) => `target.${field} is missing`);
+    step.effects.forEach((effect, i) => {
+      if (effect.kind === 'simFlag' && effect.op === undefined) missing.push(`effects[${i}].op is missing`);
+    });
+    return missing;
   }
 
   private stepProblems(step: QuestStep): string[] {
@@ -225,3 +258,13 @@ export class QuestlineDraft {
     if (!def.flags.includes(flag)) def.flags.push(flag);
   }
 }
+
+/** Puts a piece in place of the one with its id, or at the end; true when it replaced one. */
+function put<T>(pieces: T[], piece: T, same: (held: T) => boolean): boolean {
+  const at = pieces.findIndex(same);
+  if (at >= 0) pieces[at] = piece;
+  else pieces.push(piece);
+  return at >= 0;
+}
+
+const verb = (replaced: boolean) => (replaced ? 'replaced' : 'added');
