@@ -1,6 +1,7 @@
 /** Builds per-person context from Simulation, quest facts and recorded conversation. */
 
 import { QuestError } from '../errors.js';
+import { stripCues } from '../flow/cues.js';
 import { promptLoader } from '../prompts.js';
 import type { QuestlineRuntime } from '../flow/QuestlineRuntime.js';
 import type { QuestRole } from '../flow/schema.js';
@@ -83,14 +84,14 @@ export class DialogContextService {
   }
 
   /**
-   * Remembers one completed exchange: both turns are stored before this
-   * returns. The returned promise settles when any fold the exchange started
+   * Remembers one completed exchange, the reply without its cues: both turns
+   * are stored before this returns. The returned promise settles when any fold the exchange started
    * has written its note, so a host replies first and awaits or catches it later.
    */
   recordExchange(npcId: string, exchange: DialogExchange): Promise<void> {
     return this.memoryStore.record(npcId, [
       { speaker: 'player', text: exchange.line, atMin: exchange.atMin },
-      { speaker: 'npc', text: exchange.reply, atMin: exchange.atMin },
+      { speaker: 'npc', text: stripCues(exchange.reply), atMin: exchange.atMin },
     ]);
   }
 

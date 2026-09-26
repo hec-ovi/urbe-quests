@@ -230,9 +230,13 @@ describe('quest dialogue runtime', () => {
 });
 
 describe('authored dialogue validation', () => {
-  it('accepts valid dialogue and legacy steps with no dialogue', () => {
+  it('accepts valid dialogue, NPC lines with cues and legacy steps with no dialogue', () => {
     const validator = new FlowValidator();
     expect(() => validator.validate(definition())).not.toThrow();
+    const cued = definition();
+    cued.steps[0]!.dialogue!.opening = '[sigh] We need to talk.';
+    cued.steps[0]!.dialogue!.choices[1]!.reply = 'Then it is settled. [whisper] Tell no one.';
+    expect(() => validator.validate(cued)).not.toThrow();
     const legacy = definition();
     for (const step of legacy.steps) delete step.dialogue;
     expect(() => validator.validate(legacy)).not.toThrow();
@@ -246,6 +250,9 @@ describe('authored dialogue validation', () => {
     { name: 'blank choice id', change: (step) => { step.dialogue!.choices[0]!.id = ' '; } },
     { name: 'blank player text', change: (step) => { step.dialogue!.choices[0]!.text = ' '; } },
     { name: 'blank NPC reply', change: (step) => { step.dialogue!.choices[0]!.reply = ' '; } },
+    { name: 'an opening of cues alone', change: (step) => { step.dialogue!.opening = '[sigh] '; } },
+    { name: 'a stage direction in a reply', change: (step) => { step.dialogue!.choices[0]!.reply = 'Fine. [nods]'; } },
+    { name: 'a cue in the player text', change: (step) => { step.dialogue!.choices[0]!.text = '[sigh] Why?'; } },
     { name: 'no committing choice', change: (step) => { step.dialogue!.choices[1]!.completesStep = false; } },
     { name: 'dialogue on a non-talk step', change: (step) => { step.target = { kind: 'observe', districtId: 'd1' }; } },
   ])('rejects $name', ({ change }) => {

@@ -1,11 +1,13 @@
 /**
- * Contract-surface tests for Converse and the reply cleaner, over fake model
- * ports: cleaned text replies, streamed deltas, offers from tool calls in the
- * same request, the spoken follow-up after a tool-only answer, and failures.
+ * Contract-surface tests for Converse, the reply cleaner and inline cues, over
+ * fake model ports: cleaned text replies, streamed deltas, offers from tool
+ * calls in the same request, the spoken follow-up after a tool-only answer,
+ * and failures.
  */
 
 import { describe, expect, it } from 'vitest';
 import type { ChatDelta, ChatRequest } from '../../ports/chat.js';
+import { CUES, stripCues } from '../../flow/cues.js';
 import type { LLMPort, StreamingLLMPort } from '../../ports/llm.js';
 import { Converse, type ReplyEvent } from '../Converse.js';
 import { cleanReply, ReplyCleaner } from '../ReplyCleaner.js';
@@ -67,6 +69,13 @@ describe('cleanReply', () => {
     ['<|im_start|>assistant\nFine.', 'Fine.'],
     ['Fine.<|im_end|><|im_start|>user\nHi', 'Fine.'],
     [`A <|${'x'.repeat(40)}|> stays.`, `A <|${'x'.repeat(40)}|> stays.`],
+    ['[sigh] Fine. [Laughs] Go on.', '[sigh] Fine. [laugh] Go on.'],
+    ['Mara: [whispering] Not here.', '[whisper] Not here.'],
+    ['[leans in] Listen [smiles]. Now.\n[nods]\nGo.', 'Listen. Now.\nGo.'],
+    ['Pier [7], then [the long way round the flooded docks].', 'Pier [7], then [the long way round the flooded docks].'],
+    ['[sigh] "Get out." [cry]', '[sigh] Get out. [cry]'],
+    ['"Hi." [sigh] Come in.', '"Hi." [sigh] Come in.'],
+    ['Wait [sig', 'Wait [sig'],
   ];
 
   it('keeps only the words the NPC says', () => {
@@ -81,6 +90,14 @@ describe('cleanReply', () => {
     }
   });
 
+  it('never splits a cue across the pieces it streams', () => {
+    const raw = 'No. [sigh] Maybe [whisper] later. [laugh]';
+    const cleaner = new ReplyCleaner(NAMES);
+    const pieces = [...raw].map((char) => cleaner.push(char)).concat(cleaner.end());
+    expect(pieces.join('')).toBe(raw);
+    expect(pieces.filter((piece) => /\[[a-z]*$|^[a-z]*\]/.test(piece))).toEqual([]);
+  });
+
   it('streams to exactly the whole-text result however the text is split', () => {
     for (const [raw, clean] of cases) {
       for (let at = 0; at <= raw.length; at++) {
@@ -90,6 +107,15 @@ describe('cleanReply', () => {
       const cleaner = new ReplyCleaner(NAMES);
       expect([...raw].map((char) => cleaner.push(char)).join('') + cleaner.end()).toBe(clean);
     }
+  });
+});
+
+describe('stripCues', () => {
+  it('shows a line without its cues and leaves every other bracket alone', () => {
+    expect(CUES).toEqual(['laugh', 'sigh', 'whisper', 'angry', 'gasp', 'cry']);
+    expect(stripCues('[sigh] Fine. [laugh] Go on. [cry]')).toBe('Fine. Go on.');
+    expect(stripCues('Fine [whisper].\n[Angry] Out! [gasp] "[cry] Why," she said.')).toBe('Fine.\nOut! "Why," she said.');
+    expect(stripCues('Pier [7] [leans in].')).toBe('Pier [7] [leans in].');
   });
 });
 
@@ -108,13 +134,26 @@ describe('Converse', () => {
     expect(seen[0]?.system).toBe('WORLD LAYER\n\nTYPE LAYER\n\nNPC LAYER\n\nTURNS LAYER');
     expect(seen[0]?.prompt).toContain('"Where is the lift?"');
     expect(seen[0]?.prompt).toContain('Answer as Mara Voss');
+    expect(seen[0]?.prompt).toContain('[laugh] [sigh] [whisper] [angry] [gasp] [cry]');
   });
 
   it('rejects a reply with nothing left to say', async () => {
     await expect(new Converse({ complete: async () => '<think>…</think>  ' }).reply(input))
       .rejects.toMatchObject({ code: 'E_LLM' });
+    await expect(new Converse({ complete: async () => ' [sigh] ' }).reply(input)).rejects.toMatchObject({ code: 'E_LLM' });
     const { port } = streamingPort([{ content: '<think>…</think>' }]);
     await expect(events(new Converse(port).replyStream(input))).rejects.toMatchObject({ code: 'E_LLM' });
+  });
+
+  it('streams a reply with its cues whole, however the model splits them', async () => {
+    const { port } = streamingPort([{ content: 'Not tonight, friend. [si' }, { content: 'ghs] Go' }, { content: ' on.' }]);
+    const seen = await events(new Converse(port).replyStream(input));
+    expect(seen).toEqual([
+      { type: 'delta', text: 'Not tonight, friend.' },
+      { type: 'delta', text: ' [sigh] Go' },
+      { type: 'delta', text: ' on.' },
+      { type: 'done', reply: 'Not tonight, friend. [sigh] Go on.', offers: [] },
+    ]);
   });
 
   it('streams cleaned text, then the offers its tool calls make, then the whole reply', async () => {
@@ -175,6 +214,17 @@ describe('Converse', () => {
       { role: 'tool', tool_call_id: 'call_0', content: expect.stringContaining('the player, who decides') },
       { role: 'tool', tool_call_id: 'c2', content: expect.stringContaining('not something you can propose') },
     ]);
+  });
+
+  it('keeps a cue the tool call came with in front of the spoken follow-up', async () => {
+    const { port, requests } = streamingPort(
+      [{ content: '[sigh]' }, { tool_calls: [{ index: 0, id: 'c1', function: { name: 'follow_player', arguments: '{}' } }] }],
+      [{ content: 'Fine.' }],
+    );
+    const seen = await events(new Converse(port).replyStream({ ...input, offers: { follow: true } }));
+    expect(seen.filter((event) => event.type === 'delta')).toEqual([{ type: 'delta', text: '[sigh]' }, { type: 'delta', text: ' Fine.' }]);
+    expect(seen.at(-1)).toEqual({ type: 'done', reply: '[sigh] Fine.', offers: [{ kind: 'follow' }] });
+    expect(requests[1]!.messages[2]).toMatchObject({ role: 'assistant', content: '[sigh]' });
   });
 
   it('offers nothing for a turn whose spoken reply never came', async () => {

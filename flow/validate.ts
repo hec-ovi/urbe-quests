@@ -1,6 +1,7 @@
 /** Structural validation of a QuestlineDefinition. Throws E_INVALID_FLOW. */
 
 import { QuestError } from '../errors.js';
+import { CUE_LIST, hasTag, stripCues } from './cues.js';
 import type { PlaceTarget, Predicate, QuestItem, QuestlineDefinition, QuestStep, TimeWindow } from './schema.js';
 import { namedStepTime } from './timeWords.js';
 
@@ -101,19 +102,25 @@ export class FlowValidator {
     const dialogue = step.dialogue;
     if (dialogue === undefined) return;
     if (step.target.kind !== 'talk') fail(`step ${step.stepId}: dialogue requires a talk target`);
-    if (typeof dialogue.opening !== 'string' || dialogue.opening.trim().length === 0) {
-      fail(`step ${step.stepId}: dialogue has no opening`);
-    }
+    // An NPC line has words to say and may carry cues, but no other bracketed tag.
+    const npcLine = (line: unknown, what: string): void => {
+      const words = typeof line === 'string' ? stripCues(line) : '';
+      if (words.length === 0) fail(`step ${step.stepId}: dialogue has no ${what}`);
+      if (hasTag(words)) fail(`step ${step.stepId}: dialogue ${what} holds a bracketed tag that is no cue (${CUE_LIST})`);
+    };
+    npcLine(dialogue.opening, 'opening');
     if (!Array.isArray(dialogue.choices) || dialogue.choices.length === 0) {
       fail(`step ${step.stepId}: dialogue has no choices`);
     }
     this.checkUnique(dialogue.choices.map((choice) => choice.id), `dialogue choice in ${step.stepId}`, fail);
     for (const choice of dialogue.choices) {
-      for (const key of ['id', 'text', 'reply'] as const) {
+      for (const key of ['id', 'text'] as const) {
         if (typeof choice[key] !== 'string' || choice[key].trim().length === 0) {
           fail(`step ${step.stepId}: dialogue choice has no ${key}`);
         }
       }
+      if (hasTag(choice.text)) fail(`step ${step.stepId}: the player's text in choice ${choice.id} holds a bracketed tag`);
+      npcLine(choice.reply, `reply in choice ${choice.id}`);
       if (typeof choice.completesStep !== 'boolean') fail(`step ${step.stepId}: dialogue choice has no completion decision`);
     }
     if (!dialogue.choices.some((choice) => choice.completesStep)) {

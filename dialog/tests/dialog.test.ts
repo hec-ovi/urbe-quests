@@ -240,10 +240,10 @@ describe('DialogContextService', () => {
     expect(segment(context, 'turns')).toContain('The conversation so far:\nPlayer: e\nYou: f');
   });
 
-  it('keeps a note shaped like a transcript and treats an empty note as a failed fold', async () => {
+  it('remembers replies without cues, keeps a note shaped like a transcript and treats an empty note as a failed fold', async () => {
     const notes = ['<think>nothing</think>', 'Player: asked about the lift.\nNPC: said it is broken.'];
     const { service, informerId } = setup({ memory: { tailSize: 2, foldSize: 2 }, llm: { complete: async () => notes.shift() ?? 'Later.' } });
-    await service.recordExchange(informerId, { line: 'x', reply: 'y', atMin: TUE_10 });
+    await service.recordExchange(informerId, { line: 'x', reply: '[sigh] y', atMin: TUE_10 });
     await expect(service.recordExchange(informerId, { line: 'z', reply: 'w', atMin: TUE_10 })).rejects.toMatchObject({ code: 'E_LLM' });
     expect(service.serializeMemory()[informerId]!.turns.map((turn) => turn.text)).toEqual(['x', 'y', 'z', 'w']);
 

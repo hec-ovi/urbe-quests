@@ -1,4 +1,4 @@
-# Quests 0.11.1
+# Quests 0.12.0
 
 Writes stories through injected agents, adapts them into typed quests, runs their rules in code, and prepares Engine handoffs and scoped NPC dialogue.
 
@@ -18,7 +18,8 @@ The Node library entry is [index.ts](index.ts), compiled to `dist/index.js`; bro
 | `QuestlineRuntime.dialogueFor`, `chooseDialogue` | Exact active step, resolved NPC, current time; declared choice ID for selection | [Authored dialogue and explicit choice result](flow/CONTRACT.md), offline, scoped to one step |
 | `EngineHandoff.assemble(questlines, input?)` | [Quest set](creation/schema/questline-set.schema.json), [bindings and capabilities](handoff/schema/handoff-input.schema.json) | [HandoffBundle](handoff/schema.ts), definitions, objectives, investigations, assets and bindings |
 | `DialogContextService.contextFor(npcId, timeMin, { guide? })`, `recordExchange` | [Context inputs](dialog/CONTRACT.md#in), optional guided place, completed exchange | [Scoped segments and memory](dialog/schema.ts) |
-| `Converse.reply`, `Converse.replyStream`, `cleanReply` | [Reply input](dialog/Converse.ts), optional companion offers and abort signal, [LLMPort or StreamingLLMPort](ports/llm.ts) | Cleaned reply string, or streamed `delta`, `offer` and `done` [events](dialog/CONTRACT.md#out) |
+| `Converse.reply`, `Converse.replyStream`, `cleanReply` | [Reply input](dialog/Converse.ts), optional companion offers and abort signal, [LLMPort or StreamingLLMPort](ports/llm.ts) | Cleaned reply string with its inline cues, or streamed `delta`, `offer` and `done` [events](dialog/CONTRACT.md#out) |
+| `CUES`, `stripCues(text)` | An NPC line, free chat or authored, with [inline cues](flow/cues.ts) | The closed cue list `laugh, sigh, whisper, angry, gasp, cry`; the line as shown, cues removed and trimmed. On both entries |
 | `chatDeltas(body, onUsage?)`, `ChatToolCalls` | OpenAI-compatible `stream: true` response body, [chat shapes](ports/chat.ts) | Choice deltas in order and the reported token usage; whole tool calls in index order |
 | `WorldContextNormalizer.normalize`, fixture loaders | [World and type projections](world/types/named-world.ts), [world calls](world/CONTRACT.md) | [Normalized context](world/WorldContextNormalizer.ts), standalone world/story fixtures |
 
@@ -27,6 +28,8 @@ Creation warnings report failed side translations or unusable situations. Main/s
 Engine receives main definition first, then side definitions, without creation-time cast IDs. The game casts against its own Simulation, through `CastResolver`, which queries each role at the hour its own steps name. The CLI writes bundle **1.1** with the [eight filenames and counts](handoff/schema/quest-bundle.schema.json). Bundle 1.1 keeps its shape: an authored place gains `name` and a step gains an optional `window`, both additive. Saved state is unchanged; bundle version and package version are separate.
 
 An optional role `characterName { given, family }` carries the script's authored identity into player labels and scoped dialog without changing the resolved NPC, its simulation name, routine, family or saved history. Recorded `unreservedRoles` preserve their prior fixed names in this field while removing the reservation request. Dialog context and reply prompts use the same authored name; unnamed roles and bystanders keep generated names. The field is additive within bundle 1.1 and requires no saved-state migration.
+
+NPC lines carry emotion as inline cues from one closed list, `[laugh] [sigh] [whisper] [angry] [gasp] [cry]`, where the sound or manner happens: free-chat replies when the moment calls for one, and authored openings and replies. A voice host speaks the raw line; a screen shows `stripCues(line)`. Other bracketed tags are dropped from replies and refused in authored lines. Bundle 1.1 and saved-state shapes are unchanged.
 
 Talk steps may carry `dialogue { opening, choices: [{ id, text, reply, completesStep }] }`. The recorded Weir Line and all three side stories author every talk with character speech, informational questions and explicit commitments. `dialogueFor(stepId, npcId, timeMin)` is read-only; `chooseDialogue(stepId, npcId, choiceId, timeMin)` rechecks presence, items and gates and completes only the selected step. Opening, dismissing, free chat and informational replies never progress the quest. Authored talks reject raw `talkedTo`; legacy definitions retain that event for compatibility and receive deterministic fallback choices through the same dialogue API. This optional field stays within bundle 1.1 and changes neither step IDs nor saved-state shape.
 

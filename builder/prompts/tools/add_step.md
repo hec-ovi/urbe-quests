@@ -20,7 +20,7 @@ The role whose want this step serves; they speak the stake to the player.
 
 ## dialogue
 
-For talk targets, author the conversation the player actually reads: opening in the named character's voice, then choices with unique id, the player's spoken text, the NPC's reply, and completesStep. Include a question with completesStep false and an explicit commitment with completesStep true. The commitment reply explains the next lead or the ending's consequences. Do not copy the objective or retrospective narrative into the opening. All completing choices on a step have that step's outcome; represent different outcomes with separate graph steps, and name the consequences in their choices. Opening, typing free chat, or closing the conversation never commits a choice. No dialogue on other mechanic targets.
+For talk targets, author the conversation the player actually reads: opening in the named character's voice, then choices with unique id, the player's spoken text, the NPC's reply, and completesStep. Include a question with completesStep false and an explicit commitment with completesStep true. The commitment reply explains the next lead or the ending's consequences. Do not copy the objective or retrospective narrative into the opening. All completing choices on a step have that step's outcome; represent different outcomes with separate graph steps, and name the consequences in their choices. Opening, typing free chat, or closing the conversation never commits a choice. The NPC's lines are voiced: the opening and a reply may carry an inline cue where the sound belongs, one of {{cues}} and no other bracketed word, and only where the moment calls for it; the player's text carries none. No dialogue on other mechanic targets.
 
 ## target
 

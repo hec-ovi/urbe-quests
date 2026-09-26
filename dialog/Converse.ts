@@ -1,4 +1,5 @@
 import { QuestError } from '../errors.js';
+import { CUE_LIST, stripCues } from '../flow/cues.js';
 import { promptLoader } from '../prompts.js';
 import { ChatToolCalls, type ChatMessage, type ChatRequest, type ChatToolCall } from '../ports/chat.js';
 import type { LLMPort, StreamingLLMPort } from '../ports/llm.js';
@@ -24,7 +25,7 @@ export interface ConverseStreamInput extends ConverseInput {
   signal?: AbortSignal;
 }
 
-/** What a streamed reply yields: text as it is spoken, then each offer the NPC made, then the whole reply. */
+/** What a streamed reply yields: text as it is spoken, with its cues, then each offer the NPC made, then the whole reply. */
 export type ReplyEvent =
   | { type: 'delta'; text: string }
   | ({ type: 'offer' } & CompanionOffer)
@@ -68,15 +69,18 @@ export class Converse {
     }
 
     const made = calls.list();
-    if (reply.length === 0 && made.length > 0) {
+    if (stripCues(reply).length === 0 && made.length > 0) {
       const answered: ChatMessage[] = [
         ...messages,
-        { role: 'assistant', content: '', tool_calls: made.map(wellFormed) },
+        { role: 'assistant', content: reply, tool_calls: made.map(wellFormed) },
         ...made.map((call) => answer(call, input.offers)),
       ];
+      // A cue the first answer made stays in front of the words, a space apart.
+      let gap = reply.length > 0 ? ' ' : '';
       for await (const text of said(llm, { messages: answered }, names, new ChatToolCalls(), input.signal)) {
-        reply += text;
-        yield { type: 'delta', text };
+        reply += gap + text;
+        yield { type: 'delta', text: gap + text };
+        gap = '';
       }
     }
     spoken(reply);
@@ -95,7 +99,8 @@ function request(input: ConverseInput): { system: string; prompt: string; names:
   const system = input.context.segments.map((segment) => segment.text).join('\n\n');
   const character = input.context.characterName;
   const name = character ? `${character.given} ${character.family}` : input.name;
-  return { system, prompt: prompts('reply.md', { name, line: input.line }).trim(), names: [name, name.split(' ')[0]!] };
+  const prompt = prompts('reply.md', { name, line: input.line, cues: CUE_LIST }).trim();
+  return { system, prompt, names: [name, name.split(' ')[0]!] };
 }
 
 /** The cleaned text of one streamed request, piece by piece; its tool calls land in `calls`. */
@@ -133,7 +138,8 @@ function answer(call: ChatToolCall, options: OfferOptions | undefined): ChatMess
   return { role: 'tool', tool_call_id: call.id, content: prompts(result) };
 }
 
+/** The reply, when it has words to say besides its cues. */
 function spoken(reply: string): string {
-  if (reply.length === 0) throw new QuestError('E_LLM', 'the model gave no spoken reply');
+  if (stripCues(reply).length === 0) throw new QuestError('E_LLM', 'the model gave no spoken reply');
   return reply;
 }

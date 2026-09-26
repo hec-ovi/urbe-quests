@@ -2,7 +2,7 @@
 
 Quests writes narrative with injected agents, adapts it into typed quests, runs the rules in code and prepares Engine handoffs.
 
-Call the Node library at `dist/index.js` after `npm run build` (authoring, creation, dialog, handoff). Browser gameplay uses `dist/runtime.js` (definitions, runtime, cast, guidance). CLI calls are in [README.md](README.md#cli).
+Call the Node library at `dist/index.js` after `npm run build` (authoring, creation, dialog, handoff). Browser gameplay uses `dist/runtime.js` (definitions, runtime, cast, guidance, speech cues). CLI calls are in [README.md](README.md#cli).
 
 | Request | Fields and defaults | Response |
 | --- | --- | --- |

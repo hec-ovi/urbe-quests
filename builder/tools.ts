@@ -1,5 +1,6 @@
 /** Agent tools with narrative fields first and descriptions loaded from Markdown. */
 
+import { CUE_LIST } from '../flow/cues.js';
 import { promptLoader } from '../prompts.js';
 
 import type { AgentTool } from '../ports/llm.js';
@@ -176,7 +177,7 @@ export const BUILDER_TOOLS: AgentTool[] = [
         wantedByRoleId: { type: 'string', description: prompt('tools/add_step.md#wantedByRoleId').trim() },
         dialogue: {
           type: 'object',
-          description: prompt('tools/add_step.md#dialogue').trim(),
+          description: prompt('tools/add_step.md#dialogue', { cues: CUE_LIST }).trim(),
           additionalProperties: false,
           required: ['opening', 'choices'],
           properties: {
