@@ -86,7 +86,7 @@ const scene = (): InvestigationSceneRequest => ({
 const assetRequest = (): MissionAssetCreateRequest => ({
   contractVersion: '1.0', assetId: 'quest.archive.paper-log', family: 'document', seed: 41,
   purpose: 'Physical archive access log carried by the player',
-  dimensions: { width: 0.22, height: 0.01, depth: 0.3 },
+  dimensions: { width: 0.22, height: 0.015, depth: 0.3 },
   materials: [{ slot: 'surface', key: 'cyberpunk/fabric/mid', variantId: 'paper' }],
   requiredInteractions: ['inspect', 'read', 'take'],
   clearance: { approachDepth: 0.8, sideMargin: 0.2, overhead: 0.1 },
@@ -201,6 +201,10 @@ describe('EngineHandoff', () => {
     const incompatible = assetRequest();
     incompatible.requiredInteractions = ['hack'];
     expect(() => handoff.assemble(fixtureQuestlines, { missionAssetRequests: [incompatible] })).toThrowError(/incompatible interactions/);
+    // Engine's document clip is 8% of the height and 1 mm at least, so a 1 cm document cannot be built.
+    const thin = assetRequest();
+    thin.dimensions.height = 0.01;
+    expect(() => handoff.assemble(fixtureQuestlines, { missionAssetRequests: [thin] })).toThrowError(/dimensions do not fit document/);
 
     const request = assetRequest();
     const withScene = (missionItemBindings: { questId: string; itemId: string; assetId: string }[]) =>

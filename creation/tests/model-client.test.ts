@@ -65,12 +65,14 @@ describe('sample model client through its text and agent ports', () => {
     }
   });
 
-  it('rejects HTTP failures, provider stream errors and interrupted replies', async () => {
+  it('rejects an unreachable server, HTTP failures, provider stream errors and interrupted replies', async () => {
     const client = new OpenAICompatibleClient('fixture');
-    vi.mocked(fetch).mockResolvedValueOnce(new Response('unavailable', { status: 503 }))
+    vi.mocked(fetch).mockRejectedValueOnce(new TypeError('fetch failed', { cause: new Error('connect ECONNREFUSED 127.0.0.1:9') }))
+      .mockResolvedValueOnce(new Response('unavailable', { status: 503 }))
       .mockResolvedValueOnce(stream([{ error: { message: 'provider failed' } }]))
       .mockResolvedValueOnce(stream([event({ content: 'partial' })], false));
-    await expect(client.complete({ system: '', prompt: '' })).rejects.toThrow('503');
+    await expect(client.complete({ system: '', prompt: '' })).rejects.toThrow(/^cannot reach http:\/\/\S+\/chat\/completions: connect ECONNREFUSED 127\.0\.0\.1:9$/);
+    await expect(client.complete({ system: '', prompt: '' })).rejects.toThrow(/\/chat\/completions answered 503/);
     await expect(client.complete({ system: '', prompt: '' })).rejects.toThrow('provider failed');
     await expect(client.complete({ system: '', prompt: '' })).rejects.toThrow('ended before [DONE]');
   });

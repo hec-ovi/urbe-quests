@@ -1,6 +1,6 @@
 /** Sample text and agent ports over streaming Chat Completions. */
 
-import { Agent, fetch } from 'undici';
+import { Agent, fetch, type Response } from 'undici';
 import { toMessages } from './ChatMessages.js';
 import { readChatStream } from './ChatStream.js';
 import type { ChatMessage, ChatToolCall } from '../../ports/chat.js';
@@ -46,25 +46,36 @@ export class OpenAICompatibleClient implements LLMPort, AgentPort {
   }
 
   private async chat(messages: ChatMessage[], tools?: unknown[]): Promise<{ content?: string; tool_calls?: ChatToolCall[] }> {
-    const response = await fetch(`${BASE_URL}/chat/completions`, {
+    const response = await send('/chat/completions', {
       method: 'POST',
-      dispatcher,
       headers: { 'Content-Type': 'application/json', ...authHeader() },
       // llama.cpp answers one tool call per turn unless parallel calls are asked for; the builder takes several.
       body: JSON.stringify({ model: this.model, messages, stream: true, ...(tools !== undefined ? { tools, parallel_tool_calls: true } : {}) }),
     });
-    if (!response.ok) throw new Error(`${response.status} ${response.statusText}: ${await response.text()}`);
     return readChatStream(response.body);
   }
 
   private static async firstModel(): Promise<string> {
-    const response = await fetch(`${BASE_URL}/models`, { headers: authHeader(), dispatcher });
-    if (!response.ok) throw new Error(`${response.status} ${response.statusText}: ${await response.text()}`);
+    const response = await send('/models', { headers: authHeader() });
     const body = (await response.json()) as { data: { id: string }[] };
     const id = body.data[0]?.id;
     if (id === undefined) throw new Error(`no model listed at ${BASE_URL}`);
     return id;
   }
+}
+
+/** One request to the server; a failure names the address and why, never only undici's "fetch failed". */
+async function send(path: string, init: { method?: string; headers: Record<string, string>; body?: string }): Promise<Response> {
+  const url = `${BASE_URL}${path}`;
+  let response: Response;
+  try {
+    response = await fetch(url, { ...init, dispatcher });
+  } catch (error) {
+    const { message, cause } = error as { message?: string; cause?: { message?: string } };
+    throw new Error(`cannot reach ${url}: ${cause?.message ?? message}`, { cause: error });
+  }
+  if (!response.ok) throw new Error(`${url} answered ${response.status} ${response.statusText}: ${await response.text()}`);
+  return response;
 }
 
 /** A hosted OpenAI-compatible server wants its key; a local one ignores the header. */

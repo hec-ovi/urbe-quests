@@ -103,6 +103,12 @@ describe('QuestlineCreation', () => {
 
     expect(events[0]?.kind).toBe('script');
     expect(events.filter((e) => e.kind === 'build')).not.toHaveLength(0);
+    // Each plan lands before its build starts, whatever the build does next.
+    const at = (kind: string, questline: string) => events.findIndex((e) => e.kind === kind && 'questline' in e && e.questline === questline);
+    for (const questline of ['main', 'sit_1', 'sit_2', 'sit_3']) {
+      expect(at('plan', questline), questline).toBeGreaterThan(-1);
+      expect(at('plan', questline), questline).toBeLessThan(at('build', questline));
+    }
     expect(events.filter((e) => e.kind === 'questline').map((e) => e.kind === 'questline' && e.questline).sort())
       .toEqual(['main', 'sit_1', 'sit_2', 'sit_3']);
   });
@@ -256,6 +262,14 @@ describe('QuestlineCreation', () => {
     );
     await expect(run(refuses('The Weir Line'))).rejects.toThrowError(expect.objectContaining({ code: 'E_LLM' }));
   });
+
+  it('refuses a mechanics list naming no step kind, and open parcels that are empty or not in the world, before any model is asked', async () => {
+    const script = vi.fn(async () => RECORDING.script);
+    await expect(run({ script: { complete: script } }, { mechanics: ['goto', 'teleport'] })).rejects.toThrowError(/unknown step kind teleport/);
+    await expect(run({ script: { complete: script } }, { parcels: [] })).rejects.toThrowError(/parcels names no building/);
+    await expect(run({ script: { complete: script } }, { parcels: ['p0', 'nope1', 'nope2'] })).rejects.toThrowError(/parcels not in the world: nope1, nope2$/);
+    expect(script).not.toHaveBeenCalled();
+  });
 });
 
 describe('materialize entry', () => {
@@ -349,12 +363,6 @@ describe('mechanic allowlist on a recording', () => {
     expect(narrow.questlines).toHaveLength(3);
     expect(warnings).toContainEqual(expect.stringContaining('side quest sit_1 dropped'));
   });
-
-  it('refuses an allowlist naming no step kind before any model is asked', async () => {
-    const script = vi.fn(async () => RECORDING.script);
-    await expect(run({ script: { complete: script } }, { mechanics: ['goto', 'teleport'] })).rejects.toThrowError(/unknown step kind teleport/);
-    expect(script).not.toHaveBeenCalled();
-  });
 });
 
 describe('recorded pickup appearance templates', () => {
@@ -385,6 +393,9 @@ describe('recorded pickup appearance templates', () => {
       .toThrowError(/cannot use fabric material on its surface/);
     expect(() => checkMissionItemTemplates({ device: { ...device, requiredInteractions: ['inspect', 'use'] } }))
       .toThrowError(/cannot pick up: device/);
+    // The drive ridge would be under 1 mm, which Engine's creator refuses in every variant.
+    expect(() => checkMissionItemTemplates({ key: { ...device, dimensions: { ...device.dimensions, height: 0.01 } } }))
+      .toThrowError(/dimensions do not fit data-drive/);
   });
 
   it('uses quest and item identities, keeps explicit assets, and refuses unrenderable pickups', () => {

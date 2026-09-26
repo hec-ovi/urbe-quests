@@ -1,6 +1,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, dirname, resolve } from 'node:path';
-import type { HandoffBundle } from '../../handoff/schema.js';
+import { HandoffInputBoundary } from '../../handoff/HandoffInputBoundary.js';
+import type { HandoffBundle, HandoffInput } from '../../handoff/schema.js';
 
 export const HANDOFF_FILES = Object.freeze({
   hostCapabilities: 'host-capabilities.json',
@@ -33,8 +34,9 @@ export interface HandoffManifest {
   };
 }
 
-export function readHandoffInput(path: string | undefined): unknown {
-  return path === undefined ? {} : JSON.parse(readFileSync(resolve(path), 'utf8'));
+/** Explicit bindings and host capabilities from a file, checked at the handoff boundary before anything uses them. */
+export function readHandoffInput(path: string | undefined): HandoffInput {
+  return path === undefined ? {} : new HandoffInputBoundary().parse(JSON.parse(readFileSync(resolve(path), 'utf8')));
 }
 
 export function writeEngineHandoff(questlinesPath: string, bundle: HandoffBundle): HandoffManifest {

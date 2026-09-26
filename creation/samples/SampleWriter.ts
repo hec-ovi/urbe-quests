@@ -10,6 +10,9 @@ import { QuestlineSetValidator } from '../../flow/QuestlineSet.js';
 
 export type Log = (line: string) => void;
 
+/** A questline's file stem: `main`, or `side-<situation id>`. */
+const labelOf = (questline: string): string => (questline === 'main' ? 'main' : `side-${questline}`);
+
 export class SampleWriter {
   readonly path: string;
 
@@ -28,7 +31,7 @@ export class SampleWriter {
     new QuestlineSetValidator().validate(definitions);
     this.write('questlines.json', JSON.stringify(definitions, null, 2) + '\n');
     this.writeQuestline('main', result.main);
-    for (const side of result.side) this.writeQuestline(`side-${side.situationId}`, side);
+    for (const side of result.side) this.writeQuestline(labelOf(side.situationId), side);
   }
 
   private writeQuestline(label: string, result: { definition: CreationResult['main']['definition']; cast: CreationResult['main']['cast'] }): void {
@@ -49,6 +52,12 @@ export class SampleWriter {
         log(`situations: ${situations.length}${situations.length > 0 ? `, ${situations.map((s) => `${s.situationId} "${s.title}"`).join(', ')}` : ''}`);
         return;
       }
+      case 'plan': {
+        this.write(`${labelOf(event.questline)}.plan.md`, event.result.text);
+        const counts = Object.entries(event.result.manifest).map(([kind, ids]) => `${ids.length} ${kind}`);
+        log(`plan ${event.questline}: ${counts.join(', ')}`);
+        return;
+      }
       case 'build': {
         const b = event.build;
         log(`build ${event.questline} round ${b.round}/${b.maxRounds}: ${b.note} (${b.committed}/${b.planned} planned pieces)`);
@@ -56,10 +65,8 @@ export class SampleWriter {
         return;
       }
       case 'questline': {
-        const label = event.questline === 'main' ? 'main' : `side-${event.questline}`;
         const { definition, cast } = event.result;
-        this.write(`${label}.plan.md`, event.result.plan);
-        this.writeQuestline(label, { definition, cast });
+        this.writeQuestline(labelOf(event.questline), { definition, cast });
         log(
           `questline ${event.questline} "${definition.title}": ${definition.steps.length} steps, ${definition.roles.length} roles, ${definition.items.length} items, ${definition.endings.length} endings`,
         );

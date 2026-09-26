@@ -1,4 +1,4 @@
-# urbe-quests 0.13.0
+# urbe-quests 0.13.1
 
 Writes a story from city context, adapts it to typed gameplay, and runs quest rules in code. Models are injected per creative stage. Engine receives definitions, objectives, asset requests and exact interaction bindings.
 
@@ -28,6 +28,6 @@ npm run materialize -- <recording.json> <profile> <atlas-or-named-world.json> <n
 npm run bundle -- <sample-directory> [<questlines.json>] [<handoff-input.json>]
 ```
 
-`author` streams text and tool calls from a live model without output caps, logs each stage to stderr, and writes the stages, `recording.json`, `meta.json` and a materialized bundle under `--out`. It takes `LLM_BASE_URL` (default `http://localhost:8080/v1`), `LLM_MODEL` (default first listed model), and optional `LLM_API_KEY`. `--mechanics` limits the story to the step kinds the host can play. Replay and materialize run without a model and replay a recording's mechanics. Named input retains its metadata; raw Atlas input receives deterministic fallback district labels. `--parcels` names the buildings the story may use (`p0,p3,p12`, or `@file` holding a JSON array or a plain list), so a host that opens part of the city gets a bundle that only names buildings the player can walk into.
+`author` streams text and tool calls from a live model without output caps, checks every input before it asks the model server anything, logs each stage to stderr, and writes the stages, `recording.json`, `meta.json` and a materialized bundle under `--out`. It takes `LLM_BASE_URL` (default `http://localhost:8080/v1`), `LLM_MODEL` (default first listed model), and optional `LLM_API_KEY`. `--mechanics` limits the story to the step kinds the host can play. Replay and materialize run without a model and replay a recording's mechanics. Named input retains its metadata; raw Atlas input receives deterministic fallback district labels. `--parcels` names the buildings the story may use (`p0,p3,p12`, or `@file` holding a JSON array or a plain list), so a host that opens part of the city gets a bundle that only names buildings the player can walk into.
 
 Engine bundle **1.1** has [eight stable JSON files](handoff/CONTRACT.md#out). Place names and step windows are additive fields inside it. The host declares supported transportation modes. Quests validates semantic bindings; Engine validates physical placement and playability. [Creation](creation/CONTRACT.md) documents CLI defaults and partial side results.

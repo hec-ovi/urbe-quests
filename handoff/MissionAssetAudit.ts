@@ -15,9 +15,13 @@ interface FamilyRule {
   requiredSlots?: MaterialSlot[];
 }
 
+/**
+ * Document and data-drive heights start at 12.5 mm, the height the creator's geometry needs: its document clip
+ * and drive ridge are 8% of the height and no primitive may be under 1 mm, in every variant.
+ */
 const RULES: Record<MissionAssetFamily, FamilyRule> = {
-  document: { min: [0.08, 0.002, 0.08], max: [1.2, 0.12, 1.5], interactions: ['inspect', 'read', 'take'], surfaceKinds: ['fabric', 'plastic', 'metal'], slots: ['surface', 'accent'] },
-  'data-drive': { min: [0.03, 0.01, 0.03], max: [0.5, 0.2, 0.5], interactions: ['inspect', 'take', 'use'], surfaceKinds: ['metal', 'plastic'], slots: ['surface', 'accent'] },
+  document: { min: [0.08, 0.0125, 0.08], max: [1.2, 0.12, 1.5], interactions: ['inspect', 'read', 'take'], surfaceKinds: ['fabric', 'plastic', 'metal'], slots: ['surface', 'accent'] },
+  'data-drive': { min: [0.03, 0.0125, 0.03], max: [0.5, 0.2, 0.5], interactions: ['inspect', 'take', 'use'], surfaceKinds: ['metal', 'plastic'], slots: ['surface', 'accent'] },
   'evidence-container': { min: [0.15, 0.08, 0.12], max: [2.5, 1.5, 1.5], interactions: ['inspect', 'open', 'close', 'store'], surfaceKinds: ['metal', 'plastic', 'wood'], slots: ['surface', 'accent'] },
   tool: { min: [0.08, 0.12, 0.04], max: [1.5, 2.2, 0.8], interactions: ['inspect', 'take', 'use'], surfaceKinds: ['metal', 'plastic', 'rubber'], slots: ['surface', 'accent', 'grip'] },
   'control-terminal': { min: [0.3, 0.4, 0.2], max: [3, 3, 1.5], interactions: ['inspect', 'use', 'access', 'hack', 'sabotage'], surfaceKinds: ['metal', 'plastic'], slots: ['surface', 'accent', 'display'], requiredSlots: ['surface', 'display'] },

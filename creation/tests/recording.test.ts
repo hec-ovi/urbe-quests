@@ -10,17 +10,18 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { QuestlineDefinition } from '../../flow/schema.js';
+import type { QuestlineDefinition, StepKind } from '../../flow/schema.js';
 import { EngineHandoff } from '../../handoff/EngineHandoff.js';
 import { StubSimulation, WorldContextNormalizer, type NamedWorld, type NPCTypeSet } from '../../world/index.js';
 import { QuestlineCreation } from '../QuestlineCreation.js';
 import { author, type AuthorClient } from '../samples/author.js';
 import type { HandoffManifest } from '../samples/EngineHandoffWriter.js';
 import { materialize } from '../samples/materialize.js';
+import { OpenAICompatibleClient } from '../samples/OpenAICompatibleClient.js';
 import { pickupAssetRequests } from '../samples/PickupAssetRequests.js';
-import { recordedPorts, type Recording } from '../samples/RecordedPorts.js';
+import { recordedPorts, titleOf, type Recording } from '../samples/RecordedPorts.js';
 import { recordingPorts } from '../samples/RecordingPorts.js';
-import type { CreationResult, StagePorts } from '../schema.js';
+import type { CreationInput, CreationProgress, CreationResult, StagePorts } from '../schema.js';
 
 const sampleDir = fileURLToPath(new URL('../samples/urbe-small/', import.meta.url));
 const worldPath = join(sampleDir, 'world.json');
@@ -28,7 +29,7 @@ const typesPath = join(sampleDir, 'npc-types.json');
 const read = <T>(path: string): T => JSON.parse(readFileSync(path, 'utf8')) as T;
 const RECORDING = read<Recording>(join(sampleDir, 'recording.json'));
 const { world, types } = new WorldContextNormalizer().normalize({ world: read<NamedWorld>(worldPath), types: read<NPCTypeSet>(typesPath) });
-const HOST_MECHANICS = ['goto', 'observe', 'talk', 'listen', 'pickup', 'deliver', 'steal', 'work'];
+const HOST_MECHANICS: StepKind[] = ['goto', 'observe', 'talk', 'listen', 'pickup', 'deliver', 'steal', 'work'];
 /** What the assembler opened in the materialize tests: every recorded questline fits. */
 const OPEN = ['p0', 'p1', 'p4', 'p6', 'p7', 'p10', 'p11', 'p32', 'p40'];
 
@@ -61,8 +62,12 @@ const client = (ports: StagePorts): AuthorClient => ({
   step: (request) => ports.build.step(request),
 });
 
-const create = (ports: StagePorts) =>
-  new QuestlineCreation().run({ prompt: RECORDING.prompt, world, types, sim: new StubSimulation({ seed: 'recording-test', world, types }), ports });
+const create = (ports: StagePorts, extra: Partial<CreationInput> = {}) =>
+  new QuestlineCreation().run({ prompt: RECORDING.prompt, world, types, sim: new StubSimulation({ seed: 'recording-test', world, types }), ports, ...extra });
+
+/** The refused tool results each build round of one questline met. */
+const refusalsOf = (events: CreationProgress[], questline: string): string[] =>
+  events.flatMap((event) => (event.kind === 'build' && event.questline === questline ? event.build.refusals : []));
 
 const bundleOf = (result: CreationResult, recording: Recording): string => {
   const questlines = [result.main.definition, ...result.side.map((side) => side.definition)];
@@ -95,6 +100,39 @@ describe('recordingPorts', () => {
     const replayed = await create(recordedPorts(recording, world));
     expect(bundleOf(replayed, recording)).toBe(bundleOf(live, recording));
   });
+
+  it('keeps the allowlist, so a step refused as unplayable live is refused the same way on replay', async () => {
+    // The main build first tries a hacking step the host cannot play, then sends the recorded round.
+    const model = liveModel();
+    const recorded = recordedPorts(RECORDING, world).build;
+    const firstStep = RECORDING.builds['The Weir Line']![0]!.find((call) => call.tool === 'add_step')!;
+    const hacking = { tool: 'add_step', input: { ...(firstStep.input as object), target: { kind: 'hacking', targetId: 'weir_panel', place: { districtId: 'd0' }, completionFlag: 'panel_open' } } };
+    let tried = false;
+    model.build = {
+      step: async (request) =>
+        titleOf(request.prompt) === 'The Weir Line' && !tried && (tried = true) ? { kind: 'calls', calls: [hacking] } : recorded.step(request),
+    };
+    const capture = recordingPorts(model, { prompt: RECORDING.prompt, model: 'fixture-model', mechanics: HOST_MECHANICS, missionItemTemplates: RECORDING.missionItemTemplates });
+    const liveEvents: CreationProgress[] = [];
+    const live = await create(capture.ports, { mechanics: HOST_MECHANICS, progress: (event) => liveEvents.push(event) });
+
+    // What a host writes and reads back: the list travels with the recording.
+    const recording = JSON.parse(JSON.stringify(capture.recording())) as Recording;
+    expect(recording.mechanics).toEqual(HOST_MECHANICS);
+    expect(recording.builds['The Weir Line']).toHaveLength(2);
+    const refused = refusalsOf(liveEvents, 'main');
+    expect(refused).toEqual([expect.stringMatching(/^error: step kind hacking is not playable here; use one of goto, observe, talk/)]);
+
+    const replayEvents: CreationProgress[] = [];
+    const replayed = await create(recordedPorts(recording, world), { mechanics: recording.mechanics, progress: (event) => replayEvents.push(event) });
+    expect(refusalsOf(replayEvents, 'main')).toEqual(refused);
+    expect(bundleOf(replayed, recording)).toBe(bundleOf(live, recording));
+
+    // Without the list the same recorded call meets another answer.
+    const unlimited: CreationProgress[] = [];
+    await create(recordedPorts(recording, world), { progress: (event) => unlimited.push(event) });
+    expect(refusalsOf(unlimited, 'main')).not.toEqual(refused);
+  });
 });
 
 describe('author CLI', () => {
@@ -107,16 +145,19 @@ describe('author CLI', () => {
     const lines: string[] = [];
     // What the recording held on disk when the first build round was asked for: a run stopped then keeps it.
     const model = liveModel();
-    let early: Recording | undefined;
+    let early: { title: string; recording: Recording } | undefined;
     const build = model.build;
-    model.build = { step: (request) => ((early ??= read<Recording>(join(out, 'recording.json'))), build.step(request)) };
+    model.build = { step: (request) => ((early ??= { title: titleOf(request.prompt), recording: read<Recording>(join(out, 'recording.json')) }), build.step(request)) };
     const { bundle } = await author(
       [...required(out), `--prompt=@${join(dir, 'brief.txt')}`, `--parcels=${OPEN.join(',')}`, '--mechanics', HOST_MECHANICS.join(','), '--profile', 'small'],
       { client: client(model), log: (line) => lines.push(line) },
     );
-    expect(early).toMatchObject({ script: RECORDING.script, builds: {} });
+    expect(early!.recording.script).toBe(RECORDING.script);
+    expect(early!.recording.plans[early!.title]).toBe(RECORDING.plans[early!.title]);
+    expect(early!.recording.builds).toEqual({});
 
-    for (const file of ['script.md', 'situations.md', 'main.plan.md', 'main.questline.json', 'questlines.json', 'recording.json', 'meta.json']) {
+    const stages = ['script.md', 'situations.md', 'main.plan.md', 'main.questline.json', 'questlines.json', 'recording.json', 'meta.json'];
+    for (const file of [...stages, ...['sit_1', 'sit_2', 'sit_3'].flatMap((id) => [`side-${id}.plan.md`, `side-${id}.questline.json`])]) {
       expect(existsSync(join(out, file)), file).toBe(true);
     }
     const recording = read<Recording>(join(out, 'recording.json'));
@@ -124,6 +165,7 @@ describe('author CLI', () => {
     expect(Object.keys(recording.missionItemTemplates!).sort()).toEqual(['device', 'document', 'key', 'substance', 'valuable', 'weapon']);
     expect(lines).toContainEqual(expect.stringMatching(/^script "The Weir Line": \d+ characters$/));
     expect(lines).toContainEqual(expect.stringMatching(/^plan "Last Call at Oxide Filter": \d+ chars in \d+s$/));
+    expect(lines).toContainEqual(expect.stringMatching(/^plan main: \d+ roles, \d+ items, \d+ acts, \d+ endings, \d+ steps$/));
     expect(lines).toContainEqual(expect.stringMatching(/^build main round 1\/\d+: words instead of tools, nudged/));
 
     // Bundle 1.1 beside the questlines, each count the length of its file, every pickup bound to a template asset.
@@ -153,21 +195,48 @@ describe('author CLI', () => {
     }
   });
 
-  it('names the stage a run stopped at and keeps what the model said; bad arguments stop it before any model call', async () => {
-    const out = join(scratch(), 'failed');
+  it('names the stage a run stopped at and keeps what the model said', async () => {
+    const dir = scratch();
+    const out = join(dir, 'failed');
     const unusable = client({ ...liveModel(), script: { complete: async () => 'FADE IN on nothing usable.' } });
     await expect(author(required(out), { client: unusable, log: () => undefined })).rejects.toThrowError(
       /^author failed at script: E_LLM script output unusable after repair/,
     );
-    expect(read(join(out, 'meta.json'))).toMatchObject({ failed: { stage: 'script' } });
+    expect(read(join(out, 'meta.json'))).toMatchObject({ model: 'fixture-model', failed: { stage: 'script' } });
     expect(read<Recording>(join(out, 'recording.json')).script).toBe('FADE IN on nothing usable.');
     expect(existsSync(join(out, 'bundle'))).toBe(false);
 
-    const untouched = client(liveModel());
-    const complete = vi.spyOn(untouched, 'complete');
-    await expect(author(['--world', worldPath], { client: untouched })).rejects.toThrowError(/^usage: author.ts/);
-    await expect(author([...required(out), '--mechanics', 'goto,fly'], { client: untouched })).rejects.toThrowError(/unknown step kind fly/);
-    await expect(author([...required(out), '--colour', 'grey'], { client: untouched })).rejects.toThrowError(/unknown option --colour/);
-    expect(complete).not.toHaveBeenCalled();
+    // A main build that fails still leaves its plan, on disk and in the recording.
+    const stalled = join(dir, 'stalled');
+    const words = client({ ...liveModel(), situations: { complete: async () => 'no situations here' }, build: { step: async () => ({ kind: 'done', text: 'In words.' }) } });
+    await expect(author(required(stalled), { client: words, log: () => undefined })).rejects.toThrowError(/^author failed at main questline: E_LLM/);
+    expect(readFileSync(join(stalled, 'main.plan.md'), 'utf8')).toBe(RECORDING.plans['The Weir Line']!.trim());
+    expect(read<Recording>(join(stalled, 'recording.json')).plans).toEqual({ 'The Weir Line': RECORDING.plans['The Weir Line'] });
+
+    // A server that cannot be reached is the model stage, with meta.json saying so.
+    const offline = join(dir, 'offline');
+    vi.spyOn(OpenAICompatibleClient, 'connect').mockRejectedValue(new Error('cannot reach http://127.0.0.1:9/v1/models: connect ECONNREFUSED 127.0.0.1:9'));
+    await expect(author(required(offline), { log: () => undefined })).rejects.toThrowError(/^author failed at model: cannot reach .*ECONNREFUSED/);
+    expect(read(join(offline, 'meta.json'))).toMatchObject({ failed: { stage: 'model' } });
+    expect(read(join(offline, 'meta.json'))).not.toHaveProperty('model');
+  });
+
+  it('checks every argument and file before the model server is asked anything', async () => {
+    const dir = scratch();
+    const out = join(dir, 'unused');
+    writeFileSync(join(dir, 'handoff.json'), JSON.stringify({ missionAssetRequests: 5 }));
+    const connect = vi.spyOn(OpenAICompatibleClient, 'connect');
+    const refused = (args: string[]) => expect(author(args, { log: () => undefined })).rejects;
+
+    await refused(['--world', worldPath]).toThrowError(/^usage: author.ts/);
+    await refused([...required(out), '--colour', 'grey']).toThrowError(/unknown option --colour/);
+    // A flag is never read as the value of the one before it.
+    await refused([...required(out), '--prompt', '--mechanics=goto']).toThrowError(/^--prompt needs a value$/);
+    await refused([...required(out), '--mechanics', 'goto,fly']).toThrowError(/unknown step kind fly/);
+    await refused([...required(out), '--parcels=']).toThrowError(/parcels names no building/);
+    await refused([...required(out), '--parcels=p0,nope1,nope2']).toThrowError(/parcels not in the world: nope1, nope2$/);
+    await refused([...required(out), '--handoff', join(dir, 'handoff.json')]).toThrowError(expect.objectContaining({ code: 'E_HANDOFF' }));
+    expect(connect).not.toHaveBeenCalled();
+    expect(existsSync(out)).toBe(false);
   });
 });

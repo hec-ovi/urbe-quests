@@ -8,7 +8,8 @@ export const readJson = <T>(path: string): T => JSON.parse(readFileSync(resolve(
 
 /**
  * Options as `--name value` or `--name=value`, among positional arguments.
- * An option outside `names`, or one with no value, is a usage error.
+ * An option outside `names`, or one with no value, is a usage error; the
+ * next option is never taken as a value (`--name=--text` passes one).
  */
 export function parseArgs(args: readonly string[], names: readonly string[]): { positional: string[]; options: Map<string, string> } {
   const positional: string[] = [];
@@ -22,7 +23,7 @@ export function parseArgs(args: readonly string[], names: readonly string[]): { 
     const [flag, inline] = arg.includes('=') ? [arg.slice(0, arg.indexOf('=')), arg.slice(arg.indexOf('=') + 1)] : [arg, undefined];
     const name = flag.slice(2);
     if (!names.includes(name)) throw new Error(`unknown option ${flag}`);
-    const value = inline ?? args[++i];
+    const value = inline ?? (args[i + 1]?.startsWith('--') ? undefined : args[++i]);
     if (value === undefined) throw new Error(`${flag} needs a value`);
     options.set(name, value);
   }

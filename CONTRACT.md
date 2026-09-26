@@ -1,4 +1,4 @@
-# Quests 0.13.0
+# Quests 0.13.1
 
 Writes stories through injected agents, adapts them into typed quests, runs their rules in code, and prepares Engine handoffs and scoped NPC dialogue.
 
@@ -56,7 +56,7 @@ Time is simulation minutes since Monday 00:00. Creative calls use separate conte
 
 [AuthoringError](authoring/schema/authoring-error.schema.json), `{code, message, details}`: `E_AUTHORING_INPUT`, `E_AUTHORING_OUTPUT`, `E_SKILL_CONTRACT`, `E_UNKNOWN_SKILL`, `E_UNSUPPORTED_MECHANIC`, `E_MECHANIC_SELECTION`, `E_WORLD_TARGET`, `E_CAUSE_EFFECT`, `E_INVALID_FLOW`. Meanings: [authoring errors](authoring/CONTRACT.md#errors).
 
-These are closed domain sets. Injected provider/Simulation exceptions pass through, except cast reservation and exhausted vendor matches, which become `E_CAST` while a questline is built and its `blocked` reason once it is published. Standalone [SimulationError](world/types/simulation.ts) uses the consumed Simulation error set. CLI file/JSON/usage failures and a `mechanics` list naming no real step kind are ordinary exceptions, not domain codes.
+These are closed domain sets. Injected provider/Simulation exceptions pass through, except cast reservation and exhausted vendor matches, which become `E_CAST` while a questline is built and its `blocked` reason once it is published. Standalone [SimulationError](world/types/simulation.ts) uses the consumed Simulation error set. CLI file/JSON/usage failures, a `mechanics` list naming no real step kind and `parcels` that are empty or name a building the world lacks are ordinary exceptions, not domain codes.
 
 ## Dependencies
 

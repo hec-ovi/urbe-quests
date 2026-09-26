@@ -6,7 +6,7 @@ Purpose: translates a story arc into a validated questline: a text-only plan pas
 `new QuestlineTranslator().translate(input)` ([QuestlineTranslator.ts](QuestlineTranslator.ts)):
 - `assignment`: `QuestAssignment { title, synopsis, characters, arc }` ([schema.ts](schema.ts)), the slice of story to translate.
 - `world`, `types`; `sim`: `SimulationPort`; `ports { plan: LLMPort, build: AgentPort }` ([../ports/llm.ts](../ports/llm.ts)); `parcels?`: the buildings the story may use; `mechanics?`: the step kinds the host can play, every kind when omitted.
-- `referenceTimeMin?` (cast resolution time, default Tuesday 10:00), `maxRounds?` (overrides the plan's budget), `progress?` (one `BuildProgress` per build round: title, round, maxRounds, committed and planned pieces, the tools called or what happened instead, and the round's refused calls as the agent read them).
+- `referenceTimeMin?` (cast resolution time, default Tuesday 10:00), `maxRounds?` (overrides the plan's budget), `planned?` (told the `PlanResult` once the plan parsed, before the build starts), `progress?` (one `BuildProgress` per build round: title, round, maxRounds, committed and planned pieces, the tools called or what happened instead, and the round's refused calls as the agent read them).
 
 The halves run alone: `new TranslationPlanner().plan({ assignment, world, types, llm, mechanics? }) -> PlanResult { text, manifest }` ([TranslationPlanner.ts](TranslationPlanner.ts)) and `new QuestlineBuilder().build({ assignment, plan, manifest, world, types, sim, agent, mechanics?, ... }) -> BuildResult` ([QuestlineBuilder.ts](QuestlineBuilder.ts)).
 

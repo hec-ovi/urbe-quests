@@ -11,7 +11,7 @@ import type { NamedWorld, NPCTypeSet } from '../world/types/named-world.js';
 import type { SimulationPort } from '../world/types/simulation.js';
 import { QuestlineBuilder } from './QuestlineBuilder.js';
 import type { BuildProgress, QuestAssignment, TranslationResult } from './schema.js';
-import { TranslationPlanner } from './TranslationPlanner.js';
+import { TranslationPlanner, type PlanResult } from './TranslationPlanner.js';
 
 export interface TranslateInput {
   assignment: QuestAssignment;
@@ -25,13 +25,16 @@ export interface TranslateInput {
   mechanics?: readonly StepKind[];
   referenceTimeMin?: number;
   maxRounds?: number;
+  /** Told the plan once it parsed, before the build starts, so a host keeps it whatever the build does. */
+  planned?: (plan: PlanResult) => void;
   progress?: (event: BuildProgress) => void;
 }
 
 export class QuestlineTranslator {
   async translate(input: TranslateInput): Promise<TranslationResult> {
-    const { ports, ...shared } = input;
+    const { ports, planned, ...shared } = input;
     const plan = await new TranslationPlanner().plan({ ...shared, llm: ports.plan });
+    planned?.(plan);
     const built = await new QuestlineBuilder().build({ ...shared, plan: plan.text, manifest: plan.manifest, agent: ports.build });
     return { plan: plan.text, ...built };
   }

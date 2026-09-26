@@ -13,15 +13,30 @@ import { QuestError } from '../errors.js';
 import { ScriptPass } from '../story/ScriptPass.js';
 import { SituationsPass } from '../story/SituationsPass.js';
 import type { SituationsPassResult } from '../story/schema.js';
+import type { NamedWorld } from '../world/types/named-world.js';
 import { Assignments } from './Assignments.js';
 import { UniqueCast } from './UniqueCast.js';
 import type { CreationInput, CreationProgress, CreationResult, SideQuest } from './schema.js';
 
+/**
+ * The buildings a story may use, as given: omitted, the whole world. An empty
+ * list or an id the world does not have is a caller error.
+ */
+export function openParcels(world: NamedWorld, parcels?: readonly string[]): readonly string[] | undefined {
+  if (parcels === undefined) return undefined;
+  if (parcels.length === 0) throw new Error('parcels names no building');
+  const known = new Set(world.parcels.map((parcel) => parcel.id));
+  const unknown = parcels.filter((id) => !known.has(id));
+  if (unknown.length > 0) throw new Error(`parcels not in the world: ${unknown.join(', ')}`);
+  return parcels;
+}
+
 export class QuestlineCreation {
   async run(input: CreationInput): Promise<CreationResult> {
-    const { world, types, sim, ports, parcels, referenceTimeMin, maxRounds } = input;
-    // An allowlist naming no real kind fails here, before any model is asked.
+    const { world, types, sim, ports, referenceTimeMin, maxRounds } = input;
+    // An allowlist naming no real kind, or open parcels the world lacks, fail here, before any model is asked.
     const mechanics = input.mechanics === undefined ? undefined : playableKinds(input.mechanics);
+    const parcels = openParcels(world, input.parcels);
     const progress = (event: CreationProgress) => input.progress?.(event);
     const script = await new ScriptPass().run({ world, types, llm: ports.script, prompt: input.prompt, minimums: input.minimums?.script });
     progress({ kind: 'script', result: script });
@@ -31,6 +46,7 @@ export class QuestlineCreation {
       const result = await translator.translate({
         assignment, world, types, sim, parcels, mechanics, referenceTimeMin, maxRounds,
         ports: { plan: ports.plan, build: ports.build },
+        planned: (plan) => progress({ kind: 'plan', questline, result: plan }),
         progress: (build) => progress({ kind: 'build', questline, build }),
       });
       progress({ kind: 'questline', questline, result });

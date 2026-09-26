@@ -12,7 +12,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { playableKinds } from '../../builder/mechanics.js';
 import type { StepKind } from '../../flow/schema.js';
 import type { AgentPort, LLMPort } from '../../ports/llm.js';
-import { QuestlineCreation } from '../QuestlineCreation.js';
+import { openParcels, QuestlineCreation } from '../QuestlineCreation.js';
 import type { CreationProgress, CreationResult } from '../schema.js';
 import { loadWorld, parseArgs, readJson, readParcels, readText } from './CliInputs.js';
 import { readHandoffInput } from './EngineHandoffWriter.js';
@@ -61,20 +61,46 @@ export async function author(args: readonly string[], options: AuthorOptions = {
   const elapsed = () => Math.round((Date.now() - started) / 1000);
   const log = options.log ?? ((line: string) => console.error(`[${elapsed()}s] ${line}`));
 
-  // Everything read from files is read and checked before the first model call.
+  // Every file and option is read and checked before the model server is asked anything.
   const context = loadWorld(worldPath, typesPath);
   const prompt = (flags.has('prompt') ? readText(flags.get('prompt')!).trim() : '') || context.world.meta.naming.theme;
   const mechanics: StepKind[] | undefined = flags.has('mechanics')
     ? [...playableKinds(flags.get('mechanics')!.split(',').map((kind) => kind.trim()).filter((kind) => kind.length > 0))]
     : undefined;
-  const parcels = readParcels(flags.get('parcels'));
+  const parcels = openParcels(context.world, readParcels(flags.get('parcels')));
   const missionItemTemplates = checkMissionItemTemplates(readJson(flags.get('templates') ?? DEFAULT_TEMPLATES));
   const handoff = readHandoffInput(flags.get('handoff'));
   const profile = flags.get('profile') ?? 'author';
   const writer = new SampleWriter(outDir);
   const questlinesPath = resolve(flags.get('questlines') ?? join(writer.path, 'bundle', 'questlines.json'));
 
-  const client = options.client ?? (await OpenAICompatibleClient.connect());
+  const meta = {
+    prompt,
+    // Named once the server answers.
+    model: undefined as string | undefined,
+    world: basename(worldPath),
+    types: basename(typesPath),
+    profile,
+    ...(mechanics !== undefined ? { mechanics } : {}),
+    ...(parcels !== undefined ? { parcels: parcels.length } : {}),
+    ranAt: new Date(started).toISOString(),
+  };
+  /** Seconds from the start at which each stage landed. */
+  const landed: Record<string, number> = {};
+  const json = (value: unknown) => JSON.stringify(value, null, 2) + '\n';
+  const fail = (stage: string, cause: unknown): AuthorFailure => {
+    const failure = new AuthorFailure(stage, cause);
+    writer.write('meta.json', json({ ...meta, seconds: { ...landed, failed: elapsed() }, failed: { stage, message: failure.message } }));
+    return failure;
+  };
+
+  let client: AuthorClient;
+  try {
+    client = options.client ?? (await OpenAICompatibleClient.connect());
+  } catch (error) {
+    throw fail('model', error);
+  }
+  meta.model = client.model;
   log(
     `model ${client.model}, world ${basename(worldPath)} (${context.world.parcels.length} parcels` +
       `${parcels !== undefined ? `, ${parcels.length} open` : ''}, ${context.types.types.length} types)` +
@@ -98,25 +124,6 @@ export async function author(args: readonly string[], options: AuthorOptions = {
     { prompt, model: client.model, mechanics, missionItemTemplates },
   );
 
-  const meta = {
-    prompt,
-    model: client.model,
-    world: basename(worldPath),
-    types: basename(typesPath),
-    profile,
-    ...(mechanics !== undefined ? { mechanics } : {}),
-    ...(parcels !== undefined ? { parcels: parcels.length } : {}),
-    ranAt: new Date(started).toISOString(),
-  };
-  /** Seconds from the start at which each stage landed. */
-  const landed: Record<string, number> = {};
-  const json = (value: unknown) => JSON.stringify(value, null, 2) + '\n';
-  const fail = (stage: string, cause: unknown): AuthorFailure => {
-    const failure = new AuthorFailure(stage, cause);
-    writer.write('meta.json', json({ ...meta, seconds: { ...landed, failed: elapsed() }, failed: { stage, message: failure.message } }));
-    return failure;
-  };
-
   let stage = 'script';
   let creation: CreationResult;
   try {
@@ -130,7 +137,7 @@ export async function author(args: readonly string[], options: AuthorOptions = {
       warn: log,
       progress: (event: CreationProgress) => {
         writer.onProgress(event, log);
-        // The recording lands with every stage and build round, so a run stopped from outside keeps what the model said.
+        // The recording lands with every stage, plan and build round, so a run stopped from outside keeps what the model said.
         writer.write('recording.json', json(capture.recording()));
         if (event.kind === 'script') stage = 'main questline';
         if (event.kind === 'script' || event.kind === 'situations') landed[event.kind] = elapsed();
