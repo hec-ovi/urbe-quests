@@ -105,10 +105,16 @@ describe('author CLI', () => {
     const out = join(dir, 'story');
     writeFileSync(join(dir, 'brief.txt'), `${RECORDING.prompt}\n`);
     const lines: string[] = [];
+    // What the recording held on disk when the first build round was asked for: a run stopped then keeps it.
+    const model = liveModel();
+    let early: Recording | undefined;
+    const build = model.build;
+    model.build = { step: (request) => ((early ??= read<Recording>(join(out, 'recording.json'))), build.step(request)) };
     const { bundle } = await author(
       [...required(out), `--prompt=@${join(dir, 'brief.txt')}`, `--parcels=${OPEN.join(',')}`, '--mechanics', HOST_MECHANICS.join(','), '--profile', 'small'],
-      { client: client(liveModel()), log: (line) => lines.push(line) },
+      { client: client(model), log: (line) => lines.push(line) },
     );
+    expect(early).toMatchObject({ script: RECORDING.script, builds: {} });
 
     for (const file of ['script.md', 'situations.md', 'main.plan.md', 'main.questline.json', 'questlines.json', 'recording.json', 'meta.json']) {
       expect(existsSync(join(out, file)), file).toBe(true);

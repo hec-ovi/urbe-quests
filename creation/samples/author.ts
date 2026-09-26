@@ -130,6 +130,8 @@ export async function author(args: readonly string[], options: AuthorOptions = {
       warn: log,
       progress: (event: CreationProgress) => {
         writer.onProgress(event, log);
+        // The recording lands with every stage and build round, so a run stopped from outside keeps what the model said.
+        writer.write('recording.json', json(capture.recording()));
         if (event.kind === 'script') stage = 'main questline';
         if (event.kind === 'script' || event.kind === 'situations') landed[event.kind] = elapsed();
         if (event.kind === 'questline') landed[event.questline === 'main' ? 'main' : `side ${event.questline}`] = elapsed();
@@ -138,7 +140,7 @@ export async function author(args: readonly string[], options: AuthorOptions = {
   } catch (error) {
     throw fail((error as { detail?: { stage?: string } } | null)?.detail?.stage ?? stage, error);
   } finally {
-    // What the model said is kept even when the run stops: a failed run is read from it.
+    // What the model said is kept even when the run fails: a failed run is read from it.
     writer.write('recording.json', json(capture.recording()));
   }
   writer.writeQuestlines(creation);
@@ -155,7 +157,8 @@ export async function author(args: readonly string[], options: AuthorOptions = {
       outputPath: questlinesPath,
       handoff,
       parcels,
-      log,
+      // The replay meets the same dropped side quests the live run did; its lines say they come from the replay.
+      log: (line) => log(`materialize: ${line}`),
     });
   } catch (error) {
     throw fail('materialize', error);
