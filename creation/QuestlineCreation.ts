@@ -34,17 +34,16 @@ export function openParcels(world: NamedWorld, parcels?: readonly string[]): rea
 }
 
 /**
- * The step kinds a host plays, as given: omitted, every kind. A list naming no
- * real kind is a caller error, and so is one naming investigation from a host
- * that stages no scenery: a story shows its clues on the scenes it stages.
+ * The step kinds a host plays: its list, else every kind. A story shows its
+ * clues on the scenes it stages, so investigation needs the host's scenery:
+ * without it, a list naming investigation is a caller error, like one naming
+ * no real kind, and every kind leaves investigation out.
  */
-export function hostKinds(mechanics: readonly string[] | undefined, scenery: SceneryCapabilities | undefined): readonly StepKind[] | undefined {
-  if (mechanics === undefined) return undefined;
+export function hostKinds(mechanics: readonly string[] | undefined, scenery: SceneryCapabilities | undefined): readonly StepKind[] {
   const kinds = playableKinds(mechanics);
-  if (kinds.includes('investigation') && scenery === undefined) {
-    throw new Error('investigation needs the host scenery capability: a story shows its clues on the scenes it stages');
-  }
-  return kinds;
+  if (scenery !== undefined || !kinds.includes('investigation')) return kinds;
+  if (mechanics !== undefined) throw new Error('investigation needs the host scenery capability: a story shows its clues on the scenes it stages');
+  return kinds.filter((kind) => kind !== 'investigation');
 }
 
 export class QuestlineCreation {

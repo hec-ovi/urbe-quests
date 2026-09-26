@@ -14,7 +14,7 @@ import { HANDOFF_FILES, writeEngineHandoff } from '../../creation/samples/Engine
 import type { QuestlineDefinition } from '../../flow/schema.js';
 import questlineSchema from '../../flow/schema/questline.schema.json' with { type: 'json' };
 import { EngineHandoff } from '../EngineHandoff.js';
-import { SCENERY_VOCABULARY, stagedScenery, type SceneStaging, type StagedScenery } from '../SceneStagings.js';
+import { SCENERY_VOCABULARY, questItemAssetId, scopedScenes, stagedScenery, type SceneStaging } from '../SceneStagings.js';
 import type { HandoffInput, InvestigationSceneRequest, MissionAssetCreateRequest } from '../schema.js';
 import fixedHandoffFixture from '../fixtures/engine-public-transit.input.json' with { type: 'json' };
 import fixedQuestFixture from '../fixtures/fixed-mechanics.questline.json' with { type: 'json' };
@@ -155,21 +155,27 @@ const officeStaging = (): SceneStaging => ({
   lasting: true,
 });
 
-/** The staged office as handoff input, for a host staging every kind Engine can declare. */
-function sceneHandoff(staged: StagedScenery = stagedScenery(sceneQuest(), [officeStaging()])) {
-  const knife: MissionAssetCreateRequest = {
-    contractVersion: '1.0', assetId: staged.assets[0]!.assetId, purpose: 'Filleting knife', family: 'tool', seed: 7,
-    dimensions: { width: 0.3, height: 0.12, depth: 0.05 },
-    materials: [{ slot: 'surface', key: 'cyberpunk/metal/mid', variantId: 'paint' }],
-    requiredInteractions: ['inspect', 'take'],
-    clearance: { approachDepth: 0.8, sideMargin: 0.2, overhead: 0.1 },
-  };
+const knifeRequest = (assetId: string): MissionAssetCreateRequest => ({
+  contractVersion: '1.0', assetId, purpose: 'Filleting knife', family: 'tool', seed: 7,
+  dimensions: { width: 0.3, height: 0.12, depth: 0.05 },
+  materials: [{ slot: 'surface', key: 'cyberpunk/metal/mid', variantId: 'paint' }],
+  requiredInteractions: ['inspect', 'take'],
+  clearance: { approachDepth: 0.8, sideMargin: 0.2, overhead: 0.1 },
+});
+
+/** The office killing as a build ships it, and its handoff input for a host staging every kind Engine can declare. */
+function sceneBundle(quest: QuestlineDefinition = sceneQuest()) {
+  const shipped = scopedScenes(quest, [officeStaging()]);
+  const staged = stagedScenery(shipped.definition, shipped.stagings);
   return {
-    hostCapabilities: { transportationModes: [], scenery: structuredClone(SCENERY_VOCABULARY) },
-    scenery: staged.scenery,
-    investigations: staged.investigations,
-    missionAssetRequests: [knife],
-  } satisfies HandoffInput;
+    quest: shipped.definition,
+    input: {
+      hostCapabilities: { transportationModes: [], scenery: structuredClone(SCENERY_VOCABULARY) },
+      scenery: staged.scenery,
+      investigations: staged.investigations,
+      missionAssetRequests: staged.assets.map((asset) => knifeRequest(asset.assetId)),
+    } satisfies HandoffInput,
+  };
 }
 
 describe('EngineHandoff', () => {
@@ -320,17 +326,18 @@ describe('EngineHandoff', () => {
   });
 
   it('stages a scene where its step happens and the investigation over it, in schema-valid bundle 1.2 files', () => {
-    const quest = sceneQuest();
-    const input = sceneHandoff();
+    const { quest, input } = sceneBundle();
     const bundle = new EngineHandoff().assemble([quest], input);
     const [spec] = bundle.scenery;
+    // Scene and investigation ship under one id scoped to the questline, and the investigation step names it.
+    expect(bundle.objectives[1]!.action).toMatchObject({ kind: 'investigation', sceneId: 'q_dock_killing.sc_office' });
     expect(spec).toMatchObject({
       contractVersion: '1.0', sceneId: 'q_dock_killing.sc_office', questId: 'q_dock_killing', purpose: 'crime-scene',
       place: { kind: 'room', parcelId: 'p4', floor: 0, roomKinds: ['office_private'] },
       // A quest character stands only dead: the killing step, and the simulation's word for it.
       activeWhen: { all: [{ kind: 'stepDone', stepId: 's_kill' }, { kind: 'roleDead', roleId: 'foreman' }] },
       retireWhen: { kind: 'never' },
-      investigationSceneId: 'sc_office',
+      investigationSceneId: 'q_dock_killing.sc_office',
     });
     expect(spec!.actors.map((actor) => actor.identity)).toEqual([
       { kind: 'cast', roleId: 'foreman' },
@@ -339,10 +346,11 @@ describe('EngineHandoff', () => {
     expect(spec!.actors[1]!.placement).toEqual({ zone: 'entry-side' });
     expect(spec!.props).toEqual([
       { propId: 'blood', kind: 'blood-pool', nearActorId: 'body' },
-      { propId: 'knife', kind: 'mission-asset', assetId: input.missionAssetRequests[0]!.assetId, nearActorId: 'body' },
+      // The knife in its own asset, the one a pickup of it would name.
+      { propId: 'knife', kind: 'mission-asset', assetId: questItemAssetId('q_dock_killing', 'knife'), nearActorId: 'body' },
     ]);
     expect(bundle.investigations).toEqual([{
-      contractVersion: '1.2', sceneId: 'sc_office', questId: 'q_dock_killing',
+      contractVersion: '1.2', sceneId: 'q_dock_killing.sc_office', questId: 'q_dock_killing',
       incident: { family: 'crime-scene', summary: officeStaging().description },
       questBindings: [{ stepId: 's_look', evidenceId: 'ev_wound', place: { parcelId: 'p4' }, completionAction: 'inspect' }],
       scenery: { sceneId: 'q_dock_killing.sc_office' },
@@ -352,8 +360,8 @@ describe('EngineHandoff', () => {
         portable: false, requiresInspection: true, prerequisiteEvidenceIds: [], consequences: [],
       }],
     }]);
-    // Seeds and asset ids come from the questline, scene and element ids alone.
-    expect(stagedScenery(sceneQuest(), [officeStaging()])).toEqual(stagedScenery(quest, [officeStaging()]));
+    // Seeds and asset ids come from the questline, scene, element and item ids alone.
+    expect(sceneBundle().input).toEqual(input);
 
     const outputPath = outDir('quest-scenery-handoff-');
     const manifest = writeEngineHandoff(outputPath, bundle);
@@ -366,9 +374,8 @@ describe('EngineHandoff', () => {
   });
 
   it('refuses a scene the questline cannot stand, the host does not declare or its investigation does not link', () => {
-    const refuses = (change: (quest: QuestlineDefinition, input: ReturnType<typeof sceneHandoff>) => void, message: RegExp) => {
-      const quest = sceneQuest();
-      const input = sceneHandoff();
+    const refuses = (change: (quest: QuestlineDefinition, input: ReturnType<typeof sceneBundle>['input']) => void, message: RegExp) => {
+      const { quest, input } = sceneBundle();
       change(quest, input);
       expect(() => new EngineHandoff().assemble([quest], input)).toThrowError(message);
     };
@@ -379,14 +386,34 @@ describe('EngineHandoff', () => {
     refuses((_, input) => { input.scenery[0]!.activeWhen = { any: [{ kind: 'stepDone', stepId: 's_kill' }, { kind: 'questStarted' }] }; }, /could stand before foreman dies/);
     refuses((_, input) => { input.scenery[0]!.retireWhen = { kind: 'flagSet', flag: 'tape_down' }; }, /lacks: flag tape_down/);
     refuses((_, input) => { input.scenery[0]!.place.parcelId = 'p9'; }, /stands at p9, a building quest q_dock_killing never names/);
-    refuses((_, input) => { input.missionAssetRequests = []; }, /names mission asset quest-scene\.\w+, which the bundle does not request/);
-    refuses((_, input) => { delete input.scenery[0]!.investigationSceneId; }, /links scene q_dock_killing.sc_office, which names no investigation back/);
+    refuses((_, input) => { input.missionAssetRequests = []; }, /names mission asset quest-item\.\w+, which the bundle does not request/);
+    refuses((_, input) => { delete input.scenery[0]!.investigationSceneId; }, /links scene q_dock_killing\.sc_office, which names no investigation back/);
     refuses((_, input) => { (input.investigations[0] as { evidenceVisuals: unknown[] }).evidenceVisuals = [{ evidenceId: 'ev_wound', entityId: 'nobody' }]; }, /shows evidence on what scene .* lacks: nobody/);
     refuses((_, input) => {
       (input.investigations[0] as { scenery: { sceneId: string } }).scenery.sceneId = 'elsewhere';
       delete input.scenery[0]!.investigationSceneId;
-    }, /investigation sc_office links unknown scene elsewhere/);
-    refuses((_, input) => { input.investigations = []; }, /names investigation sc_office, which does not link it/);
+    }, /investigation q_dock_killing\.sc_office links unknown scene elsewhere/);
+    refuses((_, input) => { input.investigations = []; }, /names investigation q_dock_killing\.sc_office, which does not link it/);
+  });
+
+  it('ships two questlines built apart that stage the same sceneId, each under its own id', () => {
+    const first = sceneBundle();
+    const second = sceneBundle({ ...sceneQuest(), id: 'q_dock_again' });
+    const bundle = new EngineHandoff().assemble([first.quest, second.quest], {
+      ...first.input,
+      scenery: [...first.input.scenery, ...second.input.scenery],
+      investigations: [...first.input.investigations, ...second.input.investigations],
+      missionAssetRequests: [...first.input.missionAssetRequests, ...second.input.missionAssetRequests],
+    });
+    expect(bundle.scenery.map((spec) => spec.sceneId)).toEqual(['q_dock_killing.sc_office', 'q_dock_again.sc_office']);
+    expect(bundle.investigations.map((request) => request.sceneId)).toEqual(['q_dock_killing.sc_office', 'q_dock_again.sc_office']);
+    expect(second.quest.steps[1]!.target).toMatchObject({ sceneId: 'q_dock_again.sc_office' });
+
+    // Scoping renames only what the questline stages, and leaves the authored questline alone.
+    const unstaged = scopedScenes(sceneQuest(), [{ ...officeStaging(), sceneId: 'sc_other', evidence: [] }]);
+    expect(unstaged.definition.steps[1]!.target).toMatchObject({ sceneId: 'sc_office' });
+    expect(unstaged.stagings.map((staging) => staging.sceneId)).toEqual(['q_dock_killing.sc_other']);
+    expect(sceneQuest().steps[1]!.target).toMatchObject({ sceneId: 'sc_office' });
   });
 
   it('compiles only stagings that name what the questline has, in its own buildings', () => {
@@ -395,7 +422,7 @@ describe('EngineHandoff', () => {
       change(staging);
       return () => stagedScenery(sceneQuest(), [staging]);
     };
-    expect(compile((staging) => { staging.place.atStepId = 's_kill'; })).toThrowError(/stands at step s_kill, which happens in no building/);
+    expect(compile((staging) => { staging.place.atStepId = 's_kill'; })).toThrowError(/place.atStepId s_kill \(assassinate\) happens in no building/);
     expect(compile((staging) => { staging.props[1]!.itemId = 'wound'; })).toThrowError(/shows wound, which is no physical item/);
     expect(compile((staging) => { staging.evidence!.push({ evidenceId: 'ev_hair', elementId: 'blood' }); })).toThrowError(/shows clue ev_hair, which no investigation step/);
     expect(compile((staging) => { staging.evidence = []; })).toThrowError(/shows its clue ev_wound on nothing in scene sc_office/);
@@ -407,6 +434,10 @@ describe('EngineHandoff', () => {
     // A clue is found only while its scene stands.
     expect(compile((staging) => { staging.stagedBy = 's_look'; })).toThrowError(/would stand only after its clue step s_look is done/);
     expect(compile((staging) => { staging.stagedBy = 's_look'; staging.stagedWhen = 'active'; })()).toMatchObject({ investigations: [{ sceneId: 'sc_office' }] });
+    // ...and clears no sooner than its clue is found.
+    expect(compile((staging) => { staging.stagedWhen = 'active'; staging.clearedBy = 's_kill'; delete staging.lasting; }))
+      .toThrowError(/clears once step s_kill is done, before its clue step s_look can be/);
+    expect(compile((staging) => { staging.clearedBy = 's_kill'; delete staging.lasting; })).toThrowError(/would appear and clear as step s_kill is done, so it never stands/);
 
     // Left alone, a scene stands from its step's opening until the questline ends; clearedBy retires it after a step.
     const open = stagedScenery(sceneQuest(), [{
@@ -418,5 +449,34 @@ describe('EngineHandoff', () => {
       activeWhen: { any: [{ kind: 'stepActive', stepId: 's_kill' }, { kind: 'stepDone', stepId: 's_kill' }] },
       retireWhen: { kind: 'stepDone', stepId: 's_look' },
     });
+  });
+
+  it('stands a scene with clues at its clue step, wherever casting moves it, and shows no item a pickup already stands', () => {
+    const narrative = { description: 'The clerk waits.', playerHint: 'Meet the clerk.', stake: 'Nobody else saw.' };
+    const meet: QuestlineDefinition['steps'][number] = {
+      stepId: 's_meet', actId: 'a_dock', narrative, target: { kind: 'talk', roleId: 'clerk', atParcelId: 'p4' },
+      gives: [], needs: [], conditions: [], effects: [], next: [], branching: 'parallel',
+    };
+    const withMeet = { ...sceneQuest(), steps: [...sceneQuest().steps, meet] };
+    // Same building before casting, but the scene would follow the talk step and leave its clue behind.
+    expect(() => stagedScenery(withMeet, [{ ...officeStaging(), place: { kind: 'room', atStepId: 's_meet' } }]))
+      .toThrowError(/scene sc_office shows the clue of investigation step s_look, so it stands where that step happens: set place.atStepId to s_look/);
+
+    // Casting moves the clue step to where its people work: the scene and its investigation move with it.
+    const moved = sceneQuest();
+    moved.steps[1]!.target = { ...moved.steps[1]!.target, place: { parcelId: 'p9', name: 'Night office' } } as QuestlineDefinition['steps'][number]['target'];
+    const staged = stagedScenery(moved, [officeStaging()]);
+    expect(staged.scenery[0]!.place.parcelId).toBe('p9');
+    expect(staged.investigations[0]!.questBindings[0]!.place).toEqual({ parcelId: 'p9' });
+
+    // Two clue steps of one scene that casting pulls into two buildings cannot share it.
+    const second = { ...moved.steps[1]!, stepId: 's_look_again', target: { ...sceneQuest().steps[1]!.target, evidenceId: 'ev_knife' } } as QuestlineDefinition['steps'][number];
+    const split = { ...moved, steps: [...moved.steps, second] };
+    expect(() => stagedScenery(split, [{ ...officeStaging(), evidence: [...officeStaging().evidence!, { evidenceId: 'ev_knife', elementId: 'knife' }] }]))
+      .toThrowError(/investigation step s_look_again is not in the building scene sc_office stands in \(p9, where step s_look happens\)/);
+
+    const take: QuestlineDefinition['steps'][number] = { ...meet, stepId: 's_take', target: { kind: 'pickup', itemId: 'knife' } };
+    expect(() => stagedScenery({ ...sceneQuest(), steps: [...sceneQuest().steps, take] }, [officeStaging()]))
+      .toThrowError(/prop knife shows knife, which pickup step s_take already stands in the city for the player to take/);
   });
 });

@@ -11,10 +11,7 @@ import type {
   QuestRole,
   QuestStep,
 } from '../flow/schema.js';
-import { HostCapabilityAudit } from '../handoff/HostCapabilityAudit.js';
-import { InvestigationAudit } from '../handoff/InvestigationAudit.js';
-import { SceneryAudit } from '../handoff/SceneryAudit.js';
-import { buildingOf, stagedScenery, stagingProblems, unstagedClues, type SceneStaging } from '../handoff/SceneStagings.js';
+import { auditStagings, stagingConflicts, stagingProblems, unstagedClues, type SceneStaging } from '../handoff/SceneStagings.js';
 import type { SceneryCapabilities } from '../handoff/schema.js';
 import { TARGET_FIELDS, targetLine } from './mechanics.js';
 import { MANIFEST_KINDS, manifestSize, type ManifestKind, type PlanManifest } from './PlanManifest.js';
@@ -128,15 +125,11 @@ export class QuestlineDraft {
 
   /**
    * Stages a scene: what is wrong inside it, with the planned pieces it names,
-   * or with the building of a step already in, comes back before it enters.
+   * or with the steps already in comes back before it enters.
    */
   stageScene(staging: SceneStaging): string {
     const def = this.current();
-    const problems = stagingProblems(staging);
-    const at = def.steps.find((step) => step.stepId === staging.place.atStepId);
-    if (at !== undefined && buildingOf(def, at) === undefined) {
-      problems.push(`place.atStepId ${at.stepId} (${at.target.kind}) happens in no building; name a step that meets its people in a building, goes to or ends at one, or finds its item there, such as the investigation step whose clue the scene shows`);
-    }
+    const problems = [...stagingProblems(staging), ...stagingConflicts(def, staging)];
     for (const stepId of [staging.stagedBy, staging.place.atStepId, ...(staging.clearedBy !== undefined ? [staging.clearedBy] : [])]) {
       this.reference('steps', stepId, problems);
     }
@@ -200,10 +193,7 @@ export class QuestlineDraft {
     if (unstaged.length > 0) {
       throw new DraftError(`investigation steps show their clue on no staged scene: ${unstaged.join(', ')}; call stage_scene with that sceneId and an evidence entry for each clue`);
     }
-    const staged = stagedScenery(def, this.scenes);
-    new SceneryAudit().validate([def], staged.scenery, staged.investigations, new Set(staged.assets.map((asset) => asset.assetId)));
-    new InvestigationAudit().validate([def], staged.investigations, staged.scenery);
-    new HostCapabilityAudit().validateScenery(staged.scenery, scenery);
+    auditStagings(def, this.scenes, scenery);
   }
 
   private current(): QuestlineDefinition {

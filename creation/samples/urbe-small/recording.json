@@ -1581,7 +1581,8 @@
           { "actorId": "worker", "role": "victim", "pose": "wounded-crawl", "gender": "male" },
           { "actorId": "nurse", "role": "bystander", "pose": "kneel-examine", "gender": "female", "nearActorId": "worker" }
         ],
-        "props": []
+        "props": [],
+        "clearedBy": "s3_deliver"
       }
     ]
   }

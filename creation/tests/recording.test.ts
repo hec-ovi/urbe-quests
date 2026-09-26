@@ -157,12 +157,13 @@ describe('recorded scenery', () => {
 
     expect(scripts[0]).toContain('The city can show what a scene leaves behind where it happened');
     const exchange = (result: CreationResult) => result.side.find((side) => side.definition.id === 'q_exchange_rate')!;
-    expect(exchange(live).scenes).toEqual([collapse]);
+    const shipped = [{ ...collapse!, sceneId: 'q_exchange_rate.sc3_collapse' }];
+    expect(exchange(live).scenes).toEqual(shipped);
     const recording = JSON.parse(JSON.stringify(capture.recording())) as Recording;
     expect(recording.scenery).toEqual(SCENERY_VOCABULARY);
 
     const replayed = await create(recordedPorts(recording, world), { scenery: recording.scenery });
-    expect(exchange(replayed).scenes).toEqual([collapse]);
+    expect(exchange(replayed).scenes).toEqual(shipped);
 
     const events: CreationProgress[] = [];
     const bare = await create(recordedPorts(recording, world), { progress: (event) => events.push(event) });

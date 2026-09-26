@@ -36,13 +36,14 @@ export interface CreationInput {
   parcels?: readonly string[];
   /**
    * The step kinds the host can play, when it cannot play all of them. The planner and builder see only these;
-   * a step of another kind is refused back to the builder. Omitted, every kind.
+   * a step of another kind is refused back to the builder. Omitted, every kind, and investigation only with `scenery`.
    */
   mechanics?: readonly StepKind[];
   /**
    * The scenery the host stages (its declared `hostCapabilities.scenery`). The story may write the places a death or a
    * crime leaves, the plan says what is staged there, the builder stages it with stage_scene and every investigation
-   * step shows its clue on a staged scene. A `mechanics` list naming investigation needs it.
+   * step shows its clue on a staged scene. Investigation needs it: a `mechanics` list naming investigation without it
+   * throws, and with no list investigation is left out.
    */
   scenery?: SceneryCapabilities;
   referenceTimeMin?: number;

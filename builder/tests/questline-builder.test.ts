@@ -488,7 +488,9 @@ steps: s_ask (talk), s_kill (assassinate), s_look (investigation)`;
       'error: investigation steps show their clue on no staged scene: s_look (scene sc_floor, clue ev_blood); call stage_scene with that sceneId and an evidence entry for each clue');
     expect(toolResults(requests[2]!.transcript)).toContainEqual(expect.stringMatching(/^error: scene sc_floor not staged: .*quest character lender, who stands in a scene only dead/));
     expect(result.definition.steps.map((entry) => entry.target.kind)).toEqual(['talk', 'assassinate', 'investigation']);
-    expect(result.scenes).toEqual([STAGE.input]);
+    // The build ships the scene and the investigation step naming it under the questline's own scene id.
+    expect(result.scenes).toEqual([{ ...(STAGE.input as object), sceneId: 'q_kettle_blood.sc_floor' }]);
+    expect(result.definition.steps[2]!.target).toMatchObject({ kind: 'investigation', sceneId: 'q_kettle_blood.sc_floor' });
   });
 
   it('refuses a staging beyond the host vocabulary, its limits, the plan or a building before it enters', async () => {
@@ -497,8 +499,9 @@ steps: s_ask (talk), s_kill (assassinate), s_look (investigation)`;
     const street: AgentToolCall = { tool: 'stage_scene', input: { ...(STAGE.input as object), place: { kind: 'street', atStepId: 's_look' } } };
     const unplanned: AgentToolCall = { tool: 'stage_scene', input: { ...(STAGE.input as object), stagedBy: 's_later' } };
     const nowhere: AgentToolCall = { tool: 'stage_scene', input: { ...(STAGE.input as object), place: { kind: 'room', atStepId: 's_kill' } } };
+    const apart: AgentToolCall = { tool: 'stage_scene', input: { ...(STAGE.input as object), place: { kind: 'room', atStepId: 's_ask' } } };
     const { agent, requests } = scriptedAgent([
-      { kind: 'calls', calls: [...SCENE_CALLS, crowded, street, unplanned, nowhere] },
+      { kind: 'calls', calls: [...SCENE_CALLS, crowded, street, unplanned, nowhere, apart] },
       { kind: 'calls', calls: [STAGE, FINISH] },
     ]);
     await build(agent, { plan: SCENE_PLAN, manifest: parsePlanManifest(SCENE_PLAN), scenery: SCENERY });
@@ -507,6 +510,8 @@ steps: s_ask (talk), s_kill (assassinate), s_look (investigation)`;
     expect(results).toContain('error: stage_scene not accepted: place.kind must be one of room, parcel-entry');
     expect(results).toContainEqual(expect.stringMatching(/^error: scene sc_floor not staged: unknown step s_later \(planned steps: s_ask, s_kill, s_look\)/));
     expect(results).toContainEqual(expect.stringMatching(/^error: scene sc_floor not staged: place.atStepId s_kill \(assassinate\) happens in no building; name a step/));
+    // The talk step is in the same building now, but casting may move it: a scene with clues stands at its clue step.
+    expect(results).toContain('error: scene sc_floor not staged: scene sc_floor shows the clue of investigation step s_look, so it stands where that step happens: set place.atStepId to s_look');
     expect(results).toContain('questline q_kettle_blood is valid and complete');
   });
 });

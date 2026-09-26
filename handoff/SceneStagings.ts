@@ -9,6 +9,9 @@
 import { createHash } from 'node:crypto';
 import { QuestError } from '../errors.js';
 import type { PlaceTarget, QuestlineDefinition, QuestStep } from '../flow/schema.js';
+import { HostCapabilityAudit } from './HostCapabilityAudit.js';
+import { InvestigationAudit } from './InvestigationAudit.js';
+import { SceneryAudit } from './SceneryAudit.js';
 import vocabulary from './schema/scenery-binding-slice.schema.json' with { type: 'json' };
 import type { LinkedInvestigationRequest, SceneCondition, ScenePlace, SceneSpec, SceneryCapabilities } from './schema.js';
 
@@ -48,7 +51,7 @@ export interface StagedActor {
 export interface StagedProp {
   propId: string;
   kind: string;
-  /** A mission asset shows this physical quest item. */
+  /** A mission asset shows this physical quest item in its own asset; never one a pickup step stands in the city. */
   itemId?: string;
   nearActorId?: string;
   /** A mission-asset prop listed before this one. */
@@ -56,6 +59,7 @@ export interface StagedProp {
 }
 
 export interface SceneStaging {
+  /** Authored and short; a build ships it as `<questId>.<sceneId>` (`scopedScenes`). */
   sceneId: string;
   purpose: string;
   /** What the player walks into, in the story's words. */
@@ -63,7 +67,7 @@ export interface SceneStaging {
   /** The step that brings the scene into the world, once it is active or once it is done. */
   stagedBy: string;
   stagedWhen: 'active' | 'done';
-  /** Where it stands: the building step `atStepId` happens in, on its ground floor. */
+  /** Where it stands: the building step `atStepId` happens in, on its ground floor; a scene with clues names one of its clue steps. */
   place: { kind: string; atStepId: string; roomKinds?: string[] };
   actors: StagedActor[];
   props: StagedProp[];
@@ -74,23 +78,44 @@ export interface SceneStaging {
   lasting?: boolean;
 }
 
-/** What a questline's stagings become: scene specs, the investigations over them and the props that need an asset. */
+/** What a questline's stagings become: scene specs, the investigations over them and the quest items their props show. */
 export interface StagedScenery {
   scenery: SceneSpec[];
   investigations: LinkedInvestigationRequest[];
-  /** Each mission-asset prop with the asset id its spec names and the quest item it shows. */
-  assets: { assetId: string; questId: string; sceneId: string; propId: string; itemId: string }[];
+  /** Each quest item a scene shows, once per scene, with the asset its props name. */
+  assets: { assetId: string; questId: string; sceneId: string; itemId: string }[];
 }
 
 const digest = (identity: string): string => createHash('sha256').update(identity).digest('hex');
 const seedOf = (identity: string): number => Number.parseInt(digest(identity).slice(0, 8), 16);
 
-/** The asset a scene prop shows, stable per questline, scene and prop. */
-export const sceneAssetId = (questId: string, sceneId: string, propId: string): string =>
-  `quest-scene.${digest(`${questId}\u0000${sceneId}\u0000${propId}`).slice(0, 32)}`;
-
-/** The Engine scene id of a staging: questline ids are unique in a set, so scene ids are too. */
+/** The id a staging ships under, as a scene spec and as the investigation over it: questline ids are unique in a bundle, so these are too. */
 export const sceneSpecId = (questId: string, sceneId: string): string => `${questId}.${sceneId}`;
+
+/** A physical quest item's own asset, the one its pickup and every scene prop showing it name: stable per questline and item. */
+export const questItemAssetId = (questId: string, itemId: string): string =>
+  `quest-item.${digest(`${questId}\u0000${itemId}`).slice(0, 32)}`;
+
+/**
+ * A questline and its stagings as a build ships them: each sceneId becomes
+ * `<questId>.<sceneId>` on its staging and on the investigation steps naming
+ * it, so questlines built apart never share a scene or an investigation.
+ */
+export function scopedScenes(
+  definition: QuestlineDefinition,
+  stagings: readonly SceneStaging[],
+): { definition: QuestlineDefinition; stagings: SceneStaging[] } {
+  if (stagings.length === 0) return { definition, stagings: [] };
+  const staged = new Set(stagings.map((staging) => staging.sceneId));
+  const scoped = (sceneId: string) => sceneSpecId(definition.id, sceneId);
+  const steps = definition.steps.map((step) => (step.target.kind === 'investigation' && staged.has(step.target.sceneId)
+    ? { ...step, target: { ...step.target, sceneId: scoped(step.target.sceneId) } }
+    : step));
+  return {
+    definition: { ...definition, steps },
+    stagings: stagings.map((staging) => ({ ...staging, sceneId: scoped(staging.sceneId) })),
+  };
+}
 
 /**
  * What is wrong inside one staging, with no questline in view: element ids,
@@ -140,8 +165,38 @@ export function stagingProblems(staging: SceneStaging): string[] {
     shown.add(elementId);
   }
   if (staging.clearedBy !== undefined && staging.lasting === true) problems.push(`${at} is cleared by a step or lasting, not both`);
+  if (staging.clearedBy === staging.stagedBy && staging.stagedWhen === 'done') {
+    problems.push(`${at} would appear and clear as step ${staging.stagedBy} is done, so it never stands; stage it while that step is active, or clear it by a later step`);
+  }
   if (staging.place.roomKinds !== undefined && staging.place.kind !== 'room' && staging.place.kind !== 'story-slot') {
     problems.push(`${at}: roomKinds narrow a room or story-slot place, not a ${staging.place.kind}`);
+  }
+  return problems;
+}
+
+/**
+ * What is wrong with a staging against the questline's steps as they stand,
+ * every step or those added so far: its place step happens in no building, a
+ * scene with clues stands anywhere but at one of its clue steps (casting may
+ * move a step, and a scene moves with the step it names), or a prop shows an
+ * item a pickup step already stands in the city.
+ */
+export function stagingConflicts(definition: Pick<QuestlineDefinition, 'steps' | 'items'>, staging: SceneStaging): string[] {
+  const problems: string[] = [];
+  const { atStepId } = staging.place;
+  const at = definition.steps.find((step) => step.stepId === atStepId);
+  if (at !== undefined && buildingOf(definition, at) === undefined) {
+    problems.push(`place.atStepId ${atStepId} (${at.target.kind}) happens in no building; name a step that meets its people in a building, goes to or ends at one, or finds its item there, such as the investigation step whose clue the scene shows`);
+  }
+  const clues = clueSteps(definition, staging.sceneId).map(({ stepId }) => stepId);
+  if (clues.length > 0 && !clues.includes(atStepId)) {
+    problems.push(`scene ${staging.sceneId} shows the clue of investigation step ${clues.join(', ')}, so it stands where that step happens: set place.atStepId to ${clues[0]}`);
+  }
+  for (const prop of staging.props) {
+    const pickup = prop.itemId === undefined ? undefined : definition.steps.find((step) => step.target.kind === 'pickup' && step.target.itemId === prop.itemId);
+    if (pickup !== undefined) {
+      problems.push(`prop ${prop.propId} shows ${prop.itemId}, which pickup step ${pickup.stepId} already stands in the city for the player to take; leave it out of the scene`);
+    }
   }
   return problems;
 }
@@ -153,57 +208,67 @@ export function unstagedClues(definition: QuestlineDefinition, stagings: readonl
 }
 
 /**
- * The Engine records one questline's stagings become. A scene stands in the
+ * The Engine records one questline's stagings become, under the ids the
+ * stagings carry (scoped, as a build ships them). A scene stands in the
  * building its `atStepId` step happens in, from when its step is active or
  * done, and a quest character in it only once the simulation holds them dead.
- * The investigation steps naming its sceneId become one 1.2 investigation
- * that shows each clue on the element its staging names.
+ * A prop shows its quest item in the asset `itemAssets` binds the item to,
+ * else in the item's own (`questItemAssetId`). The investigation steps naming
+ * its sceneId become one 1.2 investigation under the same id that shows each
+ * clue on the element its staging names.
  */
-export function stagedScenery(definition: QuestlineDefinition, stagings: readonly SceneStaging[]): StagedScenery {
+export function stagedScenery(
+  definition: QuestlineDefinition,
+  stagings: readonly SceneStaging[],
+  itemAssets: ReadonlyMap<string, string> = new Map(),
+): StagedScenery {
   const fail = (message: string): never => {
     throw new QuestError('E_HANDOFF', `${definition.id}: ${message}`);
   };
   const steps = new Map(definition.steps.map((step) => [step.stepId, step]));
   const items = new Map(definition.items.map((item) => [item.itemId, item]));
   const roles = new Set(definition.roles.map((role) => role.roleId));
-  const step = (stepId: string, use: string): QuestStep => steps.get(stepId) ?? fail(`scene ${use} names step ${stepId}, which the questline lacks`);
   const result: StagedScenery = { scenery: [], investigations: [], assets: [] };
   const staged = new Set<string>();
 
   for (const staging of stagings) {
+    const { sceneId } = staging;
     const problems = stagingProblems(staging);
     if (problems.length > 0) fail(problems.join('; '));
-    if (staged.has(staging.sceneId)) fail(`scene ${staging.sceneId} is staged twice`);
-    staged.add(staging.sceneId);
-    const { sceneId } = staging;
-    const specId = sceneSpecId(definition.id, sceneId);
-    const parcelId = buildingOf(definition, step(staging.place.atStepId, sceneId))
-      ?? fail(`scene ${sceneId} stands at step ${staging.place.atStepId}, which happens in no building`);
-    step(staging.stagedBy, sceneId);
-    if (staging.clearedBy !== undefined) step(staging.clearedBy, sceneId);
+    if (staged.has(sceneId)) fail(`scene ${sceneId} is staged twice`);
+    staged.add(sceneId);
+    for (const stepId of [staging.place.atStepId, staging.stagedBy, ...(staging.clearedBy !== undefined ? [staging.clearedBy] : [])]) {
+      if (!steps.has(stepId)) fail(`scene ${sceneId} names step ${stepId}, which the questline lacks`);
+    }
+    const conflicts = stagingConflicts(definition, staging);
+    if (conflicts.length > 0) fail(conflicts.join('; '));
+    const parcelId = buildingOf(definition, steps.get(staging.place.atStepId)!)!;
 
     for (const actor of staging.actors) {
       if (actor.roleId !== undefined && !roles.has(actor.roleId)) fail(`scene ${sceneId} actor ${actor.actorId} names role ${actor.roleId}, which the questline lacks`);
     }
-    for (const prop of staging.props) {
-      if (prop.itemId === undefined) continue;
-      const item = items.get(prop.itemId);
-      if (item === undefined || item.kind === 'information') fail(`scene ${sceneId} prop ${prop.propId} shows ${prop.itemId}, which is no physical item of the questline`);
-      result.assets.push({ assetId: sceneAssetId(definition.id, sceneId, prop.propId), questId: definition.id, sceneId, propId: prop.propId, itemId: prop.itemId });
+    const shows = new Map<string, string>();
+    for (const { propId, itemId } of staging.props) {
+      if (itemId === undefined) continue;
+      const item = items.get(itemId);
+      if (item === undefined || item.kind === 'information') fail(`scene ${sceneId} prop ${propId} shows ${itemId}, which is no physical item of the questline`);
+      shows.set(itemId, itemAssets.get(itemId) ?? questItemAssetId(definition.id, itemId));
     }
+    for (const [itemId, assetId] of shows) result.assets.push({ assetId, questId: definition.id, sceneId, itemId });
 
-    const clues = definition.steps.flatMap((candidate) =>
-      candidate.target.kind === 'investigation' && candidate.target.sceneId === sceneId ? [{ stepId: candidate.stepId, clue: candidate.target }] : []);
-    // A clue is found only while its scene stands, so the scene stands before its clue step is done.
+    // A clue is found only while its scene stands, so the scene stands before its clue step is done and clears no sooner.
+    const clues = clueSteps(definition, sceneId);
     for (const { stepId } of clues) {
-      const later = stepsAfter(definition, stepId);
-      if (later.has(staging.stagedBy) || (staging.stagedBy === stepId && staging.stagedWhen === 'done')) {
+      if (stepsAfter(definition, stepId).has(staging.stagedBy) || (staging.stagedBy === stepId && staging.stagedWhen === 'done')) {
         fail(`scene ${sceneId} would stand only after its clue step ${stepId} is done, so that clue could never be found; stage it by a step before ${stepId}, or by ${stepId} while it is active`);
       }
+      if (staging.clearedBy !== undefined && staging.clearedBy !== stepId && stepsAfter(definition, staging.clearedBy).has(stepId)) {
+        fail(`scene ${sceneId} clears once step ${staging.clearedBy} is done, before its clue step ${stepId} can be; clear it by ${stepId} or a step after it`);
+      }
     }
-    const spec: SceneSpec = {
+    result.scenery.push({
       contractVersion: '1.0',
-      sceneId: specId,
+      sceneId,
       questId: definition.id,
       seed: seedOf(`${definition.id}\u0000${sceneId}`),
       purpose: staging.purpose,
@@ -220,7 +285,7 @@ export function stagedScenery(definition: QuestlineDefinition, stagings: readonl
       props: staging.props.map((prop) => ({
         propId: prop.propId,
         kind: prop.kind,
-        ...(prop.itemId !== undefined ? { assetId: sceneAssetId(definition.id, sceneId, prop.propId) } : {}),
+        ...(prop.itemId !== undefined ? { assetId: shows.get(prop.itemId)! } : {}),
         ...(prop.nearActorId !== undefined ? { nearActorId: prop.nearActorId } : {}),
         ...(prop.nearPropId !== undefined ? { nearPropId: prop.nearPropId } : {}),
       })),
@@ -228,8 +293,7 @@ export function stagedScenery(definition: QuestlineDefinition, stagings: readonl
       ...(staging.clearedBy !== undefined ? { retireWhen: { kind: 'stepDone', stepId: staging.clearedBy } }
         : staging.lasting === true ? { retireWhen: { kind: 'never' } } : {}),
       ...(clues.length > 0 ? { investigationSceneId: sceneId } : {}),
-    };
-    result.scenery.push(spec);
+    });
 
     const shownOn = new Map((staging.evidence ?? []).map(({ evidenceId, elementId }) => [evidenceId, elementId]));
     for (const evidenceId of shownOn.keys()) {
@@ -259,12 +323,29 @@ export function stagedScenery(definition: QuestlineDefinition, stagings: readonl
       questId: definition.id,
       incident: { family: staging.purpose, summary: staging.description },
       questBindings: linked.map(({ binding }) => binding),
-      scenery: { sceneId: specId },
+      scenery: { sceneId },
       evidenceVisuals: linked.map(({ visual }) => visual),
       evidence: linked.map(({ evidence }) => evidence),
     });
   }
   return result;
+}
+
+/**
+ * The scenes one questline stages, compiled and audited as the handoff and a
+ * host declaring `scenery` take them. Throws E_HANDOFF with the first problem.
+ */
+export function auditStagings(definition: QuestlineDefinition, stagings: readonly SceneStaging[], scenery: SceneryCapabilities): void {
+  const staged = stagedScenery(definition, stagings);
+  new SceneryAudit().validate([definition], staged.scenery, staged.investigations, new Set(staged.assets.map((asset) => asset.assetId)));
+  new InvestigationAudit().validate([definition], staged.investigations, staged.scenery);
+  new HostCapabilityAudit().validateScenery(staged.scenery, scenery);
+}
+
+/** The investigation steps whose clue a scene shows: those naming its sceneId. */
+function clueSteps(definition: Pick<QuestlineDefinition, 'steps'>, sceneId: string) {
+  return definition.steps.flatMap((step) =>
+    step.target.kind === 'investigation' && step.target.sceneId === sceneId ? [{ stepId: step.stepId, clue: step.target }] : []);
 }
 
 /** Every step the flow reaches from this one along its next edges. */
@@ -283,7 +364,7 @@ function stepsAfter(definition: QuestlineDefinition, stepId: string): Set<string
 }
 
 /** The step's building: where it meets its people, where it goes or ends, or where its item lies. */
-export function buildingOf(definition: Pick<QuestlineDefinition, 'items'>, step: QuestStep): string | undefined {
+function buildingOf(definition: Pick<QuestlineDefinition, 'items'>, step: QuestStep): string | undefined {
   const t = step.target;
   const parcel = (place: PlaceTarget) => ('parcelId' in place ? place.parcelId : undefined);
   if ('atParcelId' in t) return t.atParcelId;
@@ -293,7 +374,7 @@ export function buildingOf(definition: Pick<QuestlineDefinition, 'items'>, step:
   return undefined;
 }
 
-/** Stagings stand on the ground floor: a questline does not know how tall its buildings are. Any room of a kind the staging allows. */
+/** Stagings stand on the ground floor, the one floor every building has: a questline does not know how tall its buildings are. Any room of a kind the staging allows. */
 function placeOf(place: SceneStaging['place'], parcelId: string): ScenePlace {
   if (place.kind === 'room' || place.kind === 'story-slot') {
     return { kind: place.kind, parcelId, floor: 0, roomKinds: [...(place.roomKinds ?? ROOM_KINDS)] };

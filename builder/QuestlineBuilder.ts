@@ -4,7 +4,7 @@ import { QuestError } from '../errors.js';
 import { promptLoader } from '../prompts.js';
 import type { AgentPort, AgentTurn } from '../ports/llm.js';
 import type { QuestlineDefinition, ResolvedCast, StepKind } from '../flow/schema.js';
-import type { SceneStaging } from '../handoff/SceneStagings.js';
+import { auditStagings, scopedScenes, type SceneStaging } from '../handoff/SceneStagings.js';
 import type { SceneryCapabilities } from '../handoff/schema.js';
 import type { NamedWorld, NPCTypeSet } from '../world/types/named-world.js';
 import type { SimulationPort } from '../world/types/simulation.js';
@@ -42,9 +42,10 @@ export interface BuildInput {
 }
 
 export interface BuildResult {
+  /** As it ships: pinned where its cast works, its staged scenes' ids scoped to it. */
   definition: QuestlineDefinition;
   cast: ResolvedCast;
-  /** The scenes it stages, in the order they were first staged. */
+  /** The scenes it stages, in the order they were first staged, under `<questId>.<sceneId>`. */
   scenes: SceneStaging[];
 }
 
@@ -105,7 +106,19 @@ export class QuestlineBuilder {
     // A questline nobody can staff is not a questline to hand on: the build says so here.
     if (result.blocked !== undefined) throw new QuestError('E_CAST', result.blocked.reason, result.blocked);
     // Where a step happens is decided here, while it is built, so the shipped questline is the one truth.
-    return { definition: venues.pin(definition, new Map(Object.entries(result.posts))), cast: result.cast, scenes: draft.scenes };
+    const shipped = scopedScenes(venues.pin(definition, new Map(Object.entries(result.posts))), draft.scenes);
+    if (input.scenery !== undefined) this.checkPinnedScenes(shipped.definition, shipped.stagings, input.scenery);
+    return { definition: shipped.definition, cast: result.cast, scenes: shipped.stagings };
+  }
+
+  /** Pinning moves steps to where their people work; each scene still stands where its clues are found. */
+  private checkPinnedScenes(definition: QuestlineDefinition, stagings: readonly SceneStaging[], scenery: SceneryCapabilities): void {
+    try {
+      auditStagings(definition, stagings, scenery);
+    } catch (error) {
+      if (!(error instanceof QuestError)) throw error;
+      throw new QuestError('E_HANDOFF', `the cast's workplaces move a step away from its scene: ${error.message}`, error.detail);
+    }
   }
 
   private nudgeLine(draft: QuestlineDraft): string {

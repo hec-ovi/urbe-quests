@@ -67,7 +67,7 @@ export async function author(args: readonly string[], options: AuthorOptions = {
   const handoff = readHandoffInput(flags.get('handoff'));
   const scenery = handoff.hostCapabilities?.scenery;
   const listed = flags.get('mechanics')?.split(',').map((kind) => kind.trim()).filter((kind) => kind.length > 0);
-  const mechanics: StepKind[] | undefined = listed === undefined ? undefined : [...hostKinds(listed, scenery)!];
+  const mechanics: StepKind[] | undefined = listed === undefined ? undefined : [...hostKinds(listed, scenery)];
   const parcels = openParcels(context.world, readParcels(flags.get('parcels')));
   const missionItemTemplates = checkMissionItemTemplates(readJson(flags.get('templates') ?? DEFAULT_TEMPLATES));
   const profile = flags.get('profile') ?? 'author';

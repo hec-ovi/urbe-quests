@@ -24,7 +24,7 @@ active: the scene is there once that step is open, so the player finds it when t
 
 ## place
 
-Where the scene stands: atStepId names the step whose building it is in, on that building's ground floor. For a scene the player investigates, that is the investigation step. Otherwise name a step that happens in a building (the building it meets its people in, goes to or ends at, or where its item lies); an assassinate or observe step happens in none.
+Where the scene stands: atStepId names the step whose building it is in, on that building's ground floor. A scene the player investigates stands at its investigation step, so atStepId names that step. Otherwise name a step that happens in a building (the building it meets its people in, goes to or ends at, or where its item lies); an assassinate or observe step happens in none.
 - room: a room of that building, of one of roomKinds when given.
 - story-slot: a room where the building keeps space for a story, of one of roomKinds when given.
 - parcel-entry: the room behind the building's main door.
@@ -32,7 +32,7 @@ Where the scene stands: atStepId names the step whose building it is in, on that
 
 ## roomKinds
 
-For a room or story-slot only: the kinds of room it may be. Name only kinds that building surely has (a restaurant's kitchen, an office's office_open); leave it out for any room.
+For a room or story-slot only: the kinds of room it may be, on the ground floor. Name only kinds a ground floor surely has: an office, home or hotel keeps its reception, toilets and storage there, a restaurant its dining_area and kitchen, a coffee shop its dining_area, a shop its sales_floor and storage, a gym its gym_floor and locker_room; offices, bedrooms and flats are upstairs. Leave it out for any room.
 
 ## actors
 
@@ -52,7 +52,7 @@ At most {{actors}} people. role says what they are to the scene. A quest charact
 At most {{props}} marks and objects, each near an actor (nearActorId), near a mission asset listed before it (nearPropId), or on its own.
 - blood-pool: blood on the floor.
 - tyre-marks: skid marks on the ground.
-- mission-asset: a physical quest item left there (itemId), in its own look.
+- mission-asset: a physical quest item left there (itemId), in its own look. Never an item a pickup step has the player take: the pickup already puts it in that building.
 
 ## evidence
 

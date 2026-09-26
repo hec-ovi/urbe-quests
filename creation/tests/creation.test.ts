@@ -16,7 +16,7 @@ import { QuestlineRuntime } from '../../flow/QuestlineRuntime.js';
 import type { PlayerEvent } from '../../flow/events.js';
 import type { QuestlineDefinition } from '../../flow/schema.js';
 import { StubSimulation, WorldContextNormalizer, type NamedWorld, type NPCTypeSet } from '../../world/index.js';
-import { QuestlineCreation } from '../QuestlineCreation.js';
+import { hostKinds, QuestlineCreation } from '../QuestlineCreation.js';
 import { questlineSetFromSample, writeQuestlineSet } from '../samples/QuestlineSetWriter.js';
 import { materialize, materializeRecording } from '../samples/materialize.js';
 import { recordedPorts, type Recording } from '../samples/RecordedPorts.js';
@@ -24,8 +24,8 @@ import type { CreationProgress, StagePorts } from '../schema.js';
 import { checkMissionItemTemplates, pickupAssetRequests } from '../samples/PickupAssetRequests.js';
 import { checkSceneTemplates } from '../samples/SceneTemplates.js';
 import { EngineHandoff } from '../../handoff/EngineHandoff.js';
-import { SCENERY_VOCABULARY, type SceneStaging } from '../../handoff/SceneStagings.js';
-import type { SceneSpec } from '../../handoff/schema.js';
+import { SCENERY_VOCABULARY, questItemAssetId, type SceneStaging } from '../../handoff/SceneStagings.js';
+import type { MissionItemBinding, SceneSpec } from '../../handoff/schema.js';
 
 const sampleDir = fileURLToPath(new URL('../samples/urbe-small/', import.meta.url));
 const recordingPath = join(sampleDir, 'recording.json');
@@ -274,6 +274,10 @@ describe('QuestlineCreation', () => {
     // A live story shows its clues on the scenes it stages, so a host naming investigation declares scenery.
     await expect(run({ script: { complete: script } }, { mechanics: ['talk', 'investigation'] })).rejects.toThrowError(/investigation needs the host scenery capability/);
     expect(script).not.toHaveBeenCalled();
+    // With no list, every kind the host can play: investigation only with scenery.
+    expect(hostKinds(undefined, undefined)).not.toContain('investigation');
+    expect(hostKinds(undefined, undefined)).toHaveLength(15);
+    expect(hostKinds(undefined, SCENERY_VOCABULARY)).toContain('investigation');
   });
 });
 
@@ -336,7 +340,7 @@ describe('materialize entry', () => {
           recordingPath, 'shut', namedWorldPath, typesPath, join(outputDir, 'shut', 'questlines.json'),
           '--parcels=p0,p1,p4,p6,p7,p10,p11,p40',
         ]),
-      ).rejects.toThrow(/main questline cannot be placed.*s_doc \(p32\)/);
+      ).rejects.toThrow(/main questline cannot be played in this city: no open parcel.*s_doc \(p32\)/);
     } finally {
       log.mockRestore();
       rmSync(outputDir, { recursive: true, force: true });
@@ -354,7 +358,12 @@ describe('recorded scene templates', () => {
         world, types, recording, recordingName: 'recording.json', typesName: 'npc-types.json', profile: 'scenes',
         outputPath: join(outputDir, 'questlines.json'), handoff, log: (line) => log.push(line),
       });
-      return { ...result, scenery: read<SceneSpec[]>(join(outputDir, 'scenery.json')), assets: read<{ assetId: string; family: string }[]>(join(outputDir, 'mission-assets.json')) };
+      return {
+        ...result,
+        scenery: read<SceneSpec[]>(join(outputDir, 'scenery.json')),
+        assets: read<{ assetId: string; family: string }[]>(join(outputDir, 'mission-assets.json')),
+        bindings: read<MissionItemBinding[]>(join(outputDir, 'mission-item-bindings.json')),
+      };
     } finally {
       rmSync(outputDir, { recursive: true, force: true });
     }
@@ -372,7 +381,9 @@ describe('recorded scene templates', () => {
         { actorId: 'nurse', role: 'bystander', identity: { kind: 'anonymous', gender: 'female', appearanceSeed: expect.any(Number) }, pose: 'kneel-examine', placement: { zone: 'incident', nearEntityId: 'worker' } },
       ],
       props: [],
+      // From the moment the kit is on its way until it arrives and the worker is treated.
       activeWhen: { any: [{ kind: 'stepActive', stepId: 's3_deliver' }, { kind: 'stepDone', stepId: 's3_deliver' }] },
+      retireWhen: { kind: 'stepDone', stepId: 's3_deliver' },
     }]);
 
     const log: string[] = [];
@@ -388,10 +399,13 @@ describe('recorded scene templates', () => {
       ...RECORDING, missionItemTemplates: templates, sceneTemplates: { q_exchange_rate: [showing] },
     });
     const shipped = checkMissionItemTemplates(read(fileURLToPath(new URL('../samples/mission-item-templates.json', import.meta.url))));
-    await expect(materializeWith(recording(RECORDING.missionItemTemplates), HOST)).rejects.toThrowError(/shows i3_meds in prop kit, and there is no substance template/);
+    await expect(materializeWith(recording(RECORDING.missionItemTemplates), HOST)).rejects.toThrowError(/scene q_exchange_rate.sc3_collapse shows i3_meds, and there is no substance template/);
     const staged = await materializeWith(recording({ ...RECORDING.missionItemTemplates, substance: shipped.substance }), HOST);
+    // The kit in its own asset, bound to it, so whatever else draws the kit draws the same one.
     const kit = staged.scenery[0]!.props[0]!;
+    expect(kit.assetId).toBe(questItemAssetId('q_exchange_rate', 'i3_meds'));
     expect(staged.assets.find((asset) => asset.assetId === kit.assetId)).toMatchObject({ family: 'package' });
+    expect(staged.bindings).toContainEqual({ questId: 'q_exchange_rate', itemId: 'i3_meds', assetId: kit.assetId });
 
     expect(() => checkSceneTemplates([])).toThrowError(/object keyed by questline id/);
     expect(() => checkSceneTemplates({ q: COLLAPSE })).toThrowError(expect.objectContaining({ detail: ['q holds no list of stagings'] }));
@@ -399,6 +413,26 @@ describe('recorded scene templates', () => {
       .toThrowError(expect.objectContaining({ detail: [expect.stringMatching(/^q\[0\]: actors\[0\]\.pose must be one of death-a/)] }));
     expect(() => checkSceneTemplates({ q: [{ ...COLLAPSE, actors: [{ actorId: 'a', role: 'victim', pose: 'grieving', roleId: 'r_yara' }] }] }))
       .toThrowError(expect.objectContaining({ detail: [expect.stringMatching(/stands in a scene only dead/)] }));
+  });
+
+  it('leaves out a side quest whose scenes cannot stand, and stops on a main line whose scenes cannot', async () => {
+    const log: string[] = [];
+    const side = await materializeWith({ ...RECORDING, sceneTemplates: { q_exchange_rate: [{ ...COLLAPSE!, stagedBy: 's3_gone' }] } }, HOST, log);
+    expect(side.blocked).toEqual([{
+      questlineId: 'q_exchange_rate',
+      reason: expect.stringMatching(/^its scenes cannot stand where its steps land: q_exchange_rate: scene q_exchange_rate.sc3_collapse names step s3_gone/),
+    }]);
+    expect(side.questlines.map((quest) => quest.id)).toEqual(['q_weir_line', 'q_oxide_filter', 'q_signal_sump']);
+    expect(side.scenery).toEqual([]);
+    expect(log).toContainEqual(expect.stringMatching(/^side quest q_exchange_rate blocked: its scenes cannot stand/));
+
+    // The drive Kip hid is the one the player picks up: the pickup already stands it at the market.
+    const drive: SceneStaging = {
+      ...COLLAPSE!, sceneId: 'sc_drive', stagedBy: 's_kip', place: { kind: 'parcel-entry', atStepId: 's_kip' }, clearedBy: undefined,
+      props: [{ propId: 'drive', kind: 'mission-asset', itemId: 'i_drive' }],
+    };
+    await expect(materializeWith({ ...RECORDING, sceneTemplates: { q_weir_line: [drive] } }, HOST))
+      .rejects.toThrowError(/main questline cannot be played in this city: its scenes cannot stand .*prop drive shows i_drive, which pickup step s_pickup already stands in the city/);
   });
 });
 

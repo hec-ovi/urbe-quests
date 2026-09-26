@@ -1,12 +1,16 @@
 import { writeFileSync } from 'node:fs';
 import { basename, dirname, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import type { TranslationResult } from '../../builder/schema.js';
 import { StoryVenues } from '../../builder/StoryVenues.js';
+import { QuestError } from '../../errors.js';
 import { QuestlineSetValidator } from '../../flow/QuestlineSet.js';
 import type { QuestlineDefinition } from '../../flow/schema.js';
 import { StubSimulation, type NamedWorld, type NormalizedWorldContext, type NPCTypeSet } from '../../world/index.js';
 import { QuestlineCreation } from '../QuestlineCreation.js';
 import { EngineHandoff } from '../../handoff/EngineHandoff.js';
+import { HandoffInputBoundary } from '../../handoff/HandoffInputBoundary.js';
+import { stagedScenery } from '../../handoff/SceneStagings.js';
 import { loadWorld, parseArgs, readJson, readParcels } from './CliInputs.js';
 import { readHandoffInput, writeEngineHandoff, type HandoffManifest } from './EngineHandoffWriter.js';
 import { recordedPorts, type Recording } from './RecordedPorts.js';
@@ -33,7 +37,7 @@ export interface MaterializeResult {
   world: NamedWorld;
   types: NPCTypeSet;
   questlines: QuestlineDefinition[];
-  /** Side quests left out because the open parcels cannot hold them, with the place that could not move. */
+  /** Side quests left out because the open parcels cannot hold them or their scenes cannot stand, with the reason. */
   blocked: { questlineId: string; reason: string }[];
   outputPath: string;
   manifest: HandoffManifest;
@@ -55,6 +59,7 @@ export async function materializeRecording(input: MaterializeInput): Promise<Mat
   const { recording, world, types, parcels, profile } = input;
   const log = input.log ?? ((line: string) => console.error(line));
   const outputPath = resolve(input.outputPath);
+  const handoff = new HandoffInputBoundary().parse(input.handoff ?? {});
   const sceneTemplates = checkSceneTemplates(recording.sceneTemplates ?? {});
   const result = await new QuestlineCreation().run({
     prompt: recording.prompt,
@@ -67,35 +72,42 @@ export async function materializeRecording(input: MaterializeInput): Promise<Mat
     scenery: recording.scenery,
     warn: log,
   });
-  // A place the open city cannot hold makes a questline unplayable: the main line stops the run, a side quest is left out by name.
+  // A place the open city cannot hold, or a scene its buildings cannot stand, makes a questline unplayable here:
+  // the main line stops the run, a side quest is left out by name.
   const venues = new StoryVenues(world, types, parcels);
-  const stranded = (definition: QuestlineDefinition): string | undefined => {
-    const out = venues.outside(definition);
-    return out.length === 0
-      ? undefined
-      : `no open parcel of the right kind for ${out.map((entry) => `${entry.at} (${entry.parcelId})`).join(', ')}`;
+  const stagesScenes = handoff.hostCapabilities?.scenery !== undefined;
+  const stagingsOf = ({ definition, scenes }: TranslationResult) => withTemplates(definition.id, scenes, sceneTemplates[definition.id]);
+  const unplayable = (quest: TranslationResult): string | undefined => {
+    const out = venues.outside(quest.definition);
+    if (out.length > 0) return `no open parcel of the right kind for ${out.map((entry) => `${entry.at} (${entry.parcelId})`).join(', ')}`;
+    if (!stagesScenes) return undefined;
+    try {
+      stagedScenery(quest.definition, stagingsOf(quest));
+      return undefined;
+    } catch (error) {
+      if (error instanceof QuestError) return `its scenes cannot stand where its steps land: ${error.message}`;
+      throw error;
+    }
   };
-  const mainReason = stranded(result.main.definition);
-  if (mainReason !== undefined) {
-    throw new Error(`the main questline cannot be placed in the open parcels: ${mainReason}`);
-  }
+  const mainReason = unplayable(result.main);
+  if (mainReason !== undefined) throw new Error(`the main questline cannot be played in this city: ${mainReason}`);
   const blocked: MaterializeResult['blocked'] = [];
-  const questlines = [result.main.definition];
+  const kept = [result.main];
   for (const side of result.side) {
-    const reason = stranded(side.definition);
+    const reason = unplayable(side);
     if (reason === undefined) {
-      questlines.push(side.definition);
+      kept.push(side);
       continue;
     }
     blocked.push({ questlineId: side.definition.id, reason });
     log(`side quest ${side.definition.id} blocked: ${reason}`);
   }
+  const questlines = kept.map((quest) => quest.definition);
   new QuestlineSetValidator().validate(questlines);
-  const built = new Map([result.main, ...result.side].map((quest) => [quest.definition.id, quest.scenes]));
   const unknown = Object.keys(sceneTemplates).filter((questId) => !questlines.some((definition) => definition.id === questId));
   if (unknown.length > 0) log(`scene templates for questlines not in the bundle: ${unknown.join(', ')}`);
-  const stagings = new Map(questlines.map((definition) => [definition.id, withTemplates(built.get(definition.id) ?? [], sceneTemplates[definition.id])]));
-  const staged = sceneryHandoff(questlines, input.handoff ?? {}, stagings, recording.missionItemTemplates, log);
+  const stagings = new Map(kept.map((quest) => [quest.definition.id, stagingsOf(quest)]));
+  const staged = sceneryHandoff(questlines, handoff, stagings, recording.missionItemTemplates, log);
   const bundle = new EngineHandoff().assemble(questlines, pickupAssetRequests(questlines, staged, recording.missionItemTemplates));
   const manifest = writeEngineHandoff(outputPath, bundle);
   const meta = {
