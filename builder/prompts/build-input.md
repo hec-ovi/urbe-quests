@@ -4,4 +4,6 @@ Build this questline:
 The translation plan to follow:
 {{plan}}
 
+{{main}}
+
 {{world}}

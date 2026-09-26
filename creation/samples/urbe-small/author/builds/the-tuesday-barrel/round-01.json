@@ -16,7 +16,7 @@
     "narrative": { "description": "Dessa keeps ladling while the queue watches the man on the pavement, and waits for you to ask the question she has priced out of reach.", "playerHint": "Talk to Dessa Vey at Sluice Grub.", "stake": "Telling means the barrel stops; not telling means the cheap barrels win. Either way the street pays." },
     "target": { "kind": "talk", "roleId": "r_dessa", "atParcelId": "p6" },
     "dialogue": {
-      "opening": "Cup's two, bowl's three. His was one, two stalls down, and you get what one buys. Mine's clean. Don't look at me like that.",
+      "opening": "You're staring, so you might as well eat. Dessa Vey; this stall's mine. Cup's two, bowl's three. His was one, two stalls down, and you get what one buys. Mine's clean. Don't look at me like that.",
       "choices": [
         { "id": "ask_price", "text": "Why is yours clean when nobody's ration is?", "reply": "Because I pay for clean. Questions cost extra, love, and I'm all out.", "completesStep": false },
         { "id": "ask_source", "text": "Tell me where the barrel comes from, and the cheap ones stop too.", "reply": "[sigh] Weir Exchange. Stamped, every Tuesday, same seal as the clinic's. There. Now pour him one of mine, go on. That one's free.", "completesStep": true }

@@ -16,7 +16,7 @@ The inputs are those of any author run ([creation contract](creation/CONTRACT.md
 1. Run it.
 2. Read `needs` in `<out-dir>/meta.json` (the same lines are on stderr). Each need names the `file` to write and the `request` files that hold what a model would be asked, under `<author-dir>/requests/`.
 3. Read the request, write the file. A need with `problems` is a file you wrote that its stage refused, for the reasons a model's repair round would read: rewrite it whole.
-4. Run again. Every run replays the whole workflow from your files, so it goes on where the last one stopped, and one run may owe several files at once (the main plan and the situations, then the first round of every build).
+4. Run again. Every run replays the whole workflow from your files, so it goes on where the last one stopped, and one run may owe several files at once (the main plan and the situations, then the main build's first round, then the first round of every side build, which waits for the main questline).
 
 Stop at exit 0. Any file may be edited and the run repeated. A change upstream changes the requests after it: a new script title is a new plan file, a new plan manifest needs new rounds.
 
@@ -27,7 +27,7 @@ Stop at exit 0. Any file may be edited and the run repeated. A change upstream c
 
 After a round, `requests/builds/<title>/round-NN.results.json` holds what each call answered. An answer that starts with `error:` was refused: the next round fixes it (an add tool called again with the same id replaces that piece) and calls `finish_questline` again. The build ends when `finish_questline` succeeds.
 
-The player starts with nothing but what the story tells them. The main story's `create_questline` carries `prologue`: who the player is, where they stand, and the job that opens the story, with the person and the place to go to first, in the second person and no further than that first step. Every talk that starts a questline or meets a person for the first time opens cold: a greeting or an acknowledgement, who this person is to the player, why the player is here, then the matter.
+The player starts with nothing but what the story tells them. The main story's `create_questline` carries `prologue`: who the player is, where they stand, and the job that opens the story, with the person and the place to go to first, in the second person and no further than that first step. Every talk that starts a questline or meets a person for the first time opens cold: a greeting or an acknowledgement, who this person is to the player, why the player is here, then the matter. A side build is shown the main story's steps, and its `create_questline` names in `offeredAfter` the earliest one after which its first scene makes sense: until the player has done that step the job stays out of the journal and off the map, so it may take for granted what the main story has told by then and nothing later. Leave it out only for a job that makes sense from the first minute.
 
 `<title>` is the questline's title as a file name (`The Tuesday Barrel` is `the-tuesday-barrel`); every need spells it out.
 
@@ -35,7 +35,7 @@ The player starts with nothing but what the story tells them. The main story's `
 
 Each run first clears what the last one left in `<out-dir>` and `<author-dir>/requests/`, so both show this run only. At exit 0 `<out-dir>` holds each stage, `recording.json` (it replays through `npm run replay` and `npm run materialize` with no author present), `meta.json` with `bundle`, and the bundle under `bundle/`. That directory is the story: Engine's creation `importStory` takes it as `recording` ([Engine creation](../engine/src/creation/CONTRACT.md)). At exit 2 or 1 it is not one, and a run that owes files writes no `recording.json`.
 
-[creation/samples/urbe-small/author/](creation/samples/urbe-small/author/) is a complete author directory, The Short Measure, written for the sample world. Copy it to `<author-dir>` and run:
+[creation/samples/urbe-small/author/](creation/samples/urbe-small/author/) is a complete author directory, The Short Measure, written for the sample world: a main story with its prologue, first meetings written cold, and two of its three side jobs offered after its first step. Copy it to `<author-dir>` and run:
 
 ```sh
 npm run author -- --world creation/samples/urbe-small/world.json --types creation/samples/urbe-small/npc-types.json \

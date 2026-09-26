@@ -8,6 +8,7 @@ import { Ajv2020 } from 'ajv/dist/2020.js';
 import { loadFixtureWorld, StubSimulation } from '../../world/index.js';
 import type { PlaceTarget, QuestlineDefinition, QuestStep, ResolvedCast } from '../schema.js';
 import { QuestlineRuntime } from '../QuestlineRuntime.js';
+import { isOffered, QuestlineSetValidator } from '../QuestlineSet.js';
 import stateSchema from '../schema/questline-state.schema.json' with { type: 'json' };
 import guidanceSchema from '../schema/step-guidance.schema.json' with { type: 'json' };
 
@@ -290,5 +291,27 @@ describe('QuestlineRuntime', () => {
     expect(() => restore({
       activeStepIds: [], completedStepIds: ['s_talk', 's_pickup', 's_meet', 's_handover'], flags: ['has_chip'], endingId: 'missing',
     })).toThrowError(/unknown ending missing/);
+  });
+});
+
+describe('QuestlineSet', () => {
+  const side = (offeredAfter?: string): QuestlineDefinition => ({ ...definition(), id: 'q_side', ...(offeredAfter ? { offeredAfter } : {}) });
+
+  it('takes a side job gated on a main step and refuses a gate on the main line or on a step it lacks', () => {
+    const validator = new QuestlineSetValidator();
+    expect(() => validator.validate([definition(), side('s_pickup'), { ...side(), id: 'q_open' }])).not.toThrow();
+    expect(() => validator.validate([{ ...definition(), offeredAfter: 's_talk' }])).toThrowError(/main questline q_chip is on offer from the start/);
+    expect(() => validator.validate([definition(), side('s_ghost')])).toThrowError(/q_side is offered after s_ghost, which is no step of the main questline q_chip/);
+  });
+
+  it('offers a gated side job once the main line finished its step, and keeps one already under way', () => {
+    const fresh = { activeStepIds: ['s_talk'], completedStepIds: [], flags: [] };
+    const talked = { activeStepIds: ['s_pickup', 's_meet'], completedStepIds: ['s_talk'], flags: [] };
+    expect(isOffered(definition(), fresh, undefined)).toBe(true);
+    expect(isOffered(side(), fresh, fresh)).toBe(true);
+    expect(isOffered(side('s_talk'), fresh, fresh)).toBe(false);
+    expect(isOffered(side('s_talk'), fresh, talked)).toBe(true);
+    expect(isOffered(side('s_talk'), fresh, undefined)).toBe(false);
+    expect(isOffered(side('s_talk'), talked, fresh)).toBe(true);
   });
 });

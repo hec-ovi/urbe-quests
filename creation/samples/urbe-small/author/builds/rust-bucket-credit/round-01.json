@@ -1,5 +1,5 @@
 [
-  { "tool": "create_questline", "input": { "id": "q_rust_bucket_credit", "title": "Rust Bucket Credit", "premise": "The Rust Bucket Eatery pays for its kitchen water twice, once in ration chits and again by the cup when the ration runs dry. Tamsin Roe keeps both receipts in a tin behind the stove and wants Hale Mercer, who still eats there, to know what it costs." } },
+  { "tool": "create_questline", "input": { "id": "q_rust_bucket_credit", "title": "Rust Bucket Credit", "offeredAfter": "s_weigh", "premise": "The Rust Bucket Eatery pays for its kitchen water twice, once in ration chits and again by the cup when the ration runs dry. Tamsin Roe keeps both receipts in a tin behind the stove and wants Hale Mercer, who still eats there, to know what it costs." } },
   { "tool": "add_role", "input": { "roleId": "r_tamsin", "npcType": "quest_vendor", "characterName": { "given": "Tamsin", "family": "Roe" }, "persona": "Sharp, short sentences, talks over the pass because the kitchen is loud. Wants somebody to pay once for water; fears losing her suppliers if she is seen at the precinct; would never water the soup." } },
   { "tool": "add_role", "input": { "roleId": "r_hale", "npcType": "quest_security", "characterName": { "given": "Hale", "family": "Mercer" }, "persona": "Flat and slow, a pause before every promise. Owes Nell a favour nobody wrote down. Wants paper he can walk up a staircase; fears arresting a clerk to protect a company; would never take the tower's side because it pays better." } },
   { "tool": "add_item", "input": { "itemId": "i3_price", "kind": "information", "name": "the price of the water", "description": "Tamsin's two receipts, said aloud: the eatery pays for its water once in ration chits at Weir Exchange and again by the cup when the ration runs dry. To her it means somebody is selling Sump Row its own water." } },
@@ -10,7 +10,7 @@
     "narrative": { "description": "Tamsin Roe leans over the pass at the Rust Bucket Eatery with a tin of receipts in one hand and a ladle in the other.", "playerHint": "Talk to Tamsin Roe at the Rust Bucket Eatery.", "stake": "She wants the price carried to someone who can act on it; a cook seen at the precinct loses her suppliers." },
     "target": { "kind": "talk", "roleId": "r_tamsin", "atParcelId": "p11" },
     "dialogue": {
-      "opening": "Two receipts. Same water. One in chits at Weir Exchange, one by the cup on Friday when it runs out. Somebody's selling us our own water.",
+      "opening": "You're the one asking round Sump Row about the water; a kitchen hears everything. Tamsin Roe, I cook here. Two receipts. Same water. One in chits at Weir Exchange, one by the cup on Friday when it runs out. Somebody's selling us our own water.",
       "choices": [
         { "id": "ask_who", "text": "Who sells it by the cup?", "reply": "Whoever has a barrel on a Tuesday. I don't ask. I cook.", "completesStep": false },
         { "id": "carry_price", "text": "I'll take the price to Hale Mercer.", "reply": "Good. He eats here. He used to walk this street. Tell him what a bowl costs us now.", "completesStep": true }
@@ -24,7 +24,7 @@
     "narrative": { "description": "At his post, Hale Mercer listens to the price of a Sump Row bowl of soup without interrupting.", "playerHint": "Talk to Hale Mercer at his post.", "stake": "Hale wants a number he can write down; without it Sump Row is another story with no paper." },
     "target": { "kind": "talk", "roleId": "r_hale", "atParcelId": "p4" },
     "dialogue": {
-      "opening": "Rust Bucket. I know the soup. ... What's it cost now?",
+      "opening": "Hale Mercer; I keep this post. You smell of the Rust Bucket kitchen, so Tamsin sent you. I know the soup. ... What's it cost now?",
       "choices": [
         { "id": "ask_paper", "text": "Is a number enough for you?", "reply": "A number is a start. Paper is a case. ... I'll take the start.", "completesStep": false },
         { "id": "give_price", "text": "They pay twice for the same water: in chits, then by the cup.", "reply": "Twice. ... I'll write that down. And I'll eat somewhere else for a month.", "completesStep": true }

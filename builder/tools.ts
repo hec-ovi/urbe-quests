@@ -177,8 +177,11 @@ export function stageSceneTool(scenery: SceneryCapabilities): AgentTool {
   };
 }
 
-/** The builder's tools for a questline that may use these step kinds, and stage scenes when the host declares scenery. */
-export function builderTools(kinds: readonly StepKind[] = STEP_KINDS, scenery?: SceneryCapabilities): AgentTool[] {
+/**
+ * The builder's tools for a questline that may use these step kinds, and stage scenes when the host declares scenery.
+ * `mainSteps`, for a side job: the main questline's step ids, one of which create_questline may name the job offered after.
+ */
+export function builderTools(kinds: readonly StepKind[] = STEP_KINDS, scenery?: SceneryCapabilities, mainSteps?: readonly string[]): AgentTool[] {
   const vars = mechanicVars(kinds);
   return [
     {
@@ -190,6 +193,9 @@ export function builderTools(kinds: readonly StepKind[] = STEP_KINDS, scenery?: 
           title: { type: 'string' },
           premise: { type: 'string', description: prompt('tools/create_questline.md#premise').trim() },
           prologue: { type: 'string', description: prompt('tools/create_questline.md#prologue').trim() },
+          ...(mainSteps !== undefined
+            ? { offeredAfter: { type: 'string', enum: [...mainSteps], description: prompt('tools/create_questline.md#offeredAfter').trim() } }
+            : {}),
           id: { type: 'string', description: prompt('tools/create_questline.md#id').trim() },
         },
         required: ['title', 'premise', 'id'],

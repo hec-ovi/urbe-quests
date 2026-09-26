@@ -23,7 +23,7 @@ Purpose: the questline creation workflow: one creation prompt in; the film scrip
 ## Steps
 1. Script pass, text only.
 2. Main translation (plan, then build), in parallel with 3.
-3. Situations pass, text only, then one translation per situation, in parallel.
+3. Situations pass, text only, then one translation per situation, in parallel. Each side build waits for the main questline, is shown its steps and may name the one it is offered after (`offeredAfter`), so an author owes the side builds once the main build is in.
 
 ## Errors
 The side branch never fails the run: a side quest whose translation throws is dropped by id, a side quest built under a questline id the main line or an earlier side quest already holds is dropped, and an `E_LLM` from the situations pass drops all of them (`situations` comes back empty, holding the unusable text as `raw`), both through `warn`. Everything else passes through from the inner boxes and fails the run: `E_LLM` from the script or the main translation (detail names the stage), `E_CAST` from the main cast, `SimulationError`.

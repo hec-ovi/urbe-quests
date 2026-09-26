@@ -10,6 +10,7 @@
     "title": { "$ref": "#/$defs/text" },
     "premise": { "$ref": "#/$defs/text" },
     "prologue": { "$ref": "#/$defs/text", "description": "What the player reads before the story starts: who they are, where they stand and the job that opens the story, in the second person." },
+    "offeredAfter": { "$ref": "#/$defs/id", "description": "A side questline's gate: the main questline's step the player finishes before this job is offered. Absent, it is on offer from the start; the main questline carries none." },
     "roles": { "type": "array", "items": { "$ref": "#/$defs/role" } },
     "items": { "type": "array", "items": { "$ref": "#/$defs/item" } },
     "facts": { "type": "array", "items": { "$ref": "#/$defs/fact" } },

@@ -141,6 +141,37 @@ describe('QuestlineBuilder', () => {
     expect(blank.definition).not.toHaveProperty('prologue');
   });
 
+  it('shows a side job the main story step by step and takes the main step it is offered after', async () => {
+    const main = (await build(scriptedAgent(FULL_BUILD).agent)).definition;
+    const opening = (offeredAfter: string): AgentToolCall => ({ tool: 'create_questline', input: { ...(SETUP_CALLS[0]!.input as object), offeredAfter } });
+    const { agent, requests } = scriptedAgent([
+      { kind: 'calls', calls: [opening('s_ghost')] },
+      { kind: 'calls', calls: [opening('s_fetch'), ...SETUP_CALLS.slice(1), ...STEP_CALLS, FINAL_STEP, FINISH] },
+    ]);
+    const { definition } = await build(agent, { main });
+
+    expect(requests[0]!.prompt).toContain('This is a side job in the city of the main story, The Kettle Debt.');
+    expect(requests[0]!.prompt).toContain('- s_fetch (The Favor): Pick up the ledger.');
+    expect(requests[0]!.tools.find((tool) => tool.name === 'create_questline')!.inputSchema).toMatchObject({
+      properties: { offeredAfter: { type: 'string', enum: ['s_ask', 's_fetch', 's_pay'] } },
+    });
+    expect(toolResults(requests[1]!.transcript)[0]).toBe('error: create_questline not accepted: offeredAfter must be one of s_ask, s_fetch, s_pay');
+    expect(definition.offeredAfter).toBe('s_fetch');
+  });
+
+  it('keeps the main questline on offer from the start', async () => {
+    const { agent, requests } = scriptedAgent([
+      { kind: 'calls', calls: [{ tool: 'create_questline', input: { ...(SETUP_CALLS[0]!.input as object), offeredAfter: 's_ask' } }] },
+      ...FULL_BUILD,
+    ]);
+    const { definition } = await build(agent);
+
+    expect(requests[0]!.prompt).not.toContain('side job');
+    expect(requests[0]!.tools.find((tool) => tool.name === 'create_questline')!.inputSchema['properties']).not.toHaveProperty('offeredAfter');
+    expect(toolResults(requests[1]!.transcript)[0]).toMatch(/^error: offeredAfter names the main story step a side job waits for; /);
+    expect(definition).not.toHaveProperty('offeredAfter');
+  });
+
   it('answers a target or an effect missing a field its kind needs with a tool result, never an abort', async () => {
     const ask = STEP_CALLS[0]!.input as object;
     const { agent, requests } = scriptedAgent([

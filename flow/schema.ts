@@ -20,6 +20,14 @@ export interface QuestlineDefinition {
    * a new game starts.
    */
   prologue?: string;
+  /**
+   * A side questline's gate: the main questline's step the player finishes
+   * before this job is offered, so its first scene never takes for granted
+   * what the main story has not told yet. Until then a host keeps it out of
+   * the log and off the map. Absent, the job is on offer from the start; the
+   * main questline carries none.
+   */
+  offeredAfter?: string;
   roles: QuestRole[];
   items: QuestItem[];
   facts: QuestFact[];

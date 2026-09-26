@@ -5,7 +5,7 @@
  * against the simulation.
  */
 
-import type { StepKind } from '../flow/schema.js';
+import type { QuestlineDefinition, StepKind } from '../flow/schema.js';
 import type { SceneryCapabilities } from '../handoff/schema.js';
 import type { AgentPort, LLMPort } from '../ports/llm.js';
 import type { NamedWorld, NPCTypeSet } from '../world/types/named-world.js';
@@ -28,6 +28,8 @@ export interface TranslateInput {
   scenery?: SceneryCapabilities;
   referenceTimeMin?: number;
   maxRounds?: number;
+  /** For a side job: the main questline once built. The build waits for it, is shown its steps and may name the one the job is offered after. */
+  main?: Promise<QuestlineDefinition>;
   /** Told the plan once it parsed, before the build starts, so a host keeps it whatever the build does. */
   planned?: (plan: PlanResult) => void;
   progress?: (event: BuildProgress) => void;
@@ -35,10 +37,10 @@ export interface TranslateInput {
 
 export class QuestlineTranslator {
   async translate(input: TranslateInput): Promise<TranslationResult> {
-    const { ports, planned, ...shared } = input;
+    const { ports, planned, main, ...shared } = input;
     const plan = await new TranslationPlanner().plan({ ...shared, llm: ports.plan });
     planned?.(plan);
-    const built = await new QuestlineBuilder().build({ ...shared, plan: plan.text, manifest: plan.manifest, agent: ports.build });
+    const built = await new QuestlineBuilder().build({ ...shared, main: await main, plan: plan.text, manifest: plan.manifest, agent: ports.build });
     return { plan: plan.text, ...built };
   }
 }

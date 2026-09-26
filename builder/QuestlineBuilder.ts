@@ -34,6 +34,8 @@ export interface BuildInput {
   mechanics?: readonly StepKind[];
   /** The scenery the host stages: the agent gets stage_scene, and every investigation step shows its clue on a staged scene. */
   scenery?: SceneryCapabilities;
+  /** For a side job: the main questline, whose steps it is shown and may name the one it is offered after. */
+  main?: QuestlineDefinition;
   /** Simulation time used to resolve on-duty cast; defaults to Tuesday 10:00. */
   referenceTimeMin?: number;
   /** Overrides the budget the plan sets (two rounds per planned piece plus eight). */
@@ -67,7 +69,7 @@ export class QuestlineBuilder {
     const userPrompt = this.renderPrompt(input);
     const venues = new StoryVenues(input.world, input.types, input.parcels);
     const draft = new QuestlineDraft(input.manifest, new WorldTargetAudit(input.world, input.types), venues, input.scenery);
-    const dispatcher = new ToolDispatcher(draft, kinds, input.scenery);
+    const dispatcher = new ToolDispatcher(draft, kinds, input.scenery, input.main?.steps.map((step) => step.stepId));
     const transcript: AgentTurn[] = [];
     const title = input.assignment.title;
     const maxRounds = input.maxRounds ?? roundBudget(manifestSize(input.manifest));
@@ -137,7 +139,15 @@ export class QuestlineBuilder {
     return prompt('build-input.md', {
       assignment: renderAssignment(input.assignment),
       plan: input.plan,
+      main: input.main === undefined ? '' : this.mainStory(input.main),
       world: new WorldCatalog(input.world, input.types).render(),
     }).trim();
+  }
+
+  /** The main story a side job orbits, step by step with its act, as the player meets it. */
+  private mainStory(main: QuestlineDefinition): string {
+    const acts = new Map(main.acts.map((act) => [act.actId, act.title]));
+    const steps = main.steps.map((step) => `- ${step.stepId} (${acts.get(step.actId) ?? step.actId}): ${step.narrative.playerHint}`);
+    return prompt('main-story.md', { title: main.title, steps: steps.join('\n') });
   }
 }

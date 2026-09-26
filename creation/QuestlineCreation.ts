@@ -3,14 +3,15 @@
  * 1. script pass, text only: the whole story as a film script;
  * 2. translation of the script into the main questline (plan, then build);
  * 3. in parallel with 2, situations pass from the script, each situation
- *    translated into a side questline the same way.
+ *    translated into a side questline the same way; each side build waits
+ *    for the main questline, so it can be offered after one of its steps.
  */
 
 import type { QuestAssignment } from '../builder/schema.js';
 import { playableKinds } from '../builder/mechanics.js';
 import { QuestlineTranslator } from '../builder/QuestlineTranslator.js';
 import { QuestError } from '../errors.js';
-import type { StepKind } from '../flow/schema.js';
+import type { QuestlineDefinition, StepKind } from '../flow/schema.js';
 import type { SceneryCapabilities } from '../handoff/schema.js';
 import { ScriptPass } from '../story/ScriptPass.js';
 import { SituationsPass } from '../story/SituationsPass.js';
@@ -58,9 +59,9 @@ export class QuestlineCreation {
     progress({ kind: 'script', result: script });
     const assignments = new Assignments(script.script);
     const translator = new QuestlineTranslator();
-    const translate = async (questline: 'main' | string, assignment: QuestAssignment) => {
+    const translate = async (questline: 'main' | string, assignment: QuestAssignment, main?: Promise<QuestlineDefinition>) => {
       const result = await translator.translate({
-        assignment, world, types, sim, parcels, mechanics, scenery, referenceTimeMin, maxRounds,
+        assignment, world, types, sim, parcels, mechanics, scenery, referenceTimeMin, maxRounds, main,
         ports: { plan: ports.plan, build: ports.build },
         planned: (plan) => progress({ kind: 'plan', questline, result: plan }),
         progress: (build) => progress({ kind: 'build', questline, build }),
@@ -80,6 +81,11 @@ export class QuestlineCreation {
       }
     };
 
+    const mainBuilt = translate('main', assignments.main());
+    // A side job is built against the finished main questline; the main line's own failure fails the run below.
+    const mainDefinition = mainBuilt.then((result) => result.definition);
+    mainDefinition.catch(() => undefined);
+
     const sideQuests = async (): Promise<{ situations: CreationResult['situations']; side: SideQuest[] }> => {
       const situations = await runSituations();
       progress({ kind: 'situations', result: situations });
@@ -87,7 +93,7 @@ export class QuestlineCreation {
       const settled = await Promise.allSettled(
         situations.situations.map(async (situation) => ({
           situationId: situation.situationId,
-          ...(await translate(situation.situationId, assignments.situation(situation))),
+          ...(await translate(situation.situationId, assignments.situation(situation), mainDefinition)),
         })),
       );
       const side: SideQuest[] = [];
@@ -98,7 +104,7 @@ export class QuestlineCreation {
       return { situations, side };
     };
 
-    const [built, { situations, side: builtSide }] = await Promise.all([translate('main', assignments.main()), sideQuests()]);
+    const [built, { situations, side: builtSide }] = await Promise.all([mainBuilt, sideQuests()]);
     // Questlines are known by id across the set; a side quest built under an id already taken is dropped, not the set.
     const taken = new Set([built.definition.id]);
     const distinct = builtSide.filter((quest) => {

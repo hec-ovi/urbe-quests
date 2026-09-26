@@ -97,20 +97,34 @@ describe('external author', () => {
       { stage: 'situations', file: 'situations.md', request: ['requests/situations.md'] },
     ]);
 
-    // Plans in: every build owes its first round, with its request and tools.
+    // Plans in: the main build owes its first round, with its request and tools; the side builds wait for the main questline.
     run.supply('situations.md', 'plans');
-    const rounds = needs(await run.run());
-    expect(rounds.map((need) => need.file)).toEqual(Object.keys(TITLES).sort().map((slug) => `builds/${slug}/round-01.json`));
-    expect(rounds[0]).toEqual({
-      stage: 'build', title: 'Rust Bucket Credit', round: 1, file: 'builds/rust-bucket-credit/round-01.json',
-      request: ['requests/builds/rust-bucket-credit/request.md', 'requests/builds/rust-bucket-credit/tools.json'],
-    });
+    expect(needs(await run.run())).toEqual([{
+      stage: 'build', title: 'The Short Measure', round: 1, file: 'builds/the-short-measure/round-01.json',
+      request: ['requests/builds/the-short-measure/request.md', 'requests/builds/the-short-measure/tools.json'],
+    }]);
     const build = text(join(run.authorDir, 'requests', 'builds', 'the-short-measure', 'request.md'));
     expect(build).toMatch(/^Stage: build\nTitle: The Short Measure\nAnswer: builds\/the-short-measure\/round-NN\.json\nTools: requests\/builds\/the-short-measure\/tools\.json\n/);
     expect(build).toContain('# Step catalog');
     expect(build).toContain('Title: The Short Measure');
-    const tools = read<{ name: string }[]>(join(run.authorDir, 'requests', 'builds', 'the-short-measure', 'tools.json')).map((tool) => tool.name);
-    expect(tools).toEqual(expect.arrayContaining(['create_questline', 'add_step', 'stage_scene', 'finish_questline']));
+    expect(build).not.toContain('side job');
+    type Tool = { name: string; inputSchema: { properties: Record<string, unknown> } };
+    const toolsOf = (slug: string) => read<Tool[]>(join(run.authorDir, 'requests', 'builds', slug, 'tools.json'));
+    expect(toolsOf('the-short-measure').map((tool) => tool.name)).toEqual(expect.arrayContaining(['create_questline', 'add_step', 'stage_scene', 'finish_questline']));
+    expect(toolsOf('the-short-measure')[0]!.inputSchema.properties).not.toHaveProperty('offeredAfter');
+
+    // The main questline in: every side build owes its first round, shown the main story and offered after one of its steps.
+    run.supply('builds/the-short-measure');
+    const rounds = needs(await run.run());
+    expect(rounds.map((need) => need.file)).toEqual(Object.keys(TITLES).filter((slug) => slug !== 'the-short-measure').sort().map((slug) => `builds/${slug}/round-01.json`));
+    expect(rounds[0]).toEqual({
+      stage: 'build', title: 'Rust Bucket Credit', round: 1, file: 'builds/rust-bucket-credit/round-01.json',
+      request: ['requests/builds/rust-bucket-credit/request.md', 'requests/builds/rust-bucket-credit/tools.json'],
+    });
+    const side = text(join(run.authorDir, 'requests', 'builds', 'tolerance', 'request.md'));
+    expect(side).toContain('This is a side job in the city of the main story, The Short Measure.');
+    expect(side).toContain('- s_weigh (The Measure): Talk to Nell Arden at the Vitalis Spire Clinic.');
+    expect(toolsOf('tolerance')[0]!.inputSchema.properties['offeredAfter']).toMatchObject({ enum: ['s_weigh', 's_tally', 's_report'] });
 
     // Every round in: the run completes, never asks a model server, and records what the author wrote.
     run.supply();
@@ -126,6 +140,8 @@ describe('external author', () => {
       expect(recording.builds[title]).toEqual([read<AgentToolCall[]>(join(AUTHORED, 'builds', slug, 'round-01.json'))]);
     }
     expect(done.creation.main.definition.steps.map((step) => step.target.kind)).toEqual(['talk', 'pickup', 'deliver']);
+    expect(done.creation.main.definition.prologue).toMatch(/^Rain runs off the Glass Apex/);
+    expect([done.creation.main, ...done.creation.side].map((quest) => quest.definition.offeredAfter)).toEqual([undefined, undefined, 's_weigh', 's_weigh']);
     expect(done.creation.side.map((side) => side.scenes.map((scene) => scene.sceneId))).toEqual([['q_tuesday_barrel.sc1_cup'], [], []]);
 
     // Bundle 1.2 with the staged scene, byte-identical to a later materialize of the recording.

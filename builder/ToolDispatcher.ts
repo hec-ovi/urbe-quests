@@ -33,12 +33,14 @@ export class ToolDispatcher {
   readonly tools: AgentTool[];
   private readonly refused = new Set<string>();
 
+  /** `mainSteps`, for a side job: the main questline's steps create_questline may name it offered after. */
   constructor(
     private readonly draft: QuestlineDraft,
     private readonly kinds: readonly StepKind[] = STEP_KINDS,
     scenery?: SceneryCapabilities,
+    private readonly mainSteps?: readonly string[],
   ) {
-    this.tools = builderTools(kinds, scenery);
+    this.tools = builderTools(kinds, scenery, mainSteps);
   }
 
   /**
@@ -82,8 +84,13 @@ export class ToolDispatcher {
   private route(call: AgentToolCall): DispatchOutcome {
     const input = (call.input ?? {}) as Record<string, unknown>;
     switch (call.tool) {
-      case 'create_questline':
-        return { result: this.draft.create(input as { id: string; title: string; premise: string; prologue?: string }) };
+      case 'create_questline': {
+        const args = input as { id: string; title: string; premise: string; prologue?: string; offeredAfter?: string };
+        if (args.offeredAfter !== undefined && this.mainSteps === undefined) {
+          return { result: 'error: offeredAfter names the main story step a side job waits for; the main questline is on offer from the start, so leave it out' };
+        }
+        return { result: this.draft.create(args) };
+      }
       case 'add_role':
         return { result: this.draft.addRole(input as never) };
       case 'add_item':
