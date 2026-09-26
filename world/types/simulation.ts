@@ -45,6 +45,13 @@ export interface Job {
   shift: Shift;
 }
 
+/** Station or vehicle employment. */
+export interface TransitJob {
+  place: { kind: 'stop' | 'route'; id: string };
+  role: string;
+  shift: Shift;
+}
+
 export interface FamilyMember {
   npcId: string;
   relation: 'partner' | 'child' | 'parent' | 'sibling' | 'roommate';
@@ -76,7 +83,10 @@ export interface NPCInstance {
   traits?: string[];
   type: string;
   home: { parcelId: string; unit: number };
+  /** Building employment. */
   job?: Job;
+  /** Station or vehicle employment; absent for building workers. */
+  transitJob?: TransitJob;
   family: FamilyMember[];
   /** Weekly plan; entries cover the full week with no gaps. */
   routine: RoutineEntry[];

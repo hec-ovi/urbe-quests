@@ -1,4 +1,4 @@
-# Quests 0.11.0
+# Quests 0.11.1
 
 Writes stories through injected agents, adapts them into typed quests, runs their rules in code, and prepares Engine handoffs and scoped NPC dialogue.
 
@@ -46,7 +46,7 @@ Time is simulation minutes since Monday 00:00. Creative calls use separate conte
 
 ## Errors
 
-[QuestError](errors.ts), `{code, message, detail?}`: `E_INVALID_FLOW` (definition/save), `E_UNKNOWN_ID` (missing identity), `E_WRONG_STATE` (event/state), `E_UNAVAILABLE` (gated action), `E_CAST` (cast resolution), `E_LLM` (unusable text/build, or a reply with nothing to say), `E_HANDOFF` (bindings/assets/capabilities).
+[QuestError](errors.ts), `{code, message, detail?}`: `E_INVALID_FLOW` (definition/save), `E_UNKNOWN_ID` (missing identity), `E_WRONG_STATE` (event/state), `E_UNAVAILABLE` (gated action), `E_CAST` (cast resolution), `E_LLM` (unusable text/build, a reply with nothing to say, or an empty memory note), `E_HANDOFF` (bindings/assets/capabilities).
 
 [AuthoringError](authoring/schema/authoring-error.schema.json), `{code, message, details}`: `E_AUTHORING_INPUT`, `E_AUTHORING_OUTPUT`, `E_SKILL_CONTRACT`, `E_UNKNOWN_SKILL`, `E_UNSUPPORTED_MECHANIC`, `E_MECHANIC_SELECTION`, `E_WORLD_TARGET`, `E_CAUSE_EFFECT`, `E_INVALID_FLOW`. Meanings: [authoring errors](authoring/CONTRACT.md#errors).
 
@@ -54,4 +54,4 @@ These are closed domain sets. Injected provider/Simulation exceptions pass throu
 
 ## Dependencies
 
-Data contracts only: [Atlas](../atlas/CONTRACT.md) (world projection), [Naming](../naming/CONTRACT.md) (names/types), [Simulation](../simulation/CONTRACT.md) (people/schedules), [Interior](../interior/CONTRACT.md) (the staffing roles a building publishes), Engine [investigation](../engine/src/game/investigation/CONTRACT.md) (v1.1) and [mission assets](../engine/src/mission-assets/CONTRACT.md) (v1.0). Models are injected through [ports](ports/llm.ts), streamed dialog through the OpenAI-compatible [chat shapes](ports/chat.ts), and [authoring ports](authoring/src/schema.ts). Ajv validates authoring and handoff schemas. Engine consumes this box.
+Data contracts only: [Atlas](../atlas/CONTRACT.md) (world projection), [Naming](../naming/CONTRACT.md) (names/types), [Simulation](../simulation/CONTRACT.md) (people/schedules), [Interior](../interior/CONTRACT.md) (the staffing roles a building publishes), Engine [investigation](../engine/src/game/investigation/CONTRACT.md) (v1.1) and [mission assets](../engine/src/mission-assets/CONTRACT.md) (v1.0). Models are injected through [ports](ports/llm.ts), streamed dialog through the OpenAI-compatible [chat shapes](ports/chat.ts), and [authoring ports](authoring/src/schema.ts); model text loses think blocks and template tokens through one [markup stage](ports/markup.ts). Ajv validates authoring and handoff schemas. Engine consumes this box.

@@ -175,33 +175,20 @@ export class DialogContextService {
 
   /** The place the NPC led the player to, and what this NPC's own life ties it to. */
   private renderPlace(npc: NPCInstance, guide: DialogGuide): string {
-    const lines = [prompt('context.md#place', { place: this.guidePlace(guide) })];
-    if (guide.kind === 'parcel') {
-      if (npc.job?.parcelId === guide.placeId) lines.push(prompt('context.md#place-work'));
-      if (npc.home.parcelId === guide.placeId) lines.push(prompt('context.md#place-home'));
-      if (npc.routine.some((e) => (e.activity === 'leisure' || e.activity === 'shopping') && e.place.id === guide.placeId)) {
-        lines.push(prompt('context.md#place-haunt'));
-      }
-    }
+    const lines = [prompt('context.md#place', { place: this.places.named({ kind: guide.kind, id: guide.placeId }, guide.name) })];
+    const at = (place: { kind: string; id: string } | undefined) => place?.kind === guide.kind && place.id === guide.placeId;
+    if (at(npc.job && { kind: 'parcel', id: npc.job.parcelId }) || at(npc.transitJob?.place)) lines.push(prompt('context.md#place-work'));
+    if (at({ kind: 'parcel', id: npc.home.parcelId })) lines.push(prompt('context.md#place-home'));
+    if (npc.routine.some((e) => (e.activity === 'leisure' || e.activity === 'shopping') && at(e.place))) lines.push(prompt('context.md#place-haunt'));
     if (guide.notes !== undefined && guide.notes.length > 0) lines.push(prompt('context.md#place-notes', { notes: bullets(guide.notes) }));
     lines.push(prompt('context.md#place-talk'));
     return lines.join('\n');
   }
 
-  /** "Static Cafe, a coffee shop in Kanaal Market", "a coffee shop in a poor downtown district", "Harbor Station". */
-  private guidePlace(guide: DialogGuide): string {
-    if (guide.kind === 'stop') return guide.name ?? this.places.stop(guide.placeId) ?? 'a stop';
-    const parcel = this.world.parcels.find((p) => p.id === guide.placeId);
-    if (!parcel) return guide.name ?? 'a place';
-    const building = `${this.places.building(parcel.id)} in ${this.places.district(parcel.districtId)}`;
-    const name = guide.name ?? parcel.name;
-    return name === undefined ? building : `${name}, ${building}`;
-  }
-
   private renderNow(npcId: string, timeMin: number, turns: DialogTurn[]): string {
     const behavior = this.sim.behaviorAt(npcId, timeMin);
     const day = dayName(Math.floor(timeMin / 1440) % 7);
-    const lines = [prompt('context.md#now', { day, time: clock(timeMin % 1440), activity: behavior.activity.replace('_', ' ') })];
+    const lines = [prompt('context.md#now', { day, time: clock(timeMin % 1440), activity: prompt(`context.md#activity-${behavior.activity}`) })];
     if (turns.length > 0) {
       lines.push(prompt('context.md#conversation', {
         turns: turns.map(turn => `${turn.speaker === 'player' ? 'Player' : 'You'}: ${turn.text}`).join('\n'),

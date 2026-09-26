@@ -4,6 +4,7 @@ import { Agent, fetch } from 'undici';
 import { toMessages } from './ChatMessages.js';
 import { readChatStream } from './ChatStream.js';
 import type { ChatMessage, ChatToolCall } from '../../ports/chat.js';
+import { cleanMarkup } from '../../ports/markup.js';
 import type { AgentPort, AgentReply, AgentTool, AgentTurn, LLMPort } from '../../ports/llm.js';
 
 export const BASE_URL = process.env['LLM_BASE_URL'] ?? 'http://localhost:8080/v1';
@@ -24,7 +25,7 @@ export class OpenAICompatibleClient implements LLMPort, AgentPort {
       { role: 'system', content: request.system },
       { role: 'user', content: request.prompt },
     ]);
-    return stripThinking(message.content ?? '');
+    return cleanMarkup(message.content ?? '');
   }
 
   async step(request: { system: string; prompt: string; tools: AgentTool[]; transcript: AgentTurn[] }): Promise<AgentReply> {
@@ -39,7 +40,7 @@ export class OpenAICompatibleClient implements LLMPort, AgentPort {
     }));
     const message = await this.chat(messages, tools);
     const calls = message.tool_calls ?? [];
-    if (calls.length === 0) return { kind: 'done', text: stripThinking(message.content ?? '') };
+    if (calls.length === 0) return { kind: 'done', text: cleanMarkup(message.content ?? '') };
     return { kind: 'calls', calls: calls.map((c) => ({ tool: c.function.name, input: parseArguments(c.function.arguments) })) };
   }
 
@@ -77,5 +78,3 @@ function parseArguments(text: string): unknown {
     return { malformedArguments: text };
   }
 }
-
-const stripThinking = (text: string) => text.replace(/<think>[\s\S]*?<\/think>/g, '').trim();

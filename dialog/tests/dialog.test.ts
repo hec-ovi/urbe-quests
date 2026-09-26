@@ -83,7 +83,7 @@ describe('DialogContextService', () => {
     expect(npc!.text).toContain('You work at Static Cafe in Kanaal Market');
     expect(npc!.text).toContain('Collects rumors like tips.');
     expect(quest!.text).toContain('The Arcade cameras have been dark');
-    expect(turns!.text).toContain('It is Tuesday 10:00');
+    expect(turns!.text).toContain('It is Tuesday 10:00; right now you are at work.');
 
     const all = context.segments.map((s) => s.text).join('\n');
     expect(all).not.toContain('Helix pays someone at Precinct 9');
@@ -162,6 +162,26 @@ describe('DialogContextService', () => {
     expect(text).toContain('You work at a coffee shop in a modest commercial district as');
   });
 
+  it('describes transit work by the stop or the lines, and a guided stop the NPC works at', () => {
+    const transit = { trainStations: [{ id: 'ts1', name: 'Harbor Station', districtId: 'd2' }], subwayStations: [{ id: 'ss0', districtId: 'd3' }] };
+    const { service, sim, informerId } = setup({ world: (world) => ({ ...world, transit }) });
+    const npc = sim.getNPC(informerId);
+    const shift = npc.job!.shift;
+    delete npc.job;
+    const background = () => segment(service.contextFor(informerId, TUE_10), 'npc');
+
+    npc.transitJob = { place: { kind: 'stop', id: 'ss0' }, role: 'fare_agent', shift };
+    expect(background()).toContain('You work at a subway station in The Sump as fare agent,');
+    expect(segment(service.contextFor(informerId, TUE_10, { guide: { placeId: 'ss0', kind: 'stop' } }), 'place'))
+      .toContain('You have led the player to a subway station in The Sump, and you are both standing there now.\nYou work here.');
+    expect(segment(service.contextFor(informerId, TUE_10, { guide: { placeId: 'ts1', kind: 'stop' } }), 'place'))
+      .toContain('led the player to Harbor Station, a train station in Kanaal Market,');
+
+    npc.transitJob = { place: { kind: 'route', id: 'Rsl0' }, role: 'driver', shift };
+    expect(background()).toContain("You work on the city's transit lines as driver,");
+    expect(background()).not.toContain('Rsl0');
+  });
+
   it('adds the place the NPC led the player to, what its own life ties it to, and what the host shows there', () => {
     const { service, sim, informerId } = setup();
     const work = sim.getNPC(informerId).job!.parcelId;
@@ -176,7 +196,7 @@ describe('DialogContextService', () => {
     const precinct = segment(service.contextFor(informerId, TUE_10, { guide: { placeId: 'p8', kind: 'parcel', name: 'the precinct' } }), 'place');
     expect(precinct).toContain('the precinct, a police station in Kanaal Market');
     expect(precinct).not.toContain('You work here.');
-    expect(segment(service.contextFor(informerId, TUE_10, { guide: { placeId: 's_9', kind: 'stop' } }), 'place')).toContain('led the player to a stop,');
+    expect(segment(service.contextFor(informerId, TUE_10, { guide: { placeId: 's_9', kind: 'stop' } }), 'place')).toContain('led the player to a transit stop,');
     expect(service.contextFor(informerId, TUE_10).segments.some((s) => s.id === 'place')).toBe(false);
   });
 
@@ -218,6 +238,20 @@ describe('DialogContextService', () => {
     const context = service.contextFor(informerId, TUE_10);
     expect(segment(context, 'memory')).toBe('You remember:\n- Folded.\n- Folded.');
     expect(segment(context, 'turns')).toContain('The conversation so far:\nPlayer: e\nYou: f');
+  });
+
+  it('keeps a note shaped like a transcript and treats an empty note as a failed fold', async () => {
+    const notes = ['<think>nothing</think>', 'Player: asked about the lift.\nNPC: said it is broken.'];
+    const { service, informerId } = setup({ memory: { tailSize: 2, foldSize: 2 }, llm: { complete: async () => notes.shift() ?? 'Later.' } });
+    await service.recordExchange(informerId, { line: 'x', reply: 'y', atMin: TUE_10 });
+    await expect(service.recordExchange(informerId, { line: 'z', reply: 'w', atMin: TUE_10 })).rejects.toMatchObject({ code: 'E_LLM' });
+    expect(service.serializeMemory()[informerId]!.turns.map((turn) => turn.text)).toEqual(['x', 'y', 'z', 'w']);
+
+    await service.recordExchange(informerId, { line: 'v', reply: 'u', atMin: TUE_10 });
+    expect(service.serializeMemory()[informerId]).toEqual({
+      digest: ['Player: asked about the lift.\nNPC: said it is broken.', 'Later.'],
+      turns: [{ speaker: 'player', text: 'v', atMin: TUE_10 }, { speaker: 'npc', text: 'u', atMin: TUE_10 }],
+    });
   });
 
   it('refuses unknown types and dead NPC context', () => {

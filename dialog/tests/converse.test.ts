@@ -60,10 +60,25 @@ describe('cleanReply', () => {
     ['Two < three, and <b> stays.', 'Two < three, and <b> stays.'],
     ['Sure.<think>never closed', 'Sure.'],
     ['“Get out.”', 'Get out.'],
+    ['"Hi," he said. "Come."', '"Hi," he said. "Come."'],
+    ['"Stay back." I won\'t say it twice.', '"Stay back." I won\'t say it twice.'],
+    ['"Stay back," I said.', '"Stay back," I said.'],
+    ['"Unclosed, and gone.', 'Unclosed, and gone.'],
+    ['<|im_start|>assistant\nFine.', 'Fine.'],
+    ['Fine.<|im_end|><|im_start|>user\nHi', 'Fine.'],
+    [`A <|${'x'.repeat(40)}|> stays.`, `A <|${'x'.repeat(40)}|> stays.`],
   ];
 
   it('keeps only the words the NPC says', () => {
     for (const [raw, clean] of cases) expect(cleanReply(raw, NAMES)).toBe(clean);
+  });
+
+  it('is done once the model has moved past the NPC turn', () => {
+    for (const [raw, done] of [['Fine.\nPlayer: And', true], ['Fine.<|im_end|>', true], ['Fine.\nMara: More', false]] as const) {
+      const cleaner = new ReplyCleaner(NAMES);
+      cleaner.push(raw);
+      expect(cleaner.done).toBe(done);
+    }
   });
 
   it('streams to exactly the whole-text result however the text is split', () => {
@@ -134,25 +149,61 @@ describe('Converse', () => {
     expect(lead.parameters).toMatchObject({ required: ['placeId'], properties: { placeId: { enum: ['p5', 'p8'] } } });
   });
 
-  it('answers a tool-only reply and streams the spoken words from a second request without tools', async () => {
+  it('answers a tool-only reply, echoing well-formed arguments, and streams the spoken words from a second request without tools', async () => {
     const { port, requests } = streamingPort(
-      [{ tool_calls: [{ index: 0, function: { name: 'follow_player', arguments: '{}' } }] }],
+      [{ tool_calls: [
+        { index: 0, function: { name: 'follow_player', arguments: '{}' } },
+        { index: 1, id: 'c2', function: { name: 'lead_player_to', arguments: '{"place' } },
+      ] }],
       [{ content: 'Fine. Lead on.' }],
     );
 
-    const seen = await events(new Converse(port).replyStream({ ...input, offers: { follow: true } }));
+    const seen = await events(new Converse(port).replyStream({ ...input, offers: { follow: true, places: [{ placeId: 'p5', name: 'Noodle Saint' }] } }));
 
     expect(seen).toEqual([
-      { type: 'offer', kind: 'follow' },
       { type: 'delta', text: 'Fine. Lead on.' },
+      { type: 'offer', kind: 'follow' },
       { type: 'done', reply: 'Fine. Lead on.', offers: [{ kind: 'follow' }] },
     ]);
-    expect(requests[0]!.tools?.map((tool) => tool.function.name)).toEqual(['follow_player']);
+    expect(requests[0]!.tools?.map((tool) => tool.function.name)).toEqual(['follow_player', 'lead_player_to']);
     expect(requests[1]!.tools).toBeUndefined();
     expect(requests[1]!.messages.slice(2)).toEqual([
-      { role: 'assistant', content: '', tool_calls: [{ id: 'call_0', type: 'function', function: { name: 'follow_player', arguments: '{}' } }] },
+      { role: 'assistant', content: '', tool_calls: [
+        { id: 'call_0', type: 'function', function: { name: 'follow_player', arguments: '{}' } },
+        { id: 'c2', type: 'function', function: { name: 'lead_player_to', arguments: '{}' } },
+      ] },
       { role: 'tool', tool_call_id: 'call_0', content: expect.stringContaining('the player, who decides') },
+      { role: 'tool', tool_call_id: 'c2', content: expect.stringContaining('not something you can propose') },
     ]);
+  });
+
+  it('offers nothing for a turn whose spoken reply never came', async () => {
+    const { port } = streamingPort([{ tool_calls: [{ index: 0, function: { name: 'follow_player', arguments: '{}' } }] }], []);
+    const seen: ReplyEvent[] = [];
+    const stream = new Converse(port).replyStream({ ...input, offers: { follow: true } });
+    await expect((async () => { for await (const event of stream) seen.push(event); })()).rejects.toMatchObject({ code: 'E_LLM' });
+    expect(seen).toEqual([]);
+  });
+
+  it('stops reading the model once it writes past the NPC turn', async () => {
+    let pulled = 0;
+    let closed = false;
+    const port: StreamingLLMPort = {
+      complete: async () => '',
+      async *stream() {
+        try {
+          for (const content of ['Fine.', '\nPlayer: And then?', '\nMara: More.', '\nPlayer: Go on.']) {
+            pulled++;
+            yield { content };
+          }
+        } finally {
+          closed = true;
+        }
+      },
+    };
+    expect(spoken(await events(new Converse(port).replyStream(input)))).toBe('Fine.');
+    expect(pulled).toBe(2);
+    expect(closed).toBe(true);
   });
 
   it('streams without tools when nothing may be offered, and a port without stream replies whole', async () => {

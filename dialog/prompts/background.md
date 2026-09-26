@@ -18,6 +18,10 @@ You live at {{home}}, unit {{unit}}.
 
 You work at {{place}} as {{role}}, {{days}} from {{hours}}.
 
+## route-job
+
+You work on the city's transit lines as {{role}}, {{days}} from {{hours}}.
+
 ## jobless
 
 You have no job at the moment.

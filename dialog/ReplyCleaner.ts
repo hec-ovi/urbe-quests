@@ -1,89 +1,19 @@
 /**
  * Turns raw model text into the words an NPC says. Removes think blocks and
- * chat-template tokens, a speaker tag in front of a line, a transcript the
- * model continues past its own turn, one pair of quotes wrapping the whole
- * reply, and surrounding whitespace. It works on a stream: the pieces `push`
- * and `end` return join to exactly what `cleanReply` returns for the whole text.
+ * chat-template tokens (a token after the reply ends it), a speaker tag in
+ * front of a line, a transcript the model continues past its own turn, one
+ * pair of quotes wrapping the whole reply, and surrounding whitespace. It works
+ * on a stream: the pieces `push` and `end` return join to exactly what
+ * `cleanReply` returns for the whole text.
  */
+
+import { ModelMarkup } from '../ports/markup.js';
 
 interface Stage {
   push(text: string): string;
   end(): string;
-}
-
-const THINK_OPEN = '<think>';
-const THINK_CLOSE = '</think>';
-const TOKEN_OPEN = '<|';
-/** Template tokens are short (`<|im_end|>`); a longer `<|` run is literal text. */
-const TOKEN_LONGEST = 32;
-const MARKUP = [THINK_OPEN, THINK_CLOSE, TOKEN_OPEN];
-
-/** Drops `<think>` blocks, stray `</think>` tags and `<|...|>` template tokens. */
-class Markup implements Stage {
-  private held = '';
-  private thinking = false;
-
-  push(text: string): string {
-    let rest = this.held + text;
-    let out = '';
-    for (;;) {
-      if (this.thinking) {
-        const close = rest.indexOf(THINK_CLOSE);
-        if (close < 0) {
-          this.held = partialSuffix(rest, THINK_CLOSE);
-          return out;
-        }
-        rest = rest.slice(close + THINK_CLOSE.length);
-        this.thinking = false;
-        continue;
-      }
-      const at = rest.indexOf('<');
-      if (at < 0) {
-        this.held = '';
-        return out + rest;
-      }
-      out += rest.slice(0, at);
-      rest = rest.slice(at);
-      if (rest.startsWith(THINK_OPEN)) {
-        this.thinking = true;
-        rest = rest.slice(THINK_OPEN.length);
-      } else if (rest.startsWith(THINK_CLOSE)) {
-        rest = rest.slice(THINK_CLOSE.length);
-      } else if (rest.startsWith(TOKEN_OPEN)) {
-        const close = rest.indexOf('|>');
-        if (close >= 0) {
-          rest = rest.slice(close + 2);
-        } else if (rest.length <= TOKEN_LONGEST) {
-          this.held = rest;
-          return out;
-        } else {
-          out += '<';
-          rest = rest.slice(1);
-        }
-      } else if (MARKUP.some((tag) => tag.startsWith(rest))) {
-        this.held = rest;
-        return out;
-      } else {
-        out += '<';
-        rest = rest.slice(1);
-      }
-    }
-  }
-
-  end(): string {
-    const rest = this.thinking || this.held.startsWith(TOKEN_OPEN) ? '' : this.held;
-    this.held = '';
-    this.thinking = false;
-    return rest;
-  }
-}
-
-/** The longest end of `text` that could still grow into `tag`. */
-function partialSuffix(text: string, tag: string): string {
-  for (let length = Math.min(text.length, tag.length - 1); length > 0; length--) {
-    if (tag.startsWith(text.slice(-length))) return text.slice(-length);
-  }
-  return '';
+  /** True once everything further is dropped. */
+  readonly closed?: boolean;
 }
 
 /**
@@ -97,7 +27,7 @@ class SpeakerTags implements Stage {
   private readonly longest: number;
   private head = '';
   private lineStart = true;
-  private closed = false;
+  private ended = false;
 
   constructor(names: string[]) {
     const labels = [...names, 'assistant', 'npc'].filter((n) => n.length > 0).map(escape);
@@ -108,7 +38,7 @@ class SpeakerTags implements Stage {
   push(text: string): string {
     let rest = text;
     let out = '';
-    while (rest.length > 0 && !this.closed) {
+    while (rest.length > 0 && !this.ended) {
       if (!this.lineStart) {
         const newline = rest.indexOf('\n');
         if (newline < 0) return out + rest;
@@ -128,18 +58,22 @@ class SpeakerTags implements Stage {
 
   end(): string {
     let out = '';
-    while (!this.closed && this.head.length > 0) out += this.push(this.decide(true)!);
+    while (!this.ended && this.head.length > 0) out += this.push(this.decide(true)!);
     this.head = '';
     this.lineStart = true;
-    this.closed = false;
+    this.ended = false;
     return out;
+  }
+
+  get closed(): boolean {
+    return this.ended;
   }
 
   /** The line's text once its head is known, or undefined while a tag could still be forming. */
   private decide(final: boolean): string | undefined {
     const head = this.head;
     if (this.other.test(head)) {
-      this.closed = true;
+      this.ended = true;
       this.head = '';
       return '';
     }
@@ -154,38 +88,49 @@ class SpeakerTags implements Stage {
 
 const QUOTES = /["“”]/;
 
-/** Trims the reply and drops one pair of quotes wrapping all of it. */
+/**
+ * Trims the reply and drops one pair of quotes wrapping all of it. A reply
+ * that opens with a quote is held until its first closing quote: when that
+ * quote ends the reply both go, otherwise the text streams with its quotes.
+ */
 class Wrapping implements Stage {
   private held = '';
   private started = false;
-  private opened = false;
-  private inner = false;
+  /** The opening quote while the reply may still turn out to be wrapped in it. */
+  private opening = '';
 
   push(text: string): string {
     let body = this.held + text;
     this.held = '';
     if (!this.started) {
       body = body.trimStart();
-      if (!this.opened && QUOTES.test(body.charAt(0))) {
-        this.opened = true;
-        body = body.slice(1).trimStart();
-      }
       if (body.length === 0) return '';
       this.started = true;
+      if (QUOTES.test(body[0]!)) {
+        this.opening = body[0]!;
+        body = body.slice(1);
+      }
     }
-    const keep = /[\s"“”]*$/.exec(body)!.index;
-    const out = body.slice(0, keep);
+    if (this.opening) {
+      const close = body.search(QUOTES);
+      if (close < 0 || body.slice(close + 1).trim().length === 0) {
+        this.held = body;
+        return '';
+      }
+      body = this.opening + body;
+      this.opening = '';
+    }
+    const keep = body.trimEnd().length;
     this.held = body.slice(keep);
-    if (this.opened && QUOTES.test(out)) this.inner = true;
-    return out;
+    return body.slice(0, keep);
   }
 
   end(): string {
-    let tail = this.held.trimEnd();
-    if (this.opened && !this.inner && QUOTES.test(tail.slice(-1))) tail = tail.slice(0, -1).trimEnd();
-    this.held = '';
-    this.started = this.opened = this.inner = false;
-    return tail;
+    const close = this.held.search(QUOTES);
+    const rest = this.opening ? this.held.slice(0, close < 0 ? undefined : close).trim() : '';
+    this.held = this.opening = '';
+    this.started = false;
+    return rest;
   }
 }
 
@@ -194,7 +139,12 @@ export class ReplyCleaner {
 
   /** @param names what the NPC is called, so a leading `Name:` tag is recognised */
   constructor(names: string[] = []) {
-    this.stages = [new Markup(), new SpeakerTags(names), new Wrapping()];
+    this.stages = [new ModelMarkup(), new SpeakerTags(names), new Wrapping()];
+  }
+
+  /** True once the model has moved past the NPC's turn, so the rest of its text can only be dropped. */
+  get done(): boolean {
+    return this.stages.some((stage) => stage.closed === true);
   }
 
   /** The cleaned text that is certain so far. */

@@ -1,6 +1,6 @@
 /**
  * Renders an NPC's deterministic simulation background (who they are, home,
- * job, family, routine) as second-person prose facts. This is the
+ * work, family, routine) as second-person prose facts. This is the
  * mathematical life the persona is layered on; nothing here is invented.
  */
 
@@ -21,26 +21,35 @@ export class BackgroundRenderer {
     const who = person(npc);
     const lines = [who === undefined ? prompt('background.md#identity', { ...npc.name }) : prompt('background.md#person', { ...npc.name, who })];
     if (npc.traits !== undefined && npc.traits.length > 0) lines.push(prompt('background.md#traits', { traits: listed(npc.traits) }));
-    lines.push(prompt('background.md#home', { home: this.places.parcel(npc.home.parcelId), unit: npc.home.unit }));
-    if (npc.job) {
-      const days = this.days(npc.job.shift.days);
-      const hours = `${clock(npc.job.shift.startMin)} to ${clock(npc.job.shift.endMin)}`;
-      lines.push(prompt('background.md#job', { place: this.places.parcel(npc.job.parcelId), role: npc.job.role.replace(/_/g, ' '), days, hours }));
-    } else {
-      lines.push(prompt('background.md#jobless'));
-    }
+    lines.push(prompt('background.md#home', { home: this.places.place({ kind: 'parcel', id: npc.home.parcelId }), unit: npc.home.unit }));
+    lines.push(this.work(npc));
     for (const member of npc.family) {
       lines.push(prompt('background.md#family', { ...member.name, relation: member.relation }));
     }
     const leisure = new Set(
       npc.routine
         .filter((e) => (e.activity === 'leisure' || e.activity === 'shopping') && e.place.kind === 'parcel')
-        .map((e) => this.places.parcel(e.place.id)),
+        .map((e) => this.places.place({ kind: 'parcel', id: e.place.id })),
     );
     if (leisure.size > 0) {
       lines.push(prompt('background.md#leisure', { places: [...leisure].join('; ') }));
     }
     return lines.join('\n');
+  }
+
+  /** Where and when this person works: a building, a stop or station, or the transit lines. */
+  private work(npc: NPCInstance): string {
+    const job = npc.job ?? npc.transitJob;
+    if (job === undefined) return prompt('background.md#jobless');
+    const shift = {
+      role: job.role.replace(/_/g, ' '),
+      days: this.days(job.shift.days),
+      hours: `${clock(job.shift.startMin)} to ${clock(job.shift.endMin)}`,
+    };
+    const place = 'parcelId' in job
+      ? this.places.place({ kind: 'parcel', id: job.parcelId })
+      : job.place.kind === 'stop' ? this.places.place({ kind: 'stop', id: job.place.id }) : undefined;
+    return place === undefined ? prompt('background.md#route-job', shift) : prompt('background.md#job', { ...shift, place });
   }
 
   private days(days: number[]): string {

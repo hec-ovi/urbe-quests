@@ -67,6 +67,34 @@ When the player asks about this place, talk about it as you know it; what you do
 
 It is {{day}} {{time}}; right now you are {{activity}}.
 
+## activity-sleeping
+
+up at an hour you would normally be asleep
+
+## activity-home
+
+at home
+
+## activity-working
+
+at work
+
+## activity-commuting
+
+on your way somewhere
+
+## activity-shopping
+
+out running errands
+
+## activity-leisure
+
+out on your own time
+
+## activity-transit_wait
+
+waiting for your ride at a stop
+
 ## conversation
 
 The conversation so far:

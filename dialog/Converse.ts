@@ -24,7 +24,7 @@ export interface ConverseStreamInput extends ConverseInput {
   signal?: AbortSignal;
 }
 
-/** What a streamed reply yields: text as it is spoken, each offer the NPC makes, then the whole reply. */
+/** What a streamed reply yields: text as it is spoken, then each offer the NPC made, then the whole reply. */
 export type ReplyEvent =
   | { type: 'delta'; text: string }
   | ({ type: 'offer' } & CompanionOffer)
@@ -41,9 +41,10 @@ export class Converse {
 
   /**
    * Streams the reply through the port's `stream`, cleaned as it arrives. Tool
-   * calls in the same request become offers; when the model only called tools,
-   * each call is answered and the spoken reply is asked for once more. A port
-   * without `stream` yields the whole `reply` as one delta and offers nothing.
+   * calls in the same request become offers, yielded once the spoken reply is
+   * complete; when the model only called tools, each call is answered and the
+   * spoken reply is asked for once more. A port without `stream` yields the
+   * whole `reply` as one delta and offers nothing.
    */
   async *replyStream(input: ConverseStreamInput): AsyncGenerator<ReplyEvent> {
     const llm = this.llm;
@@ -67,17 +68,10 @@ export class Converse {
     }
 
     const made = calls.list();
-    const offers = new Map<string, CompanionOffer>();
-    for (const call of made) {
-      const offer = offerOf(call, input.offers);
-      if (offer) offers.set(offer.kind === 'lead' ? `lead:${offer.placeId}` : offer.kind, offer);
-    }
-    for (const offer of offers.values()) yield { type: 'offer', ...offer };
-
     if (reply.length === 0 && made.length > 0) {
       const answered: ChatMessage[] = [
         ...messages,
-        { role: 'assistant', content: '', tool_calls: made },
+        { role: 'assistant', content: '', tool_calls: made.map(wellFormed) },
         ...made.map((call) => answer(call, input.offers)),
       ];
       for await (const text of said(llm, { messages: answered }, names, new ChatToolCalls(), input.signal)) {
@@ -85,7 +79,15 @@ export class Converse {
         yield { type: 'delta', text };
       }
     }
-    yield { type: 'done', reply: spoken(reply), offers: [...offers.values()] };
+    spoken(reply);
+
+    const offers = new Map<string, CompanionOffer>();
+    for (const call of made) {
+      const offer = offerOf(call, input.offers);
+      if (offer) offers.set(offer.kind === 'lead' ? `lead:${offer.placeId}` : offer.kind, offer);
+    }
+    for (const offer of offers.values()) yield { type: 'offer', ...offer };
+    yield { type: 'done', reply, offers: [...offers.values()] };
   }
 }
 
@@ -109,9 +111,21 @@ async function* said(
     calls.add(delta.tool_calls);
     const text = cleaner.push(delta.content ?? '');
     if (text.length > 0) yield text;
+    // The model has moved past the NPC's turn: stop reading, which closes the request.
+    if (cleaner.done) break;
   }
   const rest = cleaner.end();
   if (rest.length > 0) yield rest;
+}
+
+/** The call as it goes back to the server, which rejects arguments that are not JSON. */
+function wellFormed(call: ChatToolCall): ChatToolCall {
+  try {
+    JSON.parse(call.function.arguments);
+    return call;
+  } catch {
+    return { ...call, function: { ...call.function, arguments: '{}' } };
+  }
 }
 
 function answer(call: ChatToolCall, options: OfferOptions | undefined): ChatMessage {

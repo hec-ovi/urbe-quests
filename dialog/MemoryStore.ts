@@ -4,9 +4,10 @@
  * memory survives saves.
  */
 
+import { QuestError } from '../errors.js';
 import type { LLMPort } from '../ports/llm.js';
+import { cleanMarkup } from '../ports/markup.js';
 import { promptLoader } from '../prompts.js';
-import { cleanReply } from './ReplyCleaner.js';
 import type { DialogTurn, MemorySnapshot } from './schema.js';
 
 export interface MemoryStoreOptions {
@@ -39,7 +40,8 @@ export class MemoryStore {
   /**
    * Stores the turns at once and returns the fold they start. Folded turns
    * leave the tail only when their note is written, so context read meanwhile
-   * still holds them; a failed fold keeps them for the next record to retry.
+   * still holds them; a failed fold (a provider error or an empty note) keeps
+   * them for the next record to retry.
    */
   record(npcId: string, turns: DialogTurn[]): Promise<void> {
     const memory = this.memory(npcId);
@@ -72,9 +74,10 @@ export class MemoryStore {
     while (memory.turns.length > this.tailSize) {
       const folded = memory.turns.slice(0, this.foldSize);
       const transcript = folded.map((t) => `${t.speaker}: ${t.text}`).join('\n');
-      const note = cleanReply(await this.llm.complete({ system: SUMMARIZE_PROMPT, prompt: transcript }));
+      const note = cleanMarkup(await this.llm.complete({ system: SUMMARIZE_PROMPT, prompt: transcript }));
+      if (note.length === 0) throw new QuestError('E_LLM', 'the model wrote no memory note');
       memory.turns.splice(0, folded.length);
-      if (note.length > 0) memory.digest.push(note);
+      memory.digest.push(note);
     }
   }
 
