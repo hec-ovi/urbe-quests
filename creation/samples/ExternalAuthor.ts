@@ -6,10 +6,11 @@
  * `requests/` and waits, and so does one the stage refused, with the reasons
  * a model's repair round would read. Once every branch of the run waits or is
  * done, `stalled` resolves with what the author owes, so the run stops there;
- * the next run replays the files already written and goes on.
+ * the next run replays the files already written and goes on. Each run writes
+ * `requests/` afresh, so it holds exactly the requests that run reached.
  */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import type { AgentReply, AgentToolCall, AgentPort, LLMPort } from '../../ports/llm.js';
 import type { StagePorts } from '../schema.js';
@@ -54,6 +55,7 @@ export class ExternalAuthor {
 
   constructor(dir: string) {
     this.dir = resolve(dir);
+    rmSync(join(this.dir, REQUESTS), { recursive: true, force: true });
     mkdirSync(this.dir, { recursive: true });
     this.stalled = new Promise((settle) => (this.settle = settle));
     this.ports = {
@@ -73,7 +75,7 @@ export class ExternalAuthor {
         const need: AuthorNeed = { stage, ...(title !== undefined ? { title } : {}), file: `${base}.md`, request: [`${REQUESTS}/${base}.md`] };
         // A repair round: the file on disk did not parse, for the reasons a model would be given.
         if (problems !== undefined) return this.wait({ ...need, problems: [...problems] });
-        this.write(need.request[0]!, requestText(need, system, prompt));
+        this.write(need.request[0]!, requestText(need, need.file, system, prompt));
         return this.read(need.file) ?? this.wait(need);
       },
     };
@@ -88,7 +90,7 @@ export class ExternalAuthor {
     const request = [`${REQUESTS}/${base}/request.md`, `${REQUESTS}/${base}/tools.json`];
     const need: AuthorNeed = { stage: 'build', title, round, file: `${base}/${roundFile(round)}.json`, request };
     if (round === 1) {
-      this.write(request[0]!, requestText(need, system, prompt));
+      this.write(request[0]!, requestText(need, `${base}/round-NN.json`, system, prompt));
       this.write(request[1]!, json(tools));
     }
     const last = transcript.at(-1);
@@ -134,12 +136,12 @@ export class ExternalAuthor {
   }
 }
 
-/** The request as the model would see it, under the stage, title and file that answer it. */
-function requestText(need: AuthorNeed, system: string, prompt: string): string {
+/** The request as the model would see it, under the stage, title and the file that answers it. */
+function requestText(need: AuthorNeed, answer: string, system: string, prompt: string): string {
   const head = [
     `Stage: ${need.stage}`,
     ...(need.title !== undefined ? [`Title: ${need.title}`] : []),
-    `Answer: ${need.file.replace(/round-\d+/, 'round-NN')}`,
+    `Answer: ${answer}`,
     ...(need.stage === 'build' ? [`Tools: ${need.request[1]}`] : []),
   ];
   return `${head.join('\n')}\n\n======== SYSTEM ========\n\n${system.trim()}\n\n======== PROMPT ========\n\n${prompt.trim()}\n`;

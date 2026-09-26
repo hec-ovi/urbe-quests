@@ -7,6 +7,7 @@
  * directory, The Short Measure, stands in for the agent writing it.
  */
 
+import { spawnSync } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -23,11 +24,12 @@ import { materialize } from '../samples/materialize.js';
 import { OpenAICompatibleClient } from '../samples/OpenAICompatibleClient.js';
 import { recordedPorts, type Recording } from '../samples/RecordedPorts.js';
 
+const root = fileURLToPath(new URL('../../', import.meta.url));
 const sampleDir = fileURLToPath(new URL('../samples/urbe-small/', import.meta.url));
 const AUTHORED = join(sampleDir, 'author');
 const worldPath = join(sampleDir, 'world.json');
 const typesPath = join(sampleDir, 'npc-types.json');
-/** Engine's host capabilities: public transit and the scenery it stages. */
+/** The host capabilities Engine declares: public transit and the scenery it stages. */
 const handoffPath = join(sampleDir, 'handoff-input.json');
 const read = <T>(path: string): T => JSON.parse(readFileSync(path, 'utf8')) as T;
 const text = (path: string): string => readFileSync(path, 'utf8');
@@ -69,7 +71,7 @@ function scratch() {
 const needs = (result: AuthorResult) => (result.status === 'needs' ? result.needs : []);
 
 describe('external author', () => {
-  it('runs the sample against the host capabilities Engine declares', () => {
+  it('gives the sample public transit and every scenery kind the stage_scene tool knows', () => {
     expect(read(handoffPath)).toEqual({ hostCapabilities: { transportationModes: ['public-transit'], scenery: SCENERY_VOCABULARY } });
   });
 
@@ -85,6 +87,7 @@ describe('external author', () => {
     expect(request).toContain('The city can show what a scene leaves behind');
     expect(request).toContain(`======== PROMPT ========\n\nCreation prompt:\n${PROMPT}`);
     expect(read(join(run.out, 'meta.json'))).toMatchObject({ model: 'claude-opus-5-5', scenery: true, needs: needs(first) });
+    expect(existsSync(join(run.out, 'recording.json'))).toBe(false);
     expect(existsSync(join(run.out, 'bundle'))).toBe(false);
 
     // The script in: the main plan and the situations are owed together.
@@ -190,14 +193,32 @@ describe('external author', () => {
     const recording = read<Recording>(join(run.out, 'recording.json'));
     expect(recording.model).toBe('claude-opus-test');
     expect(recording.builds['The Short Measure']).toEqual([[...authored.slice(0, -1), orrin], [{ tool: 'finish_questline' }]]);
+
+    // A later run into the same --out that owes a file keeps nothing of the finished one: no recording, questlines or bundle.
+    const finished = readdirSync(run.out);
+    expect(finished).toEqual(expect.arrayContaining(['recording.json', 'questlines.json', 'side-sit_2.plan.md', 'side-sit_2.questline.json', 'bundle']));
+    writeFileSync(join(run.authorDir, 'requests', 'stale.md'), 'from an earlier run');
+    run.write('plans/tolerance.md', 'A plan that forgot its manifest.');
+    expect(needs(await run.run()).map((need) => need.file)).toEqual(['plans/tolerance.md']);
+    expect(readdirSync(run.out).filter((file) => !['bundle', 'meta.json'].includes(file)).sort()).toEqual(
+      finished.filter((file) => /^(script|situations|main\.|side-sit_[13]\.)/.test(file)).sort(),
+    );
+    expect(readdirSync(join(run.out, 'bundle'))).toEqual([]);
+    expect(read(join(run.out, 'meta.json'))).not.toHaveProperty('bundle');
+    expect(existsSync(join(run.authorDir, 'requests', 'stale.md'))).toBe(false);
   });
 
-  it('names an external author only with --external, and keeps one file per title', async () => {
+  it('takes one named author, names an external one only, and keeps one file per title', async () => {
     const run = scratch();
-    await expect(author(['--world', worldPath, '--types', typesPath, '--out', run.out, '--model', 'claude-opus-5-5'])).rejects.toThrowError(
-      /^--model names an external author/,
-    );
+    const bare = ['--world', worldPath, '--types', typesPath, '--out', run.out];
+    const oneAuthor = /^name one author: --external <author-dir>, an agent writing each stage as a file, or --live, the model server$/;
+    await expect(author(bare)).rejects.toThrowError(oneAuthor);
+    await expect(author([...bare, '--model', 'claude-opus-5-5'])).rejects.toThrowError(oneAuthor);
+    await expect(run.run('--live')).rejects.toThrowError(oneAuthor);
+    await expect(author([...bare, '--live=yes'])).rejects.toThrowError(/^--live takes no value$/);
+    await expect(author([...bare, '--live', '--model', 'claude-opus-5-5'])).rejects.toThrowError(/^--model names an external author/);
     await expect(run.run('--external=')).rejects.toThrowError(/^--external needs a value$/);
+    await expect(author([...bare, '--external', run.out])).rejects.toThrowError(/^--external and --out name one directory/);
     expect(existsSync(run.out)).toBe(false);
 
     const external = new ExternalAuthor(run.authorDir);
@@ -208,6 +229,28 @@ describe('external author', () => {
       'titles "Rust, Salt" and "Rust & Salt" share the author file name rust-salt; give one its own title',
     );
     void external.ports.plan.complete({ system: 'plan', prompt: 'Title: Déjà Vu' });
-    expect(await external.stalled).toEqual([{ stage: 'plan', title: 'Déjà Vu', file: 'plans/deja-vu.md', request: ['requests/plans/deja-vu.md'] }]);
+    // A request names the file that answers it exactly, whatever the title holds.
+    void external.ports.plan.complete({ system: 'plan', prompt: 'Title: Round 2' });
+    void external.ports.build.step({ system: 'build', prompt: 'Title: Round 2', tools: [], transcript: [] });
+    expect(await external.stalled).toEqual([
+      { stage: 'build', title: 'Round 2', round: 1, file: 'builds/round-2/round-01.json', request: ['requests/builds/round-2/request.md', 'requests/builds/round-2/tools.json'] },
+      { stage: 'plan', title: 'Déjà Vu', file: 'plans/deja-vu.md', request: ['requests/plans/deja-vu.md'] },
+      { stage: 'plan', title: 'Round 2', file: 'plans/round-2.md', request: ['requests/plans/round-2.md'] },
+    ]);
+    const header = (file: string) => text(join(run.authorDir, 'requests', file)).split('\n\n')[0];
+    expect(header('plans/round-2.md')).toBe('Stage: plan\nTitle: Round 2\nAnswer: plans/round-2.md');
+    expect(header('builds/round-2/request.md')).toBe('Stage: build\nTitle: Round 2\nAnswer: builds/round-2/round-NN.json\nTools: requests/builds/round-2/tools.json');
+  });
+
+  it('exits 2 while the author owes files and 1 without an author', () => {
+    const run = scratch();
+    const cli = (...args: string[]) =>
+      spawnSync(process.execPath, ['--import', 'tsx', 'creation/samples/author.ts', '--world', worldPath, '--types', typesPath, '--out', run.out, ...args], { cwd: root, encoding: 'utf8' });
+    const owes = cli('--external', run.authorDir);
+    expect(owes.status, owes.stderr).toBe(2);
+    expect(owes.stderr).toContain('needs script.md (request requests/script.md)');
+    const unnamed = cli();
+    expect(unnamed.status).toBe(1);
+    expect(unnamed.stderr).toContain('name one author');
   });
 });

@@ -7,13 +7,19 @@ import { WorldContextNormalizer, type AtlasQuestWorld, type NamedWorld, type Nor
 export const readJson = <T>(path: string): T => JSON.parse(readFileSync(resolve(path), 'utf8')) as T;
 
 /**
- * Options as `--name value` or `--name=value`, among positional arguments.
- * An option outside `names`, or one with no value, is a usage error; the
- * next option is never taken as a value (`--name=--text` passes one).
+ * Options as `--name value` or `--name=value` and switches as `--name`, among
+ * positional arguments. An option outside `names` and `switches`, an option
+ * with no value or a switch given one is a usage error; the next option is
+ * never taken as a value (`--name=--text` passes one).
  */
-export function parseArgs(args: readonly string[], names: readonly string[]): { positional: string[]; options: Map<string, string> } {
+export function parseArgs(
+  args: readonly string[],
+  names: readonly string[],
+  switches: readonly string[] = [],
+): { positional: string[]; options: Map<string, string>; switches: Set<string> } {
   const positional: string[] = [];
   const options = new Map<string, string>();
+  const on = new Set<string>();
   for (let i = 0; i < args.length; i++) {
     const arg = args[i]!;
     if (!arg.startsWith('--')) {
@@ -22,12 +28,17 @@ export function parseArgs(args: readonly string[], names: readonly string[]): { 
     }
     const [flag, inline] = arg.includes('=') ? [arg.slice(0, arg.indexOf('=')), arg.slice(arg.indexOf('=') + 1)] : [arg, undefined];
     const name = flag.slice(2);
+    if (switches.includes(name)) {
+      if (inline !== undefined) throw new Error(`${flag} takes no value`);
+      on.add(name);
+      continue;
+    }
     if (!names.includes(name)) throw new Error(`unknown option ${flag}`);
     const value = inline ?? (args[i + 1]?.startsWith('--') ? undefined : args[++i]);
     if (value === undefined) throw new Error(`${flag} needs a value`);
     options.set(name, value);
   }
-  return { positional, options };
+  return { positional, options, switches: on };
 }
 
 /** A literal, or `@path` for the contents of that file. */

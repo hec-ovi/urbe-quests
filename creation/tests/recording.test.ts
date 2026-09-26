@@ -173,7 +173,7 @@ describe('recorded scenery', () => {
 });
 
 describe('author CLI', () => {
-  const required = (out: string) => ['--world', worldPath, '--types', typesPath, '--out', out];
+  const required = (out: string) => ['--world', worldPath, '--types', typesPath, '--out', out, '--live'];
 
   it('writes stages, recording and meta to --out and the bundle a later materialize of that recording writes', async () => {
     const dir = scratch();

@@ -9,7 +9,7 @@ npm run author -- --world <named-world.json> --types <npc-types.json> --out <out
   [--prompt <text|@file>] [--handoff <file>] [--mechanics <kind,kind,...>] [--parcels=<ids|@file>] [--profile <label>] [--model <label>]
 ```
 
-The inputs are a live run's ([creation contract](creation/CONTRACT.md#sample)). `--model` is the name the recording gives you, `claude-opus-5-5` by default. Exit 2: files are owed. Exit 0: the bundle is written. Exit 1: a failure, named on stderr and in `<out-dir>/meta.json`.
+The inputs are those of any author run ([creation contract](creation/CONTRACT.md#sample)). `<author-dir>` and `<out-dir>` are two directories. `--model` is the name the recording gives you, `claude-opus-5-5` by default. Exit 2: files are owed. Exit 0: the bundle is written. Exit 1: a failure, named on stderr and in `<out-dir>/meta.json`. Never pass `--live`: it asks the model server instead of you.
 
 ## Loop
 
@@ -31,7 +31,7 @@ After a round, `requests/builds/<title>/round-NN.results.json` holds what each c
 
 ## What you get
 
-`<out-dir>` holds each stage as it lands, `recording.json` (it replays through `npm run replay` and `npm run materialize` with no author present), `meta.json` and the bundle under `bundle/`.
+Each run first clears what the last one left in `<out-dir>` and `<author-dir>/requests/`, so both show this run only. At exit 0 `<out-dir>` holds each stage, `recording.json` (it replays through `npm run replay` and `npm run materialize` with no author present), `meta.json` with `bundle`, and the bundle under `bundle/`. That directory is the story: Engine's creation `importStory` takes it as `recording` ([Engine creation](../engine/src/creation/CONTRACT.md)). At exit 2 or 1 it is not one, and a run that owes files writes no `recording.json`.
 
 [creation/samples/urbe-small/author/](creation/samples/urbe-small/author/) is a complete author directory, The Short Measure, written for the sample world. Copy it to `<author-dir>` and run:
 

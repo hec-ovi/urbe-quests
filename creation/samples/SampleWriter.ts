@@ -3,7 +3,7 @@
  * run that stops late keeps what it made.
  */
 
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import type { TranslationResult } from '../../builder/schema.js';
 import type { CreationProgress, CreationResult } from '../schema.js';
@@ -14,12 +14,20 @@ export type Log = (line: string) => void;
 /** A questline's file stem: `main`, or `side-<situation id>`. */
 const labelOf = (questline: string): string => (questline === 'main' ? 'main' : `side-${questline}`);
 
+/** The files a run's stages land in. */
+const STAGE_FILE = /^(script\.md|situations\.md|questlines\.json|.+\.plan\.md|.+\.questline\.json)$/;
+
 export class SampleWriter {
   readonly path: string;
 
   constructor(dir: string) {
     this.path = resolve(dir);
     mkdirSync(this.path, { recursive: true });
+  }
+
+  /** Removes the stage files an earlier run left here, and the other files named. */
+  clear(also: readonly string[] = []): void {
+    for (const name of readdirSync(this.path)) if (STAGE_FILE.test(name) || also.includes(name)) rmSync(join(this.path, name), { force: true });
   }
 
   write(file: string, text: string): void {

@@ -1,5 +1,5 @@
 import { writeFileSync } from 'node:fs';
-import { basename, dirname, resolve } from 'node:path';
+import { basename, dirname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import type { TranslationResult } from '../../builder/schema.js';
 import { StoryVenues } from '../../builder/StoryVenues.js';
@@ -12,7 +12,7 @@ import { EngineHandoff } from '../../handoff/EngineHandoff.js';
 import { HandoffInputBoundary } from '../../handoff/HandoffInputBoundary.js';
 import { stagedScenery } from '../../handoff/SceneStagings.js';
 import { loadWorld, parseArgs, readJson, readParcels } from './CliInputs.js';
-import { readHandoffInput, writeEngineHandoff, type HandoffManifest } from './EngineHandoffWriter.js';
+import { HANDOFF_FILES, readHandoffInput, writeEngineHandoff, type HandoffManifest } from './EngineHandoffWriter.js';
 import { recordedPorts, type Recording } from './RecordedPorts.js';
 import { pickupAssetRequests } from './PickupAssetRequests.js';
 import { checkSceneTemplates, sceneryHandoff, withTemplates } from './SceneTemplates.js';
@@ -45,6 +45,14 @@ export interface MaterializeResult {
 
 const USAGE =
   'usage: materialize.ts <recording.json> <profile> <atlas-or-named-world.json> <npc-types.json> <questlines.json output> [<handoff-input.json>] [--parcels=<ids|@file>]';
+
+const META = 'questlines.meta.json';
+
+/** Every file a materialize to this questlines path writes: the questlines, the bundle beside them and questlines.meta.json. */
+export function materializedFiles(outputPath: string): string[] {
+  const dir = dirname(resolve(outputPath));
+  return [resolve(outputPath), ...Object.values(HANDOFF_FILES).map((file) => join(dir, file)), join(dir, META)];
+}
 
 /** The simulation a profile's questlines are cast against, live or replayed. */
 export const profileSimulation = (profile: string, context: NormalizedWorldContext): StubSimulation =>
@@ -121,7 +129,7 @@ export async function materializeRecording(input: MaterializeInput): Promise<Mat
     ...(parcels !== undefined ? { parcels } : {}),
     blocked,
   };
-  writeFileSync(resolve(dirname(outputPath), 'questlines.meta.json'), JSON.stringify(meta, null, 2) + '\n');
+  writeFileSync(join(dirname(outputPath), META), JSON.stringify(meta, null, 2) + '\n');
   log(`materialized ${questlines.length} questlines for ${profile} at ${outputPath}`);
   return { world, types, questlines, blocked, outputPath, manifest };
 }
