@@ -35,11 +35,21 @@ export interface ChatDelta {
   }>;
 }
 
+/** Token counts a server reports on a stream's last chunk (`stream_options.include_usage`). */
+export interface ChatUsage {
+  prompt_tokens?: number;
+  completion_tokens?: number;
+}
+
 /**
  * Yields each choice-0 delta of a streamed Chat Completions body until
- * `[DONE]`. A provider error event, or a body that ends before `[DONE]`, rejects.
+ * `[DONE]`, and hands any reported usage to `onUsage`. A provider error
+ * event, or a body that ends before `[DONE]`, rejects.
  */
-export async function* chatDeltas(body: AsyncIterable<Uint8Array> | null): AsyncGenerator<ChatDelta> {
+export async function* chatDeltas(
+  body: AsyncIterable<Uint8Array> | null,
+  onUsage?: (usage: ChatUsage) => void,
+): AsyncGenerator<ChatDelta> {
   if (body === null) throw new Error('model response has no stream');
   const decoder = new TextDecoder();
   let buffer = '';
@@ -53,8 +63,13 @@ export async function* chatDeltas(body: AsyncIterable<Uint8Array> | null): Async
         .map((line) => line.slice(5).trimStart()).join('\n');
       if (data.length === 0) continue;
       if (data === '[DONE]') return;
-      const event = JSON.parse(data) as { choices?: { index: number; delta?: ChatDelta }[]; error?: { message: string } };
+      const event = JSON.parse(data) as {
+        choices?: { index: number; delta?: ChatDelta }[];
+        usage?: ChatUsage | null;
+        error?: { message: string };
+      };
       if (event.error) throw new Error(event.error.message);
+      if (event.usage) onUsage?.(event.usage);
       const delta = event.choices?.find((choice) => choice.index === 0)?.delta;
       if (delta) yield delta;
     }

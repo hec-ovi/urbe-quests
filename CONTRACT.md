@@ -19,7 +19,7 @@ The Node library entry is [index.ts](index.ts), compiled to `dist/index.js`; bro
 | `EngineHandoff.assemble(questlines, input?)` | [Quest set](creation/schema/questline-set.schema.json), [bindings and capabilities](handoff/schema/handoff-input.schema.json) | [HandoffBundle](handoff/schema.ts), definitions, objectives, investigations, assets and bindings |
 | `DialogContextService.contextFor(npcId, timeMin, { guide? })`, `recordExchange` | [Context inputs](dialog/CONTRACT.md#in), optional guided place, completed exchange | [Scoped segments and memory](dialog/schema.ts) |
 | `Converse.reply`, `Converse.replyStream`, `cleanReply` | [Reply input](dialog/Converse.ts), optional companion offers and abort signal, [LLMPort or StreamingLLMPort](ports/llm.ts) | Cleaned reply string, or streamed `delta`, `offer` and `done` [events](dialog/CONTRACT.md#out) |
-| `chatDeltas(body)`, `ChatToolCalls` | OpenAI-compatible `stream: true` response body, [chat shapes](ports/chat.ts) | Choice deltas in order; whole tool calls in index order |
+| `chatDeltas(body, onUsage?)`, `ChatToolCalls` | OpenAI-compatible `stream: true` response body, [chat shapes](ports/chat.ts) | Choice deltas in order and the reported token usage; whole tool calls in index order |
 | `WorldContextNormalizer.normalize`, fixture loaders | [World and type projections](world/types/named-world.ts), [world calls](world/CONTRACT.md) | [Normalized context](world/WorldContextNormalizer.ts), standalone world/story fixtures |
 
 Creation warnings report failed side translations or unusable situations. Main/script failures reject the run. `CreationResult` has no completion marker or retained side-failure record. Naming is supplied by callers; its integration is proposed in [issues](docs/ISSUES.md).

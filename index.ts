@@ -10,6 +10,7 @@ export {
   type ChatRequest,
   type ChatTool,
   type ChatToolCall,
+  type ChatUsage,
 } from './ports/chat.js';
 
 export * from './world/index.js';
