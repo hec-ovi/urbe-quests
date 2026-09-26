@@ -4,7 +4,7 @@ import { QuestError } from '../errors.js';
 import { stripCues } from '../flow/cues.js';
 import { promptLoader } from '../prompts.js';
 import type { QuestlineRuntime } from '../flow/QuestlineRuntime.js';
-import type { QuestRole } from '../flow/schema.js';
+import type { QuestRole, QuestStep, QuestStepDialogue } from '../flow/schema.js';
 import type { LLMPort } from '../ports/llm.js';
 import type { NPCType, NPCTypeSet } from '../world/types/named-world.js';
 import type { NPCInstance, SimulationPort } from '../world/types/simulation.js';
@@ -17,6 +17,7 @@ import type {
   DialogContext,
   DialogExchange,
   DialogGuide,
+  DialogLine,
   DialogTurn,
   DialogWorld,
   MemorySnapshot,
@@ -79,20 +80,23 @@ export class DialogContextService {
       segments.push({ id: 'memory', text: prompt('context.md#memory', { notes: bullets(memory.digest) }), shared: false });
     }
     if (options.guide) segments.push({ id: 'place', text: this.renderPlace(npc, options.guide), shared: false });
-    segments.push({ id: 'turns', text: this.renderNow(npcId, timeMin, memory.turns), shared: false });
+    const turns = [...memory.turns, ...said(options.prior ?? [], timeMin)];
+    segments.push({ id: 'turns', text: this.renderNow(npcId, timeMin, turns), shared: false });
     return { npcId, ...(characterName ? { characterName: { ...characterName } } : {}), segments };
   }
 
   /**
-   * Remembers one completed exchange, the reply without its cues: both turns
-   * are stored before this returns. The returned promise settles when any fold the exchange started
-   * has written its note, so a host replies first and awaits or catches it later.
+   * Remembers one completed exchange after the prior lines shown before it,
+   * the NPC's lines without their cues: all turns are stored before this returns.
+   * The returned promise settles when any fold the exchange started has
+   * written its note, so a host replies first and awaits or catches it later.
    */
   recordExchange(npcId: string, exchange: DialogExchange): Promise<void> {
-    return this.memoryStore.record(npcId, [
-      { speaker: 'player', text: exchange.line, atMin: exchange.atMin },
-      { speaker: 'npc', text: stripCues(exchange.reply), atMin: exchange.atMin },
-    ]);
+    return this.memoryStore.record(npcId, said([
+      ...(exchange.prior ?? []),
+      { speaker: 'player', text: exchange.line },
+      { speaker: 'npc', text: exchange.reply },
+    ], exchange.atMin));
   }
 
   serializeMemory(): Record<string, MemorySnapshot> {
@@ -146,14 +150,17 @@ export class DialogContextService {
   }
 
   /**
-   * Scope is code-decided: facts whose gate is open, active steps this NPC
-   * wants (through the cast mapping), and the epilogue of an ending this NPC
-   * was part of. The model never chooses what enters.
+   * Scope is code-decided: for anyone the stories cast, who the player is;
+   * facts whose gate is open, active steps this NPC wants (through the cast
+   * mapping), the authored talk this NPC is on with the player, and the
+   * epilogue of an ending this NPC was part of. The model never chooses what enters.
    */
   private renderQuestKnowledge(npcId: string): string {
     const known: string[] = [];
     const wants: string[] = [];
+    const talks: string[] = [];
     const endings: string[] = [];
+    let cast = false;
     for (const runtime of this.questlines) {
       for (const fact of runtime.def.facts) {
         if (runtime.cast[fact.roleId] !== npcId) continue;
@@ -161,15 +168,24 @@ export class DialogContextService {
         known.push(fact.text);
       }
       for (const step of runtime.activeSteps()) {
-        if (step.wantedByRoleId === undefined || runtime.cast[step.wantedByRoleId] !== npcId) continue;
-        wants.push(`${step.narrative.description} ${step.narrative.stake}`);
+        if (step.wantedByRoleId !== undefined && runtime.cast[step.wantedByRoleId] === npcId) {
+          wants.push(`${step.narrative.description} ${step.narrative.stake}`);
+        }
+        const dialogue = talkWith(step, runtime.cast, npcId);
+        if (dialogue) talks.push(renderTalk(dialogue));
       }
+      if (!Object.values(runtime.cast).includes(npcId)) continue;
+      cast = true;
       const ending = runtime.ending();
-      if (ending !== undefined && Object.values(runtime.cast).includes(npcId)) endings.push(ending.epilogue);
+      if (ending !== undefined) endings.push(ending.epilogue);
     }
+    // The player is one person across the set, as the main story's prologue tells it.
+    const player = cast ? this.questlines.find((runtime) => runtime.def.prologue !== undefined)?.def.prologue : undefined;
     const blocks: string[] = [];
+    if (player) blocks.push(prompt('context.md#player', { player }));
     if (known.length > 0) blocks.push(prompt('context.md#known', { facts: bullets(known) }));
     if (wants.length > 0) blocks.push(prompt('context.md#wants', { wants: bullets(wants) }));
+    blocks.push(...talks);
     if (endings.length > 0) blocks.push(prompt('context.md#endings', { endings: bullets(endings) }));
     return blocks.join('\n');
   }
@@ -206,3 +222,23 @@ export class DialogContextService {
 }
 
 const bullets = (lines: string[]): string => lines.map((line) => `- ${line}`).join('\n');
+
+/** Lines as memory keeps them: at one minute, the NPC's without their cues. */
+const said = (lines: DialogLine[], atMin: number): DialogTurn[] =>
+  lines.map(({ speaker, text }) => ({ speaker, text: speaker === 'npc' ? stripCues(text) : text, atMin }));
+
+/** The authored dialogue of a step that is a talk with this NPC, if any. */
+function talkWith(step: QuestStep, cast: Record<string, string>, npcId: string): QuestStepDialogue | undefined {
+  return step.target.kind === 'talk' && cast[step.target.roleId] === npcId ? step.dialogue : undefined;
+}
+
+/** The NPC's own authored words on the talk: its opening, its answers to the questions, and the answers that settle it. */
+function renderTalk(dialogue: QuestStepDialogue): string {
+  const lines = [prompt('context.md#talk', { opening: stripCues(dialogue.opening) })];
+  for (const choice of dialogue.choices) {
+    if (!choice.completesStep) lines.push(prompt('context.md#talk-answer', { question: choice.text, reply: stripCues(choice.reply) }));
+  }
+  const settling = dialogue.choices.filter((choice) => choice.completesStep).map((choice) => `"${choice.text}"`);
+  lines.push(prompt('context.md#talk-settle', { answers: settling.join(' or ') }));
+  return lines.join('\n');
+}

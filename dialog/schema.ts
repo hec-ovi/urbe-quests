@@ -48,19 +48,27 @@ export interface DialogGuide {
 export interface ContextOptions {
   /** Adds the `place` segment. */
   guide?: DialogGuide;
+  /** Lines the host showed in this conversation that memory does not hold yet, oldest first; they follow the remembered turns. */
+  prior?: DialogLine[];
 }
 
-export interface DialogTurn {
+/** One line said in a conversation that no model reply carried: an authored opening, a story choice and its reply, a greeting. */
+export interface DialogLine {
   speaker: 'player' | 'npc';
   text: string;
+}
+
+export interface DialogTurn extends DialogLine {
   atMin: number;
 }
 
-/** One completed exchange: the player's line and the NPC's reply. */
+/** One completed exchange: the player's line and the NPC's reply, after the prior lines shown since the last one. */
 export interface DialogExchange {
   line: string;
   reply: string;
   atMin: number;
+  /** Stored ahead of the exchange, at its minute. */
+  prior?: DialogLine[];
 }
 
 export interface MemorySnapshot {

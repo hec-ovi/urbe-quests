@@ -63,6 +63,7 @@ export type {
   DialogContext,
   DialogExchange,
   DialogGuide,
+  DialogLine,
   DialogTurn,
   DialogWorld,
   MemorySnapshot,

@@ -1,7 +1,8 @@
 /**
  * Contract-surface tests for DialogContextService: layer order and sharing,
- * closed knowledge with flag gating, the person and place layers, names
- * instead of ids, tiered memory, death and persistence.
+ * closed knowledge with flag gating, the player and the talk at hand, the
+ * person and place layers, names instead of ids, the lines shown before an
+ * exchange, tiered memory, death and persistence.
  */
 
 import { describe, expect, it } from 'vitest';
@@ -145,6 +146,68 @@ describe('DialogContextService', () => {
       .reply({ context, name: `${original.name.given} ${original.name.family}`, line: 'Are you Petra?' });
     expect(calls[0]!.prompt).toContain('Answer as Petra Moss');
     expect(calls[0]!.system).toContain('Your name is Petra Moss.');
+  });
+
+  it('tells a cast NPC who the player is and the talk it is on, in its own authored words, and nobody else', () => {
+    const { service, runtime, informerId, buyerId, sim } = setup();
+    const definition = structuredClone(runtime.def);
+    definition.prologue = 'You are a courier who owes the cafe. Your debt is due Friday.';
+    definition.steps[0]!.wantedByRoleId = 'buyer';
+    definition.steps[0]!.dialogue = {
+      opening: '[sigh] You again. The cameras are dark.',
+      choices: [
+        { id: 'ask', text: 'Since when?', reply: '[whisper] A week.', completesStep: false },
+        { id: 'carry', text: "I'll carry it.", reply: 'Go.', completesStep: true },
+        { id: 'drop', text: 'Not my problem.', reply: 'Then go.', completesStep: true },
+      ],
+    };
+    const story = new QuestlineRuntime(definition, runtime.cast, sim);
+    service.attachQuestline(story);
+    const bystander = sim.getNPCVendor({ type: 'cafe_barista', timeMin: TUE_10 + 8 * 60 });
+
+    const informer = segment(service.contextFor(informerId, TUE_10), 'quest');
+    expect(informer).toContain('Who the player is (these words address the player as you):\nYou are a courier who owes the cafe. Your debt is due Friday.');
+    expect(informer).toContain('The matter you have raised with the player and are on now. You opened it: "You again. The cameras are dark."');
+    expect(informer).toContain('Asked "Since when?", you answer: "A week."');
+    expect(informer).toContain('What you wait to hear from them: "I\'ll carry it." or "Not my problem."');
+    expect(informer).not.toContain('carry the precinct rumor out');
+    expect(informer).not.toContain('Go.');
+
+    const buyer = segment(service.contextFor(buyerId, TUE_10), 'quest');
+    expect(buyer).toContain('You are a courier who owes the cafe.');
+    expect(buyer).toContain('carry the precinct rumor out');
+    expect(buyer).not.toContain('You again.');
+    expect(service.contextFor(bystander.npcId, TUE_10).segments.map((s) => s.text).join('\n')).not.toContain('courier');
+
+    story.chooseDialogue('s_talk', informerId, 'carry', TUE_10);
+    expect(segment(service.contextFor(informerId, TUE_10), 'quest')).not.toContain('You opened it');
+
+    delete definition.prologue;
+    service.attachQuestline(new QuestlineRuntime(definition, runtime.cast, sim));
+    expect(segment(service.contextFor(informerId, TUE_10), 'quest')).not.toContain('Who the player is');
+  });
+
+  it('carries the lines shown since the last exchange after the remembered turns and stores them ahead of the next exchange', async () => {
+    const { service, informerId } = setup();
+    await service.recordExchange(informerId, { line: 'Hi.', reply: 'Hm.', atMin: TUE_10 });
+    const prior = [
+      { speaker: 'npc' as const, text: '[sigh] The cameras are dark.' },
+      { speaker: 'player' as const, text: 'Since when?' },
+      { speaker: 'npc' as const, text: 'A week.' },
+    ];
+    expect(segment(service.contextFor(informerId, TUE_10 + 5, { prior }), 'turns')).toContain(
+      'The conversation so far:\nPlayer: Hi.\nYou: Hm.\nYou: The cameras are dark.\nPlayer: Since when?\nYou: A week.',
+    );
+    expect(segment(service.contextFor(informerId, TUE_10 + 5), 'turns')).not.toContain('cameras');
+
+    await service.recordExchange(informerId, { line: 'What do you mean?', reply: '[whisper] Nobody is watching.', atMin: TUE_10 + 5, prior });
+    expect(service.serializeMemory()[informerId]!.turns.slice(2)).toEqual([
+      { speaker: 'npc', text: 'The cameras are dark.', atMin: TUE_10 + 5 },
+      { speaker: 'player', text: 'Since when?', atMin: TUE_10 + 5 },
+      { speaker: 'npc', text: 'A week.', atMin: TUE_10 + 5 },
+      { speaker: 'player', text: 'What do you mean?', atMin: TUE_10 + 5 },
+      { speaker: 'npc', text: 'Nobody is watching.', atMin: TUE_10 + 5 },
+    ]);
   });
 
   it('describes the person Simulation made and the places the world has not named, never their ids', () => {
