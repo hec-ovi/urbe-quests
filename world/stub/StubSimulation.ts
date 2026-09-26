@@ -25,6 +25,8 @@ import { RoutineBuilder } from './routines.js';
 
 const DAY_SHIFT: Shift = { startMin: 480, endMin: 960, days: [0, 1, 2, 3, 4, 5], kind: 'day' };
 const EVENING_SHIFT: Shift = { startMin: 960, endMin: 1410, days: [0, 1, 2, 3, 4, 5, 6], kind: 'evening' };
+/** Stub persona words; Simulation draws from per-category pools. */
+const TRAITS = ['quiet', 'wary', 'blunt', 'warm', 'tired', 'proud', 'chatty', 'sharp'];
 
 export interface StubSimulationInput {
   seed: string;
@@ -244,9 +246,15 @@ export class StubSimulation implements SimulationPort {
     const { name, type, job, homeDistrictId, rng } = args;
     const home = this.pickHome(type, homeDistrictId, rng);
     const npcId = `npc_${++this.counter}`;
+    // A separate stream, so the draws below match instances made before persona facts existed.
+    const persona = new Rng(`${this.seed}:persona:${npcId}`);
+    const trait = persona.pick(TRAITS);
     const npc: NPCInstance = {
       npcId,
       name,
+      gender: persona.pick(['male', 'female'] as const),
+      age: 18 + persona.int(50),
+      traits: [trait, persona.pick(TRAITS.filter((t) => t !== trait))],
       type: type.type,
       home: { parcelId: home.id, unit: rng.int(40) + 1 },
       job,

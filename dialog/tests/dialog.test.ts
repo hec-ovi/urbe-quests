@@ -1,6 +1,7 @@
 /**
- * Contract-surface tests for quests/dialog: layer order and sharing, closed
- * knowledge with flag gating, tiered memory, death, persistence, and the reply.
+ * Contract-surface tests for DialogContextService: layer order and sharing,
+ * closed knowledge with flag gating, the person and place layers, names
+ * instead of ids, tiered memory, death and persistence.
  */
 
 import { describe, expect, it } from 'vitest';
@@ -10,7 +11,7 @@ import type { QuestlineDefinition } from '../../flow/schema.js';
 import { QuestlineRuntime } from '../../flow/QuestlineRuntime.js';
 import { Converse } from '../Converse.js';
 import { DialogContextService } from '../DialogContextService.js';
-import type { DialogContext } from '../schema.js';
+import type { DialogContext, DialogWorld, SegmentId } from '../schema.js';
 
 const TUE_10 = 1 * 1440 + 600;
 
@@ -45,27 +46,27 @@ const DEF: QuestlineDefinition = {
   entryStepIds: ['s_talk'],
 };
 
-function setup(memory?: { tailSize: number; foldSize: number }) {
+function setup(options: {
+  memory?: { tailSize: number; foldSize: number };
+  llm?: LLMPort;
+  world?: (world: DialogWorld) => DialogWorld;
+} = {}) {
   const { world, types } = loadFixtureWorld('neon-bay');
   const sim = new StubSimulation({ seed: 'dialog-test', world, types });
   const informer = sim.getNPCVendor({ type: 'cafe_barista', timeMin: TUE_10 });
   const buyer = sim.reserveNPC({ name: { given: 'Vela', family: 'Marsh' }, type: 'corpo_exec', jobParcelId: 'p1' });
-  const llmCalls: string[] = [];
-  const llm: LLMPort = {
-    complete: async ({ prompt }) => {
-      llmCalls.push(prompt);
-      return 'They talked about the dark cameras; the barista stayed wary.';
-    },
-  };
-  const service = new DialogContextService({ world, types, sim, llm, ...(memory ? { memory } : {}) });
+  const llm = options.llm ?? { complete: async () => '' };
+  const service = new DialogContextService({ world: options.world?.(world) ?? world, types, sim, llm, ...(options.memory ? { memory: options.memory } : {}) });
   const runtime = new QuestlineRuntime(DEF, { informer: informer.npcId, buyer: buyer.npcId }, sim);
   service.attachQuestline(runtime);
-  return { sim, service, runtime, informerId: informer.npcId, buyerId: buyer.npcId, llmCalls };
+  return { sim, service, runtime, informerId: informer.npcId, buyerId: buyer.npcId };
 }
+
+const segment = (context: DialogContext, id: SegmentId) => context.segments.find((s) => s.id === id)?.text ?? '';
 
 describe('DialogContextService', () => {
   it('layers context in cache order with shared world and type segments and the closed knowledge scope', () => {
-    const { service, informerId, buyerId } = setup();
+    const { service, sim, informerId, buyerId } = setup();
     const context = service.contextFor(informerId, TUE_10);
 
     expect(context.segments.map((s) => s.id)).toEqual(['world', 'type', 'npc', 'quest', 'turns']);
@@ -75,7 +76,10 @@ describe('DialogContextService', () => {
     expect(world!.text).toContain('deflect in character');
     expect(world!.text).toContain('Crown Spire');
     expect(type!.text).toContain('neon-lit cafe');
-    expect(npc!.text).toMatch(/You are .+ .+\./);
+    const person = sim.getNPC(informerId);
+    const noun = person.gender === 'female' ? 'woman' : 'man';
+    expect(npc!.text).toContain(`You are ${person.name.given} ${person.name.family}, a ${person.age}-year-old ${noun}.`);
+    expect(npc!.text).toContain(`People would call you ${person.traits![0]} and ${person.traits![1]}`);
     expect(npc!.text).toContain('You work at Static Cafe in Kanaal Market');
     expect(npc!.text).toContain('Collects rumors like tips.');
     expect(quest!.text).toContain('The Arcade cameras have been dark');
@@ -123,16 +127,16 @@ describe('DialogContextService', () => {
     const identity = context.segments.find((segment) => segment.id === 'npc')!.text;
     expect(context.npcId).toBe(informerId);
     expect(context.characterName).toEqual({ given: 'Petra', family: 'Moss' });
-    expect(identity).toContain('You are Petra Moss.');
+    expect(identity).toContain('You are Petra Moss, a');
     expect(identity).toContain('Your name is Petra Moss.');
     expect(identity).toContain('Petra keeps her brother’s shift logs');
-    expect(identity).not.toContain(`You are ${original.name.given} ${original.name.family}.`);
+    expect(identity).not.toContain(`You are ${original.name.given} ${original.name.family},`);
     expect(sim.getNPC(informerId)).toEqual(original);
 
     const other = service.contextFor(bystander.npcId, TUE_10);
     expect(other.characterName).toBeUndefined();
     expect(other.segments.find((segment) => segment.id === 'npc')!.text)
-      .toContain(`You are ${bystander.name.given} ${bystander.name.family}.`);
+      .toContain(`You are ${bystander.name.given} ${bystander.name.family},`);
     expect(other.segments[0]!.text).toBe(context.segments[0]!.text);
     expect(other.segments[1]!.text).toBe(context.segments[1]!.text);
 
@@ -143,24 +147,77 @@ describe('DialogContextService', () => {
     expect(calls[0]!.system).toContain('Your name is Petra Moss.');
   });
 
-  it('keeps a verbatim tail, folds overflow into a digest through the LLM, and round-trips memory', async () => {
-    const { service, informerId, llmCalls } = setup({ tailSize: 4, foldSize: 2 });
-    for (let i = 1; i <= 5; i++) {
-      await service.recordTurn(informerId, { speaker: i % 2 === 1 ? 'player' : 'npc', text: `line ${i}`, atMin: TUE_10 + i });
-    }
-    expect(llmCalls).toHaveLength(1);
-    expect(llmCalls[0]).toContain('line 1');
+  it('describes the person Simulation made and the places the world has not named, never their ids', () => {
+    const { service, informerId } = setup({
+      world: (world) => ({
+        ...world,
+        districts: world.districts.map(({ name: _, ...district }) => district),
+        parcels: world.parcels.map(({ name: _, ...parcel }) => parcel),
+      }),
+    });
+    const text = service.contextFor(informerId, TUE_10).segments.map((s) => s.text).join('\n');
+    expect(text).not.toMatch(/\b[dp]\d+\b/);
+    expect(text).not.toContain("The city's districts");
+    expect(text).toContain("The city's character: rain-soaked cyberpunk port city");
+    expect(text).toContain('You work at a coffee shop in a modest commercial district as');
+  });
 
-    const context = service.contextFor(informerId, TUE_10);
-    expect(context.segments.find((s) => s.id === 'memory')!.text).toContain('the barista stayed wary');
-    const turns = context.segments.find((s) => s.id === 'turns')!;
-    expect(turns.text).not.toContain('line 1');
-    expect(turns.text).toContain('Player: line 5');
+  it('adds the place the NPC led the player to, what its own life ties it to, and what the host shows there', () => {
+    const { service, sim, informerId } = setup();
+    const work = sim.getNPC(informerId).job!.parcelId;
+    const guided = service.contextFor(informerId, TUE_10, {
+      guide: { placeId: work, kind: 'parcel', notes: ['A cracked window behind the counter.'] },
+    });
+    expect(guided.segments.map((s) => s.id)).toEqual(['world', 'type', 'npc', 'quest', 'place', 'turns']);
+    expect(segment(guided, 'place')).toContain('You have led the player to Static Cafe, a coffee shop in Kanaal Market,');
+    expect(segment(guided, 'place')).toContain('You work here.');
+    expect(segment(guided, 'place')).toContain('What is there right now:\n- A cracked window behind the counter.');
 
-    const restored = setup({ tailSize: 4, foldSize: 2 });
+    const precinct = segment(service.contextFor(informerId, TUE_10, { guide: { placeId: 'p8', kind: 'parcel', name: 'the precinct' } }), 'place');
+    expect(precinct).toContain('the precinct, a police station in Kanaal Market');
+    expect(precinct).not.toContain('You work here.');
+    expect(segment(service.contextFor(informerId, TUE_10, { guide: { placeId: 's_9', kind: 'stop' } }), 'place')).toContain('led the player to a stop,');
+    expect(service.contextFor(informerId, TUE_10).segments.some((s) => s.id === 'place')).toBe(false);
+  });
+
+  it('stores an exchange at once and folds overflow after it, keeping the turns until their note exists', async () => {
+    const notes: ((note: string) => void)[] = [];
+    const folds: string[] = [];
+    const llm: LLMPort = { complete: ({ prompt }) => new Promise((resolve) => { folds.push(prompt); notes.push(resolve); }) };
+    const { service, informerId } = setup({ memory: { tailSize: 4, foldSize: 2 }, llm });
+    await service.recordExchange(informerId, { line: 'line 1', reply: 'reply 1', atMin: TUE_10 });
+    await service.recordExchange(informerId, { line: 'line 2', reply: 'reply 2', atMin: TUE_10 + 1 });
+    const folding = service.recordExchange(informerId, { line: 'line 3', reply: 'reply 3', atMin: TUE_10 + 2 });
+
+    const during = service.contextFor(informerId, TUE_10);
+    expect(segment(during, 'turns')).toContain('Player: line 1\nYou: reply 1');
+    expect(segment(during, 'turns')).toContain('Player: line 3\nYou: reply 3');
+    expect(folds).toEqual(['player: line 1\nnpc: reply 1']);
+
+    notes[0]!('<think>short</think> The player asked about the lift.');
+    await folding;
+    const after = service.contextFor(informerId, TUE_10);
+    expect(segment(after, 'memory')).toBe('You remember:\n- The player asked about the lift.');
+    expect(segment(after, 'turns')).not.toContain('line 1');
+
+    const restored = setup({ memory: { tailSize: 4, foldSize: 2 } });
     restored.service.restoreMemory(service.serializeMemory());
-    const kept = restored.service.contextFor(restored.informerId, TUE_10).segments.find((s) => s.id === 'turns')!;
-    expect(kept.text).toContain('line 5');
+    expect(segment(restored.service.contextFor(restored.informerId, TUE_10), 'turns')).toContain('Player: line 3');
+  });
+
+  it('keeps the turns when a fold fails and folds them with the next exchange', async () => {
+    let down = true;
+    const llm: LLMPort = { complete: async () => { if (down) throw new Error('model down'); return 'Folded.'; } };
+    const { service, informerId } = setup({ memory: { tailSize: 2, foldSize: 2 }, llm });
+    await service.recordExchange(informerId, { line: 'a', reply: 'b', atMin: TUE_10 });
+    await expect(service.recordExchange(informerId, { line: 'c', reply: 'd', atMin: TUE_10 })).rejects.toThrow('model down');
+    expect(segment(service.contextFor(informerId, TUE_10), 'turns')).toContain('Player: a\nYou: b\nPlayer: c');
+
+    down = false;
+    await service.recordExchange(informerId, { line: 'e', reply: 'f', atMin: TUE_10 });
+    const context = service.contextFor(informerId, TUE_10);
+    expect(segment(context, 'memory')).toBe('You remember:\n- Folded.\n- Folded.');
+    expect(segment(context, 'turns')).toContain('The conversation so far:\nPlayer: e\nYou: f');
   });
 
   it('refuses unknown types and dead NPC context', () => {
@@ -171,34 +228,5 @@ describe('DialogContextService', () => {
     expect(() => unknownType.contextFor(informerId, TUE_10)).toThrowError(expect.objectContaining({ code: 'E_UNKNOWN_ID' }));
     sim.applyFlag(informerId, { kind: 'die' });
     expect(() => service.contextFor(informerId, TUE_10)).toThrowError(expect.objectContaining({ code: 'E_WRONG_STATE' }));
-  });
-});
-
-describe('Converse', () => {
-  it('sends the layers in order as the system prompt and the player line as the turn', async () => {
-    const context: DialogContext = {
-      npcId: 'npc-1',
-      segments: [
-        { id: 'world', text: 'WORLD LAYER', shared: true },
-        { id: 'type', text: 'TYPE LAYER', shared: true },
-        { id: 'npc', text: 'NPC LAYER', shared: false },
-        { id: 'turns', text: 'TURNS LAYER', shared: false },
-      ],
-    };
-    const seen: { system: string; prompt: string }[] = [];
-    const llm: LLMPort = {
-      async complete(request) {
-        seen.push(request);
-        return '  Not tonight, friend.\n';
-      },
-    };
-
-    const reply = await new Converse(llm).reply({ context, name: 'Mara Voss', line: 'Where is the lift?' });
-
-    expect(reply).toBe('Not tonight, friend.');
-    expect(seen).toHaveLength(1);
-    expect(seen[0]?.system).toBe('WORLD LAYER\n\nTYPE LAYER\n\nNPC LAYER\n\nTURNS LAYER');
-    expect(seen[0]?.prompt).toContain('"Where is the lift?"');
-    expect(seen[0]?.prompt).toContain('Answer as Mara Voss');
   });
 });

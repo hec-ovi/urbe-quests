@@ -3,9 +3,20 @@
  * length; the consumer wires these to its model of choice.
  */
 
+import type { ChatDelta, ChatRequest } from './chat.js';
+
 /** Free-text completion; used by story generation and memory summarization. */
 export interface LLMPort {
   complete(request: { system: string; prompt: string }): Promise<string>;
+}
+
+/**
+ * Streamed Chat Completions for live dialog: the port posts the messages and
+ * tools with `stream: true` to its model and yields each choice delta in order
+ * (`chatDeltas` reads an OpenAI-compatible SSE body). Aborting `signal` ends the request.
+ */
+export interface StreamingLLMPort extends LLMPort {
+  stream(request: ChatRequest, options?: { signal?: AbortSignal }): AsyncIterable<ChatDelta>;
 }
 
 /** One tool the agent loop may call. */

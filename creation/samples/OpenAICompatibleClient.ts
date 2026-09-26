@@ -1,8 +1,9 @@
 /** Sample text and agent ports over streaming Chat Completions. */
 
 import { Agent, fetch } from 'undici';
-import { toMessages, type Message, type ToolCallMessage } from './ChatMessages.js';
+import { toMessages } from './ChatMessages.js';
 import { readChatStream } from './ChatStream.js';
+import type { ChatMessage, ChatToolCall } from '../../ports/chat.js';
 import type { AgentPort, AgentReply, AgentTool, AgentTurn, LLMPort } from '../../ports/llm.js';
 
 export const BASE_URL = process.env['LLM_BASE_URL'] ?? 'http://localhost:8080/v1';
@@ -27,7 +28,7 @@ export class OpenAICompatibleClient implements LLMPort, AgentPort {
   }
 
   async step(request: { system: string; prompt: string; tools: AgentTool[]; transcript: AgentTurn[] }): Promise<AgentReply> {
-    const messages: Message[] = [
+    const messages: ChatMessage[] = [
       { role: 'system', content: request.system },
       { role: 'user', content: request.prompt },
       ...toMessages(request.transcript),
@@ -42,7 +43,7 @@ export class OpenAICompatibleClient implements LLMPort, AgentPort {
     return { kind: 'calls', calls: calls.map((c) => ({ tool: c.function.name, input: parseArguments(c.function.arguments) })) };
   }
 
-  private async chat(messages: Message[], tools?: unknown[]): Promise<{ content?: string; tool_calls?: ToolCallMessage[] }> {
+  private async chat(messages: ChatMessage[], tools?: unknown[]): Promise<{ content?: string; tool_calls?: ChatToolCall[] }> {
     const response = await fetch(`${BASE_URL}/chat/completions`, {
       method: 'POST',
       dispatcher,

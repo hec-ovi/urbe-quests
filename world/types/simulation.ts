@@ -69,6 +69,11 @@ export interface NPCFlags {
 export interface NPCInstance {
   npcId: string;
   name: NPCName;
+  gender?: 'male' | 'female';
+  /** Whole years. */
+  age?: number;
+  /** Two to four plain words, such as `wary` or `chatty`. */
+  traits?: string[];
   type: string;
   home: { parcelId: string; unit: number };
   job?: Job;

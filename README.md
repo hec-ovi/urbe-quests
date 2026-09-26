@@ -17,7 +17,7 @@ A quest place is a named place at a real hour: every authored place carries the 
 
 A cast member stands where the step says: the creation stage casts and pins each questline to the buildings its own people hold posts in, so the shipped bundle names the final places and play time reads them. A role the city cannot fill comes back as a blocked questline with its reason rather than a questline that disappears.
 
-Node callers import `dist/index.js` (authoring, creation, dialog, handoff). Browser hosts import `dist/runtime.js` (definitions, runtime, cast, guidance). Runtime completion requires an exact accepted event and available target. Inventory, objective location and route guidance are derived from state. Dialogue, on the Node entry, supplies scoped facts, text replies and serializable memory; the host controls the visible person and their routine.
+Node callers import `dist/index.js` (authoring, creation, dialog, handoff). Browser hosts import `dist/runtime.js` (definitions, runtime, cast, guidance). Runtime completion requires an exact accepted event and available target. Inventory, objective location and route guidance are derived from state. Dialogue, on the Node entry, supplies scoped facts, whole or streamed replies that may propose companion actions, and serializable memory of completed exchanges; the host controls the visible person, their routine and whether any proposal happens.
 
 ## CLI
 

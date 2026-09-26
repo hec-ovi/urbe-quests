@@ -4,8 +4,9 @@
  * memory survives saves.
  */
 
-import { readFileSync } from 'node:fs';
 import type { LLMPort } from '../ports/llm.js';
+import { promptLoader } from '../prompts.js';
+import { cleanReply } from './ReplyCleaner.js';
 import type { DialogTurn, MemorySnapshot } from './schema.js';
 
 export interface MemoryStoreOptions {
@@ -15,10 +16,15 @@ export interface MemoryStoreOptions {
   foldSize?: number;
 }
 
-const SUMMARIZE_PROMPT = readFileSync(new URL('./prompts/summarize.md', import.meta.url), 'utf8');
+interface Memory extends MemorySnapshot {
+  /** The fold in flight, so one NPC never folds twice at once. */
+  folding?: Promise<void>;
+}
+
+const SUMMARIZE_PROMPT = promptLoader(new URL('./prompts/', import.meta.url))('summarize.md');
 
 export class MemoryStore {
-  private readonly memories = new Map<string, { digest: string[]; turns: DialogTurn[] }>();
+  private readonly memories = new Map<string, Memory>();
   private readonly tailSize: number;
   private readonly foldSize: number;
 
@@ -30,14 +36,20 @@ export class MemoryStore {
     this.foldSize = options.foldSize ?? 6;
   }
 
-  async record(npcId: string, turn: DialogTurn): Promise<void> {
+  /**
+   * Stores the turns at once and returns the fold they start. Folded turns
+   * leave the tail only when their note is written, so context read meanwhile
+   * still holds them; a failed fold keeps them for the next record to retry.
+   */
+  record(npcId: string, turns: DialogTurn[]): Promise<void> {
     const memory = this.memory(npcId);
-    memory.turns.push(turn);
-    if (memory.turns.length <= this.tailSize) return;
-    const folded = memory.turns.splice(0, this.foldSize);
-    const transcript = folded.map((t) => `${t.speaker}: ${t.text}`).join('\n');
-    const note = await this.llm.complete({ system: SUMMARIZE_PROMPT, prompt: transcript });
-    memory.digest.push(note.trim());
+    memory.turns.push(...turns);
+    if (memory.folding === undefined && memory.turns.length > this.tailSize) {
+      memory.folding = this.fold(memory).finally(() => {
+        memory.folding = undefined;
+      });
+    }
+    return memory.folding ?? Promise.resolve();
   }
 
   snapshot(npcId: string): MemorySnapshot {
@@ -46,7 +58,7 @@ export class MemoryStore {
   }
 
   serialize(): Record<string, MemorySnapshot> {
-    return Object.fromEntries([...this.memories].map(([npcId]) => [npcId, this.snapshot(npcId)]));
+    return Object.fromEntries([...this.memories.keys()].map((npcId) => [npcId, this.snapshot(npcId)]));
   }
 
   restore(data: Record<string, MemorySnapshot>): void {
@@ -56,7 +68,17 @@ export class MemoryStore {
     }
   }
 
-  private memory(npcId: string): { digest: string[]; turns: DialogTurn[] } {
+  private async fold(memory: Memory): Promise<void> {
+    while (memory.turns.length > this.tailSize) {
+      const folded = memory.turns.slice(0, this.foldSize);
+      const transcript = folded.map((t) => `${t.speaker}: ${t.text}`).join('\n');
+      const note = cleanReply(await this.llm.complete({ system: SUMMARIZE_PROMPT, prompt: transcript }));
+      memory.turns.splice(0, folded.length);
+      if (note.length > 0) memory.digest.push(note);
+    }
+  }
+
+  private memory(npcId: string): Memory {
     let memory = this.memories.get(npcId);
     if (!memory) {
       memory = { digest: [], turns: [] };

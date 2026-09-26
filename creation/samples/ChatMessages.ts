@@ -1,19 +1,9 @@
+import type { ChatMessage } from '../../ports/chat.js';
 import type { AgentTurn } from '../../ports/llm.js';
 
-export type Message =
-  | { role: 'system' | 'user'; content: string }
-  | { role: 'assistant'; content: string; tool_calls?: ToolCallMessage[] }
-  | { role: 'tool'; tool_call_id: string; content: string };
-
-export interface ToolCallMessage {
-  id: string;
-  type: 'function';
-  function: { name: string; arguments: string };
-}
-
 /** Tool calls map onto the agent transcript by position. */
-export function toMessages(transcript: AgentTurn[]): Message[] {
-  const messages: Message[] = [];
+export function toMessages(transcript: AgentTurn[]): ChatMessage[] {
+  const messages: ChatMessage[] = [];
   let assistantIndex = -1;
   for (const turn of transcript) {
     if ('text' in turn) {

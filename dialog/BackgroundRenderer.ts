@@ -1,26 +1,31 @@
 /**
- * Renders an NPC's deterministic simulation background (home, job, family,
- * routine) as second-person prose facts. This is the mathematical life the
- * persona is layered on; nothing here is invented.
+ * Renders an NPC's deterministic simulation background (who they are, home,
+ * job, family, routine) as second-person prose facts. This is the
+ * mathematical life the persona is layered on; nothing here is invented.
  */
 
 import { promptLoader } from '../prompts.js';
-import type { NamedWorld } from '../world/types/named-world.js';
 import type { NPCInstance } from '../world/types/simulation.js';
+import { listed, PlaceWords, withArticle } from './places.js';
 import { clock, dayName } from './time.js';
 
 const prompt = promptLoader(new URL('./prompts/', import.meta.url));
 
+/** What people call someone of this gender: a child, a teenager, an adult. */
+const NOUNS = { male: ['boy', 'teenage boy', 'man'], female: ['girl', 'teenage girl', 'woman'] } as const;
+
 export class BackgroundRenderer {
-  constructor(private readonly world: NamedWorld) {}
+  constructor(private readonly places: PlaceWords) {}
 
   render(npc: NPCInstance): string {
-    const lines: string[] = [];
-    lines.push(prompt('background.md#identity', { ...npc.name, home: this.place(npc.home.parcelId), unit: npc.home.unit }));
+    const who = person(npc);
+    const lines = [who === undefined ? prompt('background.md#identity', { ...npc.name }) : prompt('background.md#person', { ...npc.name, who })];
+    if (npc.traits !== undefined && npc.traits.length > 0) lines.push(prompt('background.md#traits', { traits: listed(npc.traits) }));
+    lines.push(prompt('background.md#home', { home: this.places.parcel(npc.home.parcelId), unit: npc.home.unit }));
     if (npc.job) {
       const days = this.days(npc.job.shift.days);
       const hours = `${clock(npc.job.shift.startMin)} to ${clock(npc.job.shift.endMin)}`;
-      lines.push(prompt('background.md#job', { place: this.place(npc.job.parcelId), role: npc.job.role.replace(/_/g, ' '), days, hours }));
+      lines.push(prompt('background.md#job', { place: this.places.parcel(npc.job.parcelId), role: npc.job.role.replace(/_/g, ' '), days, hours }));
     } else {
       lines.push(prompt('background.md#jobless'));
     }
@@ -30,24 +35,24 @@ export class BackgroundRenderer {
     const leisure = new Set(
       npc.routine
         .filter((e) => (e.activity === 'leisure' || e.activity === 'shopping') && e.place.kind === 'parcel')
-        .map((e) => this.place(e.place.id)),
+        .map((e) => this.places.parcel(e.place.id)),
     );
     if (leisure.size > 0) {
-      lines.push(prompt('background.md#leisure', { places: [...leisure].join(', ') }));
+      lines.push(prompt('background.md#leisure', { places: [...leisure].join('; ') }));
     }
     return lines.join('\n');
   }
 
-  private place(parcelId: string): string {
-    const parcel = this.world.parcels.find((p) => p.id === parcelId);
-    if (!parcel) return 'a place outside the city';
-    const district = this.world.districts.find((d) => d.id === parcel.districtId);
-    const name = parcel.name ?? `a ${parcel.type.replace('_', ' ')}`;
-    return district ? `${name} in ${district.name}` : name;
-  }
-
   private days(days: number[]): string {
     if (days.length === 7) return 'every day';
-    return days.map(dayName).join(', ');
+    return listed(days.map(dayName));
   }
+}
+
+/** "a 42-year-old woman", "a man", "42 years old", or nothing when Simulation gave neither fact. */
+function person(npc: NPCInstance): string | undefined {
+  const { age, gender } = npc;
+  const noun = gender && NOUNS[gender][age === undefined || age >= 18 ? 2 : age >= 13 ? 1 : 0];
+  if (age === undefined) return noun && withArticle(noun);
+  return noun ? withArticle(`${age}-year-old ${noun}`) : `${age} years old`;
 }

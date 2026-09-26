@@ -1,4 +1,4 @@
-# Quests 0.10.5
+# Quests 0.11.0
 
 Writes stories through injected agents, adapts them into typed quests, runs their rules in code, and prepares Engine handoffs and scoped NPC dialogue.
 
@@ -17,7 +17,9 @@ The Node library entry is [index.ts](index.ts), compiled to `dist/index.js`; bro
 | `QuestlineRuntime`, `advance`, `restore` | [Definition](flow/schema/questline.schema.json), cast, Simulation, [event](flow/schema/player-event.schema.json), time, [saved state](flow/schema/questline-state.schema.json) | [State and advance result](flow/QuestlineRuntime.ts), [availability](flow/availability.ts), [guidance](flow/schema/step-guidance.schema.json) |
 | `QuestlineRuntime.dialogueFor`, `chooseDialogue` | Exact active step, resolved NPC, current time; declared choice ID for selection | [Authored dialogue and explicit choice result](flow/CONTRACT.md), offline, scoped to one step |
 | `EngineHandoff.assemble(questlines, input?)` | [Quest set](creation/schema/questline-set.schema.json), [bindings and capabilities](handoff/schema/handoff-input.schema.json) | [HandoffBundle](handoff/schema.ts), definitions, objectives, investigations, assets and bindings |
-| `DialogContextService`, `Converse.reply` | [Context inputs](dialog/DialogContextService.ts), [reply input](dialog/Converse.ts), injected model | [Scoped segments and memory](dialog/schema.ts), reply string (async) |
+| `DialogContextService.contextFor(npcId, timeMin, { guide? })`, `recordExchange` | [Context inputs](dialog/CONTRACT.md#in), optional guided place, completed exchange | [Scoped segments and memory](dialog/schema.ts) |
+| `Converse.reply`, `Converse.replyStream`, `cleanReply` | [Reply input](dialog/Converse.ts), optional companion offers and abort signal, [LLMPort or StreamingLLMPort](ports/llm.ts) | Cleaned reply string, or streamed `delta`, `offer` and `done` [events](dialog/CONTRACT.md#out) |
+| `chatDeltas(body)`, `ChatToolCalls` | OpenAI-compatible `stream: true` response body, [chat shapes](ports/chat.ts) | Choice deltas in order; whole tool calls in index order |
 | `WorldContextNormalizer.normalize`, fixture loaders | [World and type projections](world/types/named-world.ts), [world calls](world/CONTRACT.md) | [Normalized context](world/WorldContextNormalizer.ts), standalone world/story fixtures |
 
 Creation warnings report failed side translations or unusable situations. Main/script failures reject the run. `CreationResult` has no completion marker or retained side-failure record. Naming is supplied by callers; its integration is proposed in [issues](docs/ISSUES.md).
@@ -44,7 +46,7 @@ Time is simulation minutes since Monday 00:00. Creative calls use separate conte
 
 ## Errors
 
-[QuestError](errors.ts), `{code, message, detail?}`: `E_INVALID_FLOW` (definition/save), `E_UNKNOWN_ID` (missing identity), `E_WRONG_STATE` (event/state), `E_UNAVAILABLE` (gated action), `E_CAST` (cast resolution), `E_LLM` (unusable text/build), `E_HANDOFF` (bindings/assets/capabilities).
+[QuestError](errors.ts), `{code, message, detail?}`: `E_INVALID_FLOW` (definition/save), `E_UNKNOWN_ID` (missing identity), `E_WRONG_STATE` (event/state), `E_UNAVAILABLE` (gated action), `E_CAST` (cast resolution), `E_LLM` (unusable text/build, or a reply with nothing to say), `E_HANDOFF` (bindings/assets/capabilities).
 
 [AuthoringError](authoring/schema/authoring-error.schema.json), `{code, message, details}`: `E_AUTHORING_INPUT`, `E_AUTHORING_OUTPUT`, `E_SKILL_CONTRACT`, `E_UNKNOWN_SKILL`, `E_UNSUPPORTED_MECHANIC`, `E_MECHANIC_SELECTION`, `E_WORLD_TARGET`, `E_CAUSE_EFFECT`, `E_INVALID_FLOW`. Meanings: [authoring errors](authoring/CONTRACT.md#errors).
 
@@ -52,4 +54,4 @@ These are closed domain sets. Injected provider/Simulation exceptions pass throu
 
 ## Dependencies
 
-Data contracts only: [Atlas](../atlas/CONTRACT.md) (world projection), [Naming](../naming/CONTRACT.md) (names/types), [Simulation](../simulation/CONTRACT.md) (people/schedules), [Interior](../interior/CONTRACT.md) (the staffing roles a building publishes), Engine [investigation](../engine/src/game/investigation/CONTRACT.md) (v1.1) and [mission assets](../engine/src/mission-assets/CONTRACT.md) (v1.0). Models are injected through [ports](ports/llm.ts) and [authoring ports](authoring/src/schema.ts). Ajv validates authoring and handoff schemas. Engine consumes this box.
+Data contracts only: [Atlas](../atlas/CONTRACT.md) (world projection), [Naming](../naming/CONTRACT.md) (names/types), [Simulation](../simulation/CONTRACT.md) (people/schedules), [Interior](../interior/CONTRACT.md) (the staffing roles a building publishes), Engine [investigation](../engine/src/game/investigation/CONTRACT.md) (v1.1) and [mission assets](../engine/src/mission-assets/CONTRACT.md) (v1.0). Models are injected through [ports](ports/llm.ts), streamed dialog through the OpenAI-compatible [chat shapes](ports/chat.ts), and [authoring ports](authoring/src/schema.ts). Ajv validates authoring and handoff schemas. Engine consumes this box.

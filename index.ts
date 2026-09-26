@@ -1,7 +1,16 @@
 /** Quests layer surface for consumers (see CONTRACT.md). */
 
 export { QuestError, type QuestErrorCode } from './errors.js';
-export type { AgentPort, AgentReply, AgentTool, AgentToolCall, AgentTurn, LLMPort } from './ports/llm.js';
+export type { AgentPort, AgentReply, AgentTool, AgentToolCall, AgentTurn, LLMPort, StreamingLLMPort } from './ports/llm.js';
+export {
+  chatDeltas,
+  ChatToolCalls,
+  type ChatDelta,
+  type ChatMessage,
+  type ChatRequest,
+  type ChatTool,
+  type ChatToolCall,
+} from './ports/chat.js';
 
 export * from './world/index.js';
 
@@ -43,8 +52,20 @@ export { Assignments } from './creation/Assignments.js';
 export { QuestlineCreation } from './creation/QuestlineCreation.js';
 
 export { DialogContextService, type DialogContextServiceInput } from './dialog/DialogContextService.js';
-export { Converse, type ConverseInput } from './dialog/Converse.js';
-export type { ContextSegment, DialogContext, DialogTurn, MemorySnapshot, SegmentId } from './dialog/schema.js';
+export { Converse, type ConverseInput, type ConverseStreamInput, type ReplyEvent } from './dialog/Converse.js';
+export type { CompanionOffer, OfferOptions, OfferPlace } from './dialog/offers.js';
+export { cleanReply, ReplyCleaner } from './dialog/ReplyCleaner.js';
+export type {
+  ContextOptions,
+  ContextSegment,
+  DialogContext,
+  DialogExchange,
+  DialogGuide,
+  DialogTurn,
+  DialogWorld,
+  MemorySnapshot,
+  SegmentId,
+} from './dialog/schema.js';
 
 export * from './authoring/index.js';
 export * from './handoff/index.js';
