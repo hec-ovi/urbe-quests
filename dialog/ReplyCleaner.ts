@@ -8,7 +8,7 @@
  * the whole text, and no piece splits a cue.
  */
 
-import { CUES, TAG_BODY, type Cue } from '../flow/cues.js';
+import { CUE_TAG, CUES, TAG, TAG_BODY, type Cue } from '../flow/cues.js';
 import { ModelMarkup } from '../ports/markup.js';
 
 interface Stage {
@@ -88,65 +88,87 @@ class SpeakerTags implements Stage {
   }
 }
 
-const TAG = new RegExp(`^\\[(${TAG_BODY})\\]`);
-/** Text that could still grow into a tag. */
-const TAG_START = new RegExp(`^\\[(?:${TAG_BODY})?$`);
+/** A tag at the head of the text; group 1 is its inside. */
+const TAG_HEAD = new RegExp(`^${TAG}`);
+/** A head that may still grow into a tag, or a whole tag that may still gain a closing bracket. */
+const PENDING = new RegExp(`^\\[+(?:${TAG_BODY}\\]*)?$`);
+/** The open part of a tag ending the text, which a tag dropped after it may complete: `[laugh` in `[laugh [nods]ing]`. */
+const OPEN = new RegExp(`\\[+(?:${TAG_BODY})?$`);
 /** What a model also writes for a cue. */
-const CUE_FORMS: Record<string, Cue> = {
-  laughs: 'laugh', laughing: 'laugh', chuckles: 'laugh',
-  sighs: 'sigh', sighing: 'sigh',
-  whispers: 'whisper', whispering: 'whisper',
-  angrily: 'angry',
-  gasps: 'gasp', gasping: 'gasp',
-  cries: 'cry', crying: 'cry', sobs: 'cry', sobbing: 'cry',
+const FORMS: Record<Cue, string[]> = {
+  laugh: ['laughs', 'laughing', 'laughed', 'laughter', 'chuckle', 'chuckles', 'chuckling', 'chuckled', 'giggle', 'giggles', 'giggling'],
+  sigh: ['sighs', 'sighing', 'sighed'],
+  whisper: ['whispers', 'whispering', 'whispered', 'hushed'],
+  angry: ['angrily', 'anger', 'furious', 'furiously'],
+  gasp: ['gasps', 'gasping', 'gasped'],
+  cry: ['cries', 'crying', 'cried', 'sob', 'sobs', 'sobbing', 'sobbed', 'weeps', 'weeping', 'tearful', 'tearfully'],
 };
+const CUE_FORMS = new Map<string, Cue>(CUES.flatMap((cue) => [cue, ...FORMS[cue]].map((form) => [form, cue] as const)));
 
 /**
  * Keeps the cues, each as its name in lower case, and drops any other
  * bracketed tag, a stage direction such as `[leans in]`, with the whitespace
- * before it. A tag split across pieces waits until it is whole.
+ * before it. Doubled brackets make one tag. A dropped tag joins the text
+ * around it, which is scanned again, so no tag outside the list is left. A
+ * tag split across pieces, and the text it may still join, wait until settled.
  */
 class Cues implements Stage {
   private held = '';
 
   push(text: string): string {
-    const body = this.held + text;
-    let out = '';
-    let from = 0;
-    let at = body.indexOf('[');
-    for (; at >= 0; at = body.indexOf('[', at + 1)) {
-      const rest = body.slice(at);
-      if (TAG_START.test(rest)) break;
-      const tag = TAG.exec(rest);
-      if (!tag) continue;
-      const cue = cueOf(tag[1]!);
-      const before = body.slice(from, at);
-      out += cue ? `${before}[${cue}]` : before.trimEnd();
-      from = at + tag[0].length;
-    }
-    // Whitespace waits for what follows it: a dropped tag takes it along.
-    const keep = from + body.slice(from, at < 0 ? undefined : at).trimEnd().length;
-    this.held = body.slice(keep);
-    return out + body.slice(from, keep);
+    return this.scan(this.held + text, false);
   }
 
   end(): string {
-    const rest = this.held;
-    this.held = '';
-    return rest;
+    return this.scan(this.held, true);
+  }
+
+  private scan(text: string, final: boolean): string {
+    let body = text;
+    let at = body.indexOf('[');
+    while (at >= 0) {
+      const rest = body.slice(at);
+      if (!final && PENDING.test(rest)) break;
+      const tag = TAG_HEAD.exec(rest);
+      if (tag === null) {
+        at = body.indexOf('[', at + 1);
+        continue;
+      }
+      const cue = cueOf(tag[1]!);
+      if (cue !== undefined) {
+        body = `${body.slice(0, at)}[${cue}]${rest.slice(tag[0].length)}`;
+        at = body.indexOf('[', at + cue.length + 2);
+        continue;
+      }
+      // A dropped tag takes the whitespace before it; the text it joins may close a tag it sat in, so the scan goes back there.
+      const before = body.slice(0, at).trimEnd();
+      body = before + rest.slice(tag[0].length);
+      at = OPEN.exec(before)?.index ?? body.indexOf('[', before.length);
+    }
+    // Hold what may still change: a pending tag, whitespace a later tag takes along, and an open tag part it may join.
+    let keep = final || at < 0 ? body.length : at;
+    while (!final) {
+      keep = body.slice(0, keep).trimEnd().length;
+      const open = OPEN.exec(body.slice(0, keep));
+      if (open === null) break;
+      keep = open.index;
+    }
+    this.held = body.slice(keep);
+    return body.slice(0, keep);
   }
 }
 
-function cueOf(word: string): Cue | undefined {
-  const name = word.toLowerCase();
-  return CUES.find((cue) => cue === name) ?? CUE_FORMS[name];
+/** The cue a tag stands for: a cue or a form of it as the tag's first or last word, as in `sighs heavily` or `a bitter laugh`. */
+function cueOf(inside: string): Cue | undefined {
+  const words = inside.toLowerCase().match(/[a-z]+/g) ?? [];
+  return CUE_FORMS.get(words[0] ?? '') ?? CUE_FORMS.get(words.at(-1) ?? '');
 }
 
 const QUOTES = /["“”]/;
 /** Cues in front of the reply's first word, which a wrapping quote may follow. */
-const LEAD = /^(?:\[[a-z]+\]\s*)*/;
+const LEAD = new RegExp(`^(?:${CUE_TAG}\\s*)*`);
 /** What may follow a wrapping quote's close: cues and whitespace. */
-const TAIL = /^(?:\s*\[[a-z]+\])*\s*$/;
+const TAIL = new RegExp(`^(?:\\s*${CUE_TAG})*\\s*$`);
 
 /**
  * Trims the reply and drops one pair of quotes wrapping all of it, cues in

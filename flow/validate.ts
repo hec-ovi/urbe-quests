@@ -1,7 +1,7 @@
 /** Structural validation of a QuestlineDefinition. Throws E_INVALID_FLOW. */
 
 import { QuestError } from '../errors.js';
-import { CUE_LIST, hasTag, stripCues } from './cues.js';
+import { CUE_LIST, foreignTags, hasTag, stripCues } from './cues.js';
 import type { PlaceTarget, Predicate, QuestItem, QuestlineDefinition, QuestStep, TimeWindow } from './schema.js';
 import { namedStepTime } from './timeWords.js';
 
@@ -102,11 +102,11 @@ export class FlowValidator {
     const dialogue = step.dialogue;
     if (dialogue === undefined) return;
     if (step.target.kind !== 'talk') fail(`step ${step.stepId}: dialogue requires a talk target`);
-    // An NPC line has words to say and may carry cues, but no other bracketed tag.
+    // An NPC line has words to say and may carry cues as the list writes them, but no other bracketed tag.
     const npcLine = (line: unknown, what: string): void => {
-      const words = typeof line === 'string' ? stripCues(line) : '';
-      if (words.length === 0) fail(`step ${step.stepId}: dialogue has no ${what}`);
-      if (hasTag(words)) fail(`step ${step.stepId}: dialogue ${what} holds a bracketed tag that is no cue (${CUE_LIST})`);
+      if (typeof line !== 'string' || stripCues(line).length === 0) fail(`step ${step.stepId}: dialogue has no ${what}`);
+      const [stray] = foreignTags(line);
+      if (stray !== undefined) fail(`step ${step.stepId}: dialogue ${what} holds ${stray}, which is no cue (${CUE_LIST})`);
     };
     npcLine(dialogue.opening, 'opening');
     if (!Array.isArray(dialogue.choices) || dialogue.choices.length === 0) {

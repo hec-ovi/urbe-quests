@@ -1,4 +1,4 @@
-# Quests 0.12.0
+# Quests 0.12.1
 
 Writes stories through injected agents, adapts them into typed quests, runs their rules in code, and prepares Engine handoffs and scoped NPC dialogue.
 
@@ -19,7 +19,7 @@ The Node library entry is [index.ts](index.ts), compiled to `dist/index.js`; bro
 | `EngineHandoff.assemble(questlines, input?)` | [Quest set](creation/schema/questline-set.schema.json), [bindings and capabilities](handoff/schema/handoff-input.schema.json) | [HandoffBundle](handoff/schema.ts), definitions, objectives, investigations, assets and bindings |
 | `DialogContextService.contextFor(npcId, timeMin, { guide? })`, `recordExchange` | [Context inputs](dialog/CONTRACT.md#in), optional guided place, completed exchange | [Scoped segments and memory](dialog/schema.ts) |
 | `Converse.reply`, `Converse.replyStream`, `cleanReply` | [Reply input](dialog/Converse.ts), optional companion offers and abort signal, [LLMPort or StreamingLLMPort](ports/llm.ts) | Cleaned reply string with its inline cues, or streamed `delta`, `offer` and `done` [events](dialog/CONTRACT.md#out) |
-| `CUES`, `stripCues(text)` | An NPC line, free chat or authored, with [inline cues](flow/cues.ts) | The closed cue list `laugh, sigh, whisper, angry, gasp, cry`; the line as shown, cues removed and trimmed. On both entries |
+| `CUES`, `stripCues(text)` | An NPC line, free chat or authored, with [inline cues](flow/cues.ts) | The closed cue list `laugh, sigh, whisper, angry, gasp, cry`; the line as shown: cues removed, a cue between two words leaving one space, trimmed. On both entries |
 | `chatDeltas(body, onUsage?)`, `ChatToolCalls` | OpenAI-compatible `stream: true` response body, [chat shapes](ports/chat.ts) | Choice deltas in order and the reported token usage; whole tool calls in index order |
 | `WorldContextNormalizer.normalize`, fixture loaders | [World and type projections](world/types/named-world.ts), [world calls](world/CONTRACT.md) | [Normalized context](world/WorldContextNormalizer.ts), standalone world/story fixtures |
 

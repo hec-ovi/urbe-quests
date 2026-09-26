@@ -7,7 +7,7 @@
 
 import { describe, expect, it } from 'vitest';
 import type { ChatDelta, ChatRequest } from '../../ports/chat.js';
-import { CUES, stripCues } from '../../flow/cues.js';
+import { CUES, stripCues, TAG } from '../../flow/cues.js';
 import type { LLMPort, StreamingLLMPort } from '../../ports/llm.js';
 import { Converse, type ReplyEvent } from '../Converse.js';
 import { cleanReply, ReplyCleaner } from '../ReplyCleaner.js';
@@ -76,6 +76,12 @@ describe('cleanReply', () => {
     ['[sigh] "Get out." [cry]', '[sigh] Get out. [cry]'],
     ['"Hi." [sigh] Come in.', '"Hi." [sigh] Come in.'],
     ['Wait [sig', 'Wait [sig'],
+    ['Fine. [sighs deeply] Go. [laughs softly]', 'Fine. [sigh] Go. [laugh]'],
+    ['[chuckling] Sure. [a bitter laugh] [sob] No.', '[laugh] Sure. [laugh] [cry] No.'],
+    ['[voice low, almost a whisper] Not here.', '[whisper] Not here.'],
+    ['[[sigh]] Fine. [[leans in]] Go.', '[sigh] Fine. Go.'],
+    ['[laugh [nods]ing] Fine. [a [b [nods]c]d] Go.', '[laugh] Fine. Go.'],
+    ['[laugh\n[leans in]ing][Sighs]"\n].x.]', '[laugh][sigh]\n].x.]'],
   ];
 
   it('keeps only the words the NPC says', () => {
@@ -98,6 +104,21 @@ describe('cleanReply', () => {
     expect(pieces.filter((piece) => /\[[a-z]*$|^[a-z]*\]/.test(piece))).toEqual([]);
   });
 
+  it('leaves only listed cues and streams to the whole-text result on bracket fragments', () => {
+    const fragments = ['[', ']', '[[', ']]', 'sigh', 'Laughs', 'ing', 'leans in', 'a', ' ', '\n', '"', 'x', '.', ','];
+    let seed = 7;
+    const next = (n: number) => (seed = (seed * 1103515245 + 12345) % 2 ** 31) % n;
+    for (let run = 0; run < 400; run++) {
+      const raw = Array.from({ length: 4 + next(14) }, () => fragments[next(fragments.length)]).join('');
+      const clean = cleanReply(raw);
+      expect(clean.match(new RegExp(TAG, 'g'))?.filter((tag) => !CUES.some((cue) => tag === `[${cue}]`)) ?? [], raw).toEqual([]);
+      for (let at = 0; at <= raw.length; at++) {
+        const cleaner = new ReplyCleaner();
+        expect(cleaner.push(raw.slice(0, at)) + cleaner.push(raw.slice(at)) + cleaner.end(), raw).toBe(clean);
+      }
+    }
+  });
+
   it('streams to exactly the whole-text result however the text is split', () => {
     for (const [raw, clean] of cases) {
       for (let at = 0; at <= raw.length; at++) {
@@ -116,6 +137,12 @@ describe('stripCues', () => {
     expect(stripCues('[sigh] Fine. [laugh] Go on. [cry]')).toBe('Fine. Go on.');
     expect(stripCues('Fine [whisper].\n[Angry] Out! [gasp] "[cry] Why," she said.')).toBe('Fine.\nOut! "Why," she said.');
     expect(stripCues('Pier [7] [leans in].')).toBe('Pier [7] [leans in].');
+  });
+
+  it('never glues two words and opens a quote cleanly', () => {
+    expect(stripCues('Look. [sigh]Fine. Word[sigh]word, [laugh] [cry]end.')).toBe('Look. Fine. Word word, end.');
+    expect(stripCues("'[sigh] Fine,' she said. ‘[whisper] Go.’")).toBe("'Fine,' she said. ‘Go.’");
+    expect(stripCues('"Go."[sigh] Now. The boys\'[sigh] house.\n  [gasp] There.')).toBe('"Go." Now. The boys\' house.\n  There.');
   });
 });
 

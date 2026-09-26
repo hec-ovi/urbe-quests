@@ -252,6 +252,8 @@ describe('authored dialogue validation', () => {
     { name: 'blank NPC reply', change: (step) => { step.dialogue!.choices[0]!.reply = ' '; } },
     { name: 'an opening of cues alone', change: (step) => { step.dialogue!.opening = '[sigh] '; } },
     { name: 'a stage direction in a reply', change: (step) => { step.dialogue!.choices[0]!.reply = 'Fine. [nods]'; } },
+    { name: 'a cue not written as the list writes it', change: (step) => { step.dialogue!.opening = 'She [Sigh] left.'; } },
+    { name: 'a cue in doubled brackets', change: (step) => { step.dialogue!.choices[0]!.reply = '[[sigh]] Fine.'; } },
     { name: 'a cue in the player text', change: (step) => { step.dialogue!.choices[0]!.text = '[sigh] Why?'; } },
     { name: 'no committing choice', change: (step) => { step.dialogue!.choices[1]!.completesStep = false; } },
     { name: 'dialogue on a non-talk step', change: (step) => { step.target = { kind: 'observe', districtId: 'd1' }; } },
