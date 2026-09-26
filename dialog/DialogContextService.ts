@@ -223,9 +223,9 @@ export class DialogContextService {
 
 const bullets = (lines: string[]): string => lines.map((line) => `- ${line}`).join('\n');
 
-/** Lines as memory keeps them: at one minute, the NPC's without their cues. */
+/** Lines as memory keeps them: each at the minute it was said, else at `atMin`, the NPC's without their cues. */
 const said = (lines: DialogLine[], atMin: number): DialogTurn[] =>
-  lines.map(({ speaker, text }) => ({ speaker, text: speaker === 'npc' ? stripCues(text) : text, atMin }));
+  lines.map((line) => ({ speaker: line.speaker, text: line.speaker === 'npc' ? stripCues(line.text) : line.text, atMin: line.atMin ?? atMin }));
 
 /** The authored dialogue of a step that is a talk with this NPC, if any. */
 function talkWith(step: QuestStep, cast: Record<string, string>, npcId: string): QuestStepDialogue | undefined {

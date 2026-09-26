@@ -56,6 +56,8 @@ export interface ContextOptions {
 export interface DialogLine {
   speaker: 'player' | 'npc';
   text: string;
+  /** The minute it was said; without it, the minute of the exchange it goes with. */
+  atMin?: number;
 }
 
 export interface DialogTurn extends DialogLine {
@@ -67,7 +69,7 @@ export interface DialogExchange {
   line: string;
   reply: string;
   atMin: number;
-  /** Stored ahead of the exchange, at its minute. */
+  /** Stored ahead of the exchange, each at its own minute or else the exchange's. */
   prior?: DialogLine[];
 }
 

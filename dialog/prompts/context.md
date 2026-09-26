@@ -25,7 +25,7 @@ Your name is {{given}} {{family}}. Introduce yourself by this name and answer to
 
 ## player
 
-Who the player is (these words address the player as you):
+Who the player is and how they came into this, as they were told it when it began (these words address the player as you). It is background: what has happened since, and the matter you are on with them now, come first.
 {{player}}
 
 ## known
@@ -48,7 +48,7 @@ Asked "{{question}}", you answer: "{{reply}}"
 
 ## talk-settle
 
-What you wait to hear from them: {{answers}}
+What would settle it, should the player choose to say it: {{answers}}
 
 ## endings
 
