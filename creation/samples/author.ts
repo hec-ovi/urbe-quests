@@ -1,11 +1,13 @@
 /**
- * Authors a story with a live model and makes it a bundle. The creation
- * workflow runs against the given world and writes each stage into --out as
- * it lands; what the model said is kept as recording.json, and that
- * recording is materialized in-process into bundle 1.2, exactly as a later
- * `npm run materialize` of the same recording, world, profile and parcels
- * would write it. A host whose handoff declares scenery gets stories that
- * stage the scenes they have, and may name investigation among its mechanics.
+ * Authors a story and makes it a bundle. The creation workflow runs against
+ * the given world and writes each stage into --out as it lands; what the
+ * author said is kept as recording.json, and that recording is materialized
+ * in-process into bundle 1.2, exactly as a later `npm run materialize` of the
+ * same recording, world, profile and parcels would write it. The author is a
+ * live model, or with --external an agent writing each completion as a file
+ * (ExternalAuthor): a run then stops at the first files it owes and the next
+ * run goes on from there. A host whose handoff declares scenery gets stories
+ * that stage the scenes they have, and may name investigation among its mechanics.
  */
 
 import { basename, join, resolve } from 'node:path';
@@ -13,9 +15,10 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import type { StepKind } from '../../flow/schema.js';
 import type { AgentPort, LLMPort } from '../../ports/llm.js';
 import { hostKinds, openParcels, QuestlineCreation } from '../QuestlineCreation.js';
-import type { CreationProgress, CreationResult } from '../schema.js';
+import type { CreationProgress, CreationResult, StagePorts } from '../schema.js';
 import { loadWorld, parseArgs, readJson, readParcels, readText } from './CliInputs.js';
 import { readHandoffInput } from './EngineHandoffWriter.js';
+import { EXTERNAL_MODEL, ExternalAuthor, type AuthorNeed } from './ExternalAuthor.js';
 import { materializeRecording, profileSimulation, type MaterializeResult } from './materialize.js';
 import { OpenAICompatibleClient } from './OpenAICompatibleClient.js';
 import { checkMissionItemTemplates } from './PickupAssetRequests.js';
@@ -23,10 +26,10 @@ import { titleOf, type Recording } from './RecordedPorts.js';
 import { recordingPorts } from './RecordingPorts.js';
 import { SampleWriter, type Log } from './SampleWriter.js';
 
-const OPTIONS = ['world', 'types', 'out', 'prompt', 'parcels', 'mechanics', 'templates', 'handoff', 'questlines', 'profile'];
+const OPTIONS = ['world', 'types', 'out', 'prompt', 'parcels', 'mechanics', 'templates', 'handoff', 'questlines', 'profile', 'external', 'model'];
 const USAGE =
   'usage: author.ts --world <named-world|atlas.json> --types <npc-types.json> --out <dir> [--prompt <text|@file>] [--parcels=<ids|@file>] ' +
-  '[--mechanics <kind,kind,...>] [--templates <file>] [--handoff <file>] [--questlines <path>] [--profile <label>]';
+  '[--mechanics <kind,kind,...>] [--templates <file>] [--handoff <file>] [--questlines <path>] [--profile <label>] [--external <author-dir> [--model <label>]]';
 const DEFAULT_TEMPLATES = fileURLToPath(new URL('./mission-item-templates.json', import.meta.url));
 
 /** One model for the text stages and the tool loop, and the name it goes by. */
@@ -38,12 +41,13 @@ export interface AuthorOptions {
   log?: Log;
 }
 
-export interface AuthorResult {
-  outDir: string;
-  recording: Recording;
-  creation: CreationResult;
-  bundle: MaterializeResult;
-}
+export type AuthorResult =
+  | { status: 'done'; outDir: string; recording: Recording; creation: CreationResult; bundle: MaterializeResult }
+  /** An external run stopped at the files its author owes; the next run goes on from there. */
+  | { status: 'needs'; outDir: string; recording: Recording; needs: AuthorNeed[] };
+
+/** One live client answers every stage. */
+const everyStage = (client: AuthorClient) => ({ model: client.model, ports: { script: client, situations: client, plan: client, build: client } });
 
 /** The stage a run stopped at, with what stopped it; meta.json and recording.json are already written. */
 export class AuthorFailure extends Error {
@@ -57,6 +61,8 @@ export async function author(args: readonly string[], options: AuthorOptions = {
   const { positional, options: flags } = parseArgs(args, OPTIONS);
   const [worldPath, typesPath, outDir] = [flags.get('world'), flags.get('types'), flags.get('out')];
   if (positional.length > 0 || worldPath === undefined || typesPath === undefined || outDir === undefined) throw new Error(USAGE);
+  if (flags.has('model') && !flags.has('external')) throw new Error('--model names an external author; a live model is named by LLM_MODEL');
+  for (const name of ['external', 'model']) if (flags.get(name) === '') throw new Error(`--${name} needs a value`);
   const started = Date.now();
   const elapsed = () => Math.round((Date.now() - started) / 1000);
   const log = options.log ?? ((line: string) => console.error(`[${elapsed()}s] ${line}`));
@@ -76,7 +82,7 @@ export async function author(args: readonly string[], options: AuthorOptions = {
 
   const meta = {
     prompt,
-    // Named once the server answers.
+    // Named once the server answers, or by the external author's label.
     model: undefined as string | undefined,
     world: basename(worldPath),
     types: basename(typesPath),
@@ -95,15 +101,19 @@ export async function author(args: readonly string[], options: AuthorOptions = {
     return failure;
   };
 
-  let client: AuthorClient;
+  // An external author answers from files; a live one is asked on the model server.
+  const external = flags.has('external') ? new ExternalAuthor(flags.get('external')!) : undefined;
+  let source: { model: string; ports: StagePorts };
   try {
-    client = options.client ?? (await OpenAICompatibleClient.connect());
+    source = external !== undefined
+      ? { model: flags.get('model') ?? EXTERNAL_MODEL, ports: external.ports }
+      : everyStage(options.client ?? (await OpenAICompatibleClient.connect()));
   } catch (error) {
     throw fail('model', error);
   }
-  meta.model = client.model;
+  meta.model = source.model;
   log(
-    `model ${client.model}, world ${basename(worldPath)} (${context.world.parcels.length} parcels` +
+    `${external !== undefined ? `external author ${source.model} in ${external.dir}` : `model ${source.model}`}, world ${basename(worldPath)} (${context.world.parcels.length} parcels` +
       `${parcels !== undefined ? `, ${parcels.length} open` : ''}, ${context.types.types.length} types)` +
       `, ${mechanics !== undefined ? `mechanics ${mechanics.join(', ')}` : 'every mechanic'}` +
       `${scenery !== undefined ? ', staged scenes' : ''}`,
@@ -118,18 +128,18 @@ export async function author(args: readonly string[], options: AuthorOptions = {
   });
   const capture = recordingPorts(
     {
-      script: timed(() => 'script', client),
-      situations: timed(() => 'situations', client),
-      plan: timed((asked) => `plan "${titleOf(asked)}"`, client),
-      build: client,
+      script: timed(() => 'script', source.ports.script),
+      situations: timed(() => 'situations', source.ports.situations),
+      plan: timed((asked) => `plan "${titleOf(asked)}"`, source.ports.plan),
+      build: source.ports.build,
     },
-    { prompt, model: client.model, mechanics, scenery, missionItemTemplates },
+    { prompt, model: source.model, mechanics, scenery, missionItemTemplates },
   );
 
   let stage = 'script';
-  let creation: CreationResult;
+  let outcome: CreationResult | AuthorNeed[];
   try {
-    creation = await new QuestlineCreation().run({
+    const run = new QuestlineCreation().run({
       ...context,
       prompt,
       sim: profileSimulation(profile, context),
@@ -147,12 +157,19 @@ export async function author(args: readonly string[], options: AuthorOptions = {
         if (event.kind === 'questline') landed[event.questline === 'main' ? 'main' : `side ${event.questline}`] = elapsed();
       },
     });
+    outcome = external === undefined ? await run : await Promise.race([run, external.stalled]);
   } catch (error) {
     throw fail((error as { detail?: { stage?: string } } | null)?.detail?.stage ?? stage, error);
   } finally {
     // What the model said is kept even when the run fails: a failed run is read from it.
     writer.write('recording.json', json(capture.recording()));
   }
+  if (Array.isArray(outcome)) {
+    for (const need of outcome) log(need.problems !== undefined ? `rejected ${need.file}: ${need.problems.join('; ')}` : `needs ${need.file} (request ${need.request.join(', ')})`);
+    writer.write('meta.json', json({ ...meta, seconds: { ...landed, stopped: elapsed() }, needs: outcome }));
+    return { status: 'needs', outDir: writer.path, recording: capture.recording(), needs: outcome };
+  }
+  const creation = outcome;
   writer.writeQuestlines(creation);
 
   const recording = capture.recording();
@@ -176,12 +193,13 @@ export async function author(args: readonly string[], options: AuthorOptions = {
   landed['materialize'] = elapsed();
   writer.write('meta.json', json({ ...meta, seconds: landed, bundle: { path: bundle.outputPath, ...bundle.manifest.counts }, blocked: bundle.blocked }));
   log(`done: ${bundle.questlines.length} questlines, ${bundle.blocked.length} blocked, bundle at ${bundle.outputPath}`);
-  return { outDir: writer.path, recording, creation, bundle };
+  return { status: 'done', outDir: writer.path, recording, creation, bundle };
 }
 
+// Exit 0 once the bundle is written, 2 while an external author owes files, 1 on a failure.
 if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   try {
-    await author(process.argv.slice(2));
+    if ((await author(process.argv.slice(2))).status === 'needs') process.exitCode = 2;
   } catch (error) {
     console.error(error instanceof AuthorFailure ? error.message : error);
     process.exit(1);

@@ -27,3 +27,6 @@ review-captures/
 !/creation/samples/urbe-small/recording.json
 !/creation/samples/urbe-small/world.json
 !/creation/samples/urbe-small/npc-types.json
+!/creation/samples/urbe-small/handoff-input.json
+!/creation/samples/urbe-small/author/
+/creation/samples/urbe-small/author/requests/

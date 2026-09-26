@@ -5,9 +5,13 @@
 
 import type { ChatDelta, ChatRequest } from './chat.js';
 
-/** Free-text completion; used by story generation and memory summarization. */
+/**
+ * Free-text completion; used by story generation and memory summarization.
+ * A repair round's request carries `problems`, why the answer before it could
+ * not be used, which its prompt already tells a model.
+ */
 export interface LLMPort {
-  complete(request: { system: string; prompt: string }): Promise<string>;
+  complete(request: { system: string; prompt: string; problems?: readonly string[] }): Promise<string>;
 }
 
 /**

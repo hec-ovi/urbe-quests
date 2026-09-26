@@ -1,0 +1,28 @@
+[
+  { "tool": "create_questline", "input": { "id": "q_tolerance", "title": "Tolerance", "premise": "Ivo Lann wrote the model that decides how much water every clinic and district receives, and a courier's figures say the water arrives short. He cannot go to a Sump Row counter himself without becoming a story, so he asks the player, hypothetically, to go and look." } },
+  { "tool": "add_role", "input": { "roleId": "r_ivo", "npcType": "quest_corporate", "characterName": { "given": "Ivo", "family": "Lann" }, "persona": "Pleasant, hurried, always half somewhere else; asks hypothetically and means it literally. Wants a quarter that closes clean; fears a story with his model's name on it; would never falsify a figure, and would never check one he was not asked to." } },
+  { "tool": "add_act", "input": { "actId": "a2_check", "title": "The Check", "summary": "Ivo sends someone to look at the counter he will not visit. Once it is over, his model is cleared and he is not." } },
+  { "tool": "add_ending", "input": { "endingId": "e2_correct", "title": "The Model Is Correct", "epilogue": "You watch the stamped measure go out short at the Weir Exchange counter. Ivo gets his answer: the model is correct. He finds he does not feel any cleaner for it, and closes the quarter anyway." } },
+  { "tool": "add_step", "input": {
+    "stepId": "s2_ask", "actId": "a2_check", "entry": true, "wantedByRoleId": "r_ivo",
+    "narrative": { "description": "In the lobby where he works, Ivo Lann stops you with a coffee he forgot to drink and a courier's figures still open on his slate.", "playerHint": "Talk to Ivo Lann at work.", "stake": "He needs to know that he does not need to know; a man from the tower at a Sump Row counter is a story." },
+    "target": { "kind": "talk", "roleId": "r_ivo", "atParcelId": "p10" },
+    "dialogue": {
+      "opening": "Hypothetically. If someone wanted to know whether a model was wrong or a counter was, they would look at the counter. I can't. I'd be a story.",
+      "choices": [
+        { "id": "ask_model", "text": "Are you sure the model is right?", "reply": "The model is correct. What happens to the water after it leaves the model is a logistics question. I'd like it to stay one.", "completesStep": false },
+        { "id": "go_look", "text": "I'll go and look at the Weir Exchange counter for you.", "reply": "Thank you. Don't tell me what you see unless it's that I was right. Hypothetically.", "completesStep": true }
+      ]
+    },
+    "gives": [], "needs": [],
+    "next": [{ "toStepId": "s2_counter", "when": [] }]
+  } },
+  { "tool": "add_step", "input": {
+    "stepId": "s2_counter", "actId": "a2_check", "wantedByRoleId": "r_ivo",
+    "narrative": { "description": "At the Weir Exchange counter in Sump Row you watch a clerk stamp a full measure onto a canister that is not full.", "playerHint": "Go to the Weir Exchange counter.", "stake": "If nobody looks, Ivo's model carries the blame for a clerk, and his name ends up in a report he never wanted to be in." },
+    "target": { "kind": "goto", "place": { "parcelId": "p0" } },
+    "gives": [], "needs": [],
+    "next": [], "endingId": "e2_correct"
+  } },
+  { "tool": "finish_questline", "input": {} }
+]

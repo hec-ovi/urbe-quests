@@ -24,7 +24,7 @@ export async function completeWithRepair<T>(input: RepairLoopInput<T>): Promise<
   if (first.value !== undefined) return { value: first.value, raw };
 
   const repairPrompt = prompt('repair-input.md', { request: input.prompt, answer: raw, repair: input.repair(first.problems) }).trim();
-  const repaired = await input.llm.complete({ system: input.system, prompt: repairPrompt });
+  const repaired = await input.llm.complete({ system: input.system, prompt: repairPrompt, problems: first.problems });
   const second = attempt(input.parse, repaired);
   if (second.value !== undefined) return { value: second.value, raw: repaired };
   throw new QuestError('E_LLM', `${input.stage} output unusable after repair: ${second.problems.join('; ')}`, {

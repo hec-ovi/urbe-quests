@@ -19,7 +19,7 @@ Only names, kinds, tiers and type boilerplates reach the model ([worldBrief.ts](
 Provider errors from the port pass through.
 
 ## Invariants
-- Text only: neither pass uses tools; parsing and minimum checks are code; a shortfall lists every problem in one repair round; raw text is always kept.
+- Text only: neither pass uses tools; parsing and minimum checks are code; a shortfall lists every problem in one repair round, whose request carries them as `problems` beside the prompt that tells a model; raw text is always kept.
 - Minimums are floors rendered into the prompt, never exact counts.
 - Prompts live in [prompts/](prompts/): pass-input.md, script-pass.md, script-repair.md, situations-pass.md, situations-repair.md, repair-input.md, staging.md. Output length is never capped.
 

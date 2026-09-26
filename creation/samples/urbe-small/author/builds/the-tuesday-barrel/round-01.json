@@ -1,0 +1,41 @@
+[
+  { "tool": "create_questline", "input": { "id": "q_tuesday_barrel", "title": "The Tuesday Barrel", "premise": "A dock hand sits grey-faced on the pavement at the Sluice Grub stall after a cheap cup from somebody else's barrel. Dessa Vey keeps ladling clean water at two a cup, and the only way the next cheap cup stops is if she says where hers comes from, which is the one thing that stops her barrel too." } },
+  { "tool": "add_role", "input": { "roleId": "r_dessa", "npcType": "quest_vendor", "characterName": { "given": "Dessa", "family": "Vey" }, "persona": "Warm and fast, a price in every sentence. Wants her regulars fed and her stall open; fears the day the barrel stops coming; would never overcharge a child. Goes thin and quiet when a question costs more than a cup." } },
+  { "tool": "add_item", "input": { "itemId": "i1_barrel", "kind": "information", "name": "where the barrel comes from", "description": "What Dessa has decided not to ask about and finally says aloud: her clean barrel comes stamped from Weir Exchange every Tuesday. To her it means the stall she keeps open runs on somebody else's missing water." } },
+  { "tool": "add_act", "input": { "actId": "a1_cup", "title": "The Cheap Cup", "summary": "What a bad cup does on a Sump Row pavement, and what it costs Dessa to say where the good ones come from. Once it is over, the street's clean water has an address." } },
+  { "tool": "add_ending", "input": { "endingId": "e1_poured", "title": "Poured Free", "epilogue": "Dessa tells you, quietly, that the barrel comes stamped from Weir Exchange every Tuesday. Then she pours the dock hand a cup of hers and does not charge him for it." } },
+  { "tool": "add_step", "input": {
+    "stepId": "s1_arrive", "actId": "a1_cup", "entry": true, "wantedByRoleId": "r_dessa",
+    "narrative": { "description": "At the Sluice Grub stall a dock hand sits on the wet pavement with his back to the counter, grey in the face, a stranger kneeling beside him with two fingers on his wrist.", "playerHint": "Go to the Sluice Grub stall.", "stake": "Dessa wants someone to see what a one-coin cup does before the queue closes over him; if nobody sees, the next cheap cup is somebody's child." },
+    "target": { "kind": "goto", "place": { "parcelId": "p6" } },
+    "gives": [], "needs": [],
+    "next": [{ "toStepId": "s1_ask", "when": [] }]
+  } },
+  { "tool": "add_step", "input": {
+    "stepId": "s1_ask", "actId": "a1_cup", "wantedByRoleId": "r_dessa",
+    "narrative": { "description": "Dessa keeps ladling while the queue watches the man on the pavement, and waits for you to ask the question she has priced out of reach.", "playerHint": "Talk to Dessa Vey at Sluice Grub.", "stake": "Telling means the barrel stops; not telling means the cheap barrels win. Either way the street pays." },
+    "target": { "kind": "talk", "roleId": "r_dessa", "atParcelId": "p6" },
+    "dialogue": {
+      "opening": "Cup's two, bowl's three. His was one, two stalls down, and you get what one buys. Mine's clean. Don't look at me like that.",
+      "choices": [
+        { "id": "ask_price", "text": "Why is yours clean when nobody's ration is?", "reply": "Because I pay for clean. Questions cost extra, love, and I'm all out.", "completesStep": false },
+        { "id": "ask_source", "text": "Tell me where the barrel comes from, and the cheap ones stop too.", "reply": "[sigh] Weir Exchange. Stamped, every Tuesday, same seal as the clinic's. There. Now pour him one of mine, go on. That one's free.", "completesStep": true }
+      ]
+    },
+    "gives": ["i1_barrel"], "needs": [],
+    "next": [], "endingId": "e1_poured"
+  } },
+  { "tool": "stage_scene", "input": {
+    "sceneId": "sc1_cup", "purpose": "aftermath",
+    "description": "A dock hand sits on the wet pavement in front of the Sluice Grub stall, grey in the face, a stranger kneeling beside him with two fingers on his wrist.",
+    "stagedBy": "s1_arrive", "stagedWhen": "active",
+    "place": { "kind": "street", "atStepId": "s1_arrive" },
+    "actors": [
+      { "actorId": "dockhand", "role": "victim", "pose": "ground-sit", "gender": "male" },
+      { "actorId": "stranger", "role": "bystander", "pose": "kneel-examine", "gender": "female", "nearActorId": "dockhand" }
+    ],
+    "props": [],
+    "clearedBy": "s1_ask"
+  } },
+  { "tool": "finish_questline", "input": {} }
+]

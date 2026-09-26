@@ -1,0 +1,41 @@
+[
+  { "tool": "create_questline", "input": { "id": "q_short_measure", "title": "The Short Measure", "premise": "The sealed water canisters Nell Arden carries to the Vitalis Spire Clinic weigh a litre and a half less than their seals say. Somebody at the Weir Exchange counter is skimming the ration and selling it back to Sump Row by the cup, and the proof is written in a tally book behind that counter. Nell will not break a seal alone; she needs someone to look with her, and someone to decide who hears about it first." } },
+  { "tool": "add_role", "input": { "roleId": "r_nell", "npcType": "quest_clinician", "characterName": { "given": "Nell", "family": "Arden" }, "persona": "Quiet and precise, counts in grams and trusts her arms over any seal. Wants the measure honest because the clinic's patients drink what she carries; fears being the courier who looked away; would never break a seal herself, so she asks someone else to see it with her." } },
+  { "tool": "add_role", "input": { "roleId": "r_hale", "npcType": "quest_security", "characterName": { "given": "Hale", "family": "Mercer" }, "persona": "Flat and slow, a pause before every promise. Owes Nell a favour nobody wrote down. Wants paper he can walk up a staircase; fears arresting a clerk to protect a company; would never take the tower's side because it pays better." } },
+  { "tool": "add_item", "input": { "itemId": "i_short", "kind": "information", "name": "the short measure", "description": "What Nell's arms told her before any scale did: every canister stamped at Weir Exchange weighs ten and a half litres against a seal that says twelve. To her it means the skim happens between the counter and the clinic." } },
+  { "tool": "add_item", "input": { "itemId": "i_tally", "kind": "document", "name": "the tally book", "description": "Orrin Pike's stamped tally book, kept on the shelf behind the Weir Exchange counter. To Orrin it is twenty years of round numbers; to anyone else it is two columns of what the seals say and what went out, and a third of where the difference goes.", "atParcelId": "p0" } },
+  { "tool": "add_fact", "input": { "factId": "f_nell_scale", "roleId": "r_nell", "text": "I weigh every canister on the reception scale before it goes in the cold room. My mother taught me. Seal says twelve. The needle stops at ten and a half, every one." } },
+  { "tool": "add_fact", "input": { "factId": "f_hale_favour", "roleId": "r_hale", "text": "Nell sat with me one night at the clinic and wrote nothing down. I remember who doesn't write things down." } },
+  { "tool": "add_act", "input": { "actId": "a_measure", "title": "The Measure", "summary": "The player learns the measure is short and finds where the skim is written down. Once it is over, what Nell's arms knew is on paper." } },
+  { "tool": "add_act", "input": { "actId": "a_first", "title": "Who Hears First", "summary": "The paper goes up the staircase at Apex Oversight. Once it is over, the precinct owns the story and the counter changes hands." } },
+  { "tool": "add_ending", "input": { "endingId": "e_upstairs", "title": "Paper Up the Staircase", "epilogue": "Hale Mercer walks the tally book up the staircase at Apex Oversight. By the end of the week the Weir Exchange counter has a new clerk and the canisters reach the clinic full; Nell weighs the next delivery and the needle reaches the mark. The barrel at Sluice Grub stops coming, and Sump Row goes back to paying for what it gets." } },
+  { "tool": "add_step", "input": {
+    "stepId": "s_weigh", "actId": "a_measure", "entry": true, "wantedByRoleId": "r_nell",
+    "narrative": { "description": "At the Vitalis Spire Clinic reception, Nell Arden sets a sealed canister on the scale and waits for you to read the needle yourself.", "playerHint": "Talk to Nell Arden at the Vitalis Spire Clinic.", "stake": "If nobody else sees what the scale says, she is the courier who looked away, and the clinic's patients keep drinking short." },
+    "target": { "kind": "talk", "roleId": "r_nell", "atParcelId": "p32" },
+    "dialogue": {
+      "opening": "Read the needle. Don't read the seal, the seal says twelve. My arms said ten and a half before the scale did. [sigh] Every canister this week.",
+      "choices": [
+        { "id": "ask_where", "text": "Where do the canisters get sealed?", "reply": "Weir Exchange, in Sump Row. Orrin Pike stamps them at the counter. He keeps a tally book on the shelf behind him and his hand on it whenever I'm there.", "completesStep": false },
+        { "id": "look_with_her", "text": "I see it. I'll find where the difference is written down.", "reply": "Then go to Weir Exchange and find the tally book behind the counter. I won't break a seal and I won't break a shelf. But I'll know you saw the needle.", "completesStep": true }
+      ]
+    },
+    "gives": ["i_short"], "needs": [],
+    "next": [{ "toStepId": "s_tally", "when": [] }]
+  } },
+  { "tool": "add_step", "input": {
+    "stepId": "s_tally", "actId": "a_measure", "wantedByRoleId": "r_nell",
+    "narrative": { "description": "Behind the Weir Exchange counter, on the shelf Orrin Pike keeps his hand on, the tally book waits in its stamped cover.", "playerHint": "Pick up the tally book at Weir Exchange.", "stake": "Without the book her arms are the only witness, and arms do not go up a staircase." },
+    "target": { "kind": "pickup", "itemId": "i_tally" },
+    "gives": ["i_tally"], "needs": ["i_short"],
+    "next": [{ "toStepId": "s_report", "when": [] }]
+  } },
+  { "tool": "add_step", "input": {
+    "stepId": "s_report", "actId": "a_first", "wantedByRoleId": "r_hale",
+    "narrative": { "description": "You carry the tally book into Apex Oversight, where Hale Mercer has been waiting for paper.", "playerHint": "Deliver the tally book to Apex Oversight.", "stake": "Hale needs paper he can walk up a staircase; without it the case never leaves his desk and the counter keeps stamping short." },
+    "target": { "kind": "deliver", "itemId": "i_tally", "place": { "parcelId": "p4" } },
+    "gives": [], "needs": ["i_tally"],
+    "next": [], "endingId": "e_upstairs"
+  } },
+  { "tool": "finish_questline", "input": {} }
+]

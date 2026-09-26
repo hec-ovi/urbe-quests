@@ -185,10 +185,12 @@ describe('author CLI', () => {
     let early: { title: string; recording: Recording } | undefined;
     const build = model.build;
     model.build = { step: (request) => ((early ??= { title: titleOf(request.prompt), recording: read<Recording>(join(out, 'recording.json')) }), build.step(request)) };
-    const { bundle } = await author(
+    const result = await author(
       [...required(out), `--prompt=@${join(dir, 'brief.txt')}`, `--parcels=${OPEN.join(',')}`, '--mechanics', HOST_MECHANICS.join(','), '--profile', 'small'],
       { client: client(model), log: (line) => lines.push(line) },
     );
+    if (result.status !== 'done') throw new Error('a live run finishes or fails');
+    const { bundle } = result;
     expect(early!.recording.script).toBe(RECORDING.script);
     expect(early!.recording.plans[early!.title]).toBe(RECORDING.plans[early!.title]);
     expect(early!.recording.builds).toEqual({});

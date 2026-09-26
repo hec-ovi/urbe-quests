@@ -16,7 +16,7 @@ const THIN = FIXTURE.script.replace(/### Sergeant Dev Okoro[\s\S]*?(?=## Present
 const BROKEN = FIXTURE.situations.replace('### Resolution\nThe bus stops', '### Coda\nThe bus stops');
 
 function fakeLLM(responses: string[]) {
-  const calls: { system: string; prompt: string }[] = [];
+  const calls: Parameters<LLMPort['complete']>[0][] = [];
   const queue = [...responses];
   const llm: LLMPort = {
     complete: async (request) => {
@@ -58,6 +58,7 @@ describe('ScriptPass', () => {
     const { script } = await new ScriptPass().run({ ...scriptInput(repaired.llm), minimums: { characters: 5 } });
     expect(repaired.calls).toHaveLength(2);
     expect(repaired.calls[1]!.prompt).toContain('- 3 character cards under "## Characters", at least 5 needed');
+    expect(repaired.calls[1]!.problems).toEqual(['3 character cards under "## Characters", at least 5 needed']);
     expect(repaired.calls[1]!.prompt).toContain('Rain on the Static Cafe');
     expect(script.characters).toHaveLength(6);
 
