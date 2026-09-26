@@ -19,7 +19,7 @@ export interface ConverseInput {
 }
 
 export interface ConverseStreamInput extends ConverseInput {
-  /** Companion actions the NPC may propose through tool calls; none when absent. */
+  /** Companion actions the NPC may agree to through tool calls; none when absent. */
   offers?: OfferOptions;
   /** Aborting ends the model request, and the stream rejects. */
   signal?: AbortSignal;
@@ -134,7 +134,7 @@ function wellFormed(call: ChatToolCall): ChatToolCall {
 }
 
 function answer(call: ChatToolCall, options: OfferOptions | undefined): ChatMessage {
-  const result = offerOf(call, options) ? 'offers.md#proposed' : 'offers.md#refused';
+  const result = offerOf(call, options) ? 'offers.md#accepted' : 'offers.md#refused';
   return { role: 'tool', tool_call_id: call.id, content: prompts(result) };
 }
 

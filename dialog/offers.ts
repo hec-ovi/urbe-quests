@@ -1,6 +1,7 @@
 /**
- * Companion actions an NPC may propose while it replies, offered to the model
- * as OpenAI tools. A tool call only proposes; the host decides whether it happens.
+ * Companion actions an NPC may take while it replies, offered to the model as
+ * OpenAI tools. The model calls one when it agrees to what the player asked;
+ * the host decides whether it happens.
  */
 
 import { promptLoader } from '../prompts.js';
@@ -17,17 +18,17 @@ export interface OfferPlace {
   name: string;
 }
 
-/** What the host lets this NPC propose right now. */
+/** What the host lets this NPC agree to right now. */
 export interface OfferOptions {
-  /** The NPC may propose to follow the player. */
+  /** The NPC may agree to follow the player. */
   follow?: boolean;
-  /** Places the NPC may propose to lead the player to. */
+  /** Places the NPC may agree to lead the player to. */
   places?: OfferPlace[];
 }
 
 export type CompanionOffer = { kind: 'follow' } | { kind: 'lead'; placeId: string; name: string };
 
-/** The tools these options allow; empty when the NPC may propose nothing. */
+/** The tools these options allow; empty when the NPC may agree to nothing. */
 export function offerTools(options: OfferOptions = {}): ChatTool[] {
   const tools: ChatTool[] = [];
   if (options.follow) {

@@ -208,7 +208,8 @@ describe('Converse', () => {
     expect(signals).toEqual([signal]);
     const [sent] = requests;
     expect(sent!.messages[0]).toEqual({ role: 'system', content: 'WORLD LAYER\n\nTYPE LAYER\n\nNPC LAYER\n\nTURNS LAYER' });
-    expect(sent!.messages[1]!.content).toContain('A call only proposes: the player decides.');
+    expect(sent!.messages[1]!.content).toContain('Their asking is their consent, so your call starts it at once');
+    expect(sent!.messages[1]!.content).toContain('decline in character, in words only, and call nothing');
     expect(sent!.tools?.map((tool) => tool.function.name)).toEqual(['lead_player_to']);
     const lead = sent!.tools![0]!.function;
     expect(lead.description).toContain('- p5: Noodle Saint\n- p8: Precinct 9');
@@ -238,8 +239,8 @@ describe('Converse', () => {
         { id: 'call_0', type: 'function', function: { name: 'follow_player', arguments: '{}' } },
         { id: 'c2', type: 'function', function: { name: 'lead_player_to', arguments: '{}' } },
       ] },
-      { role: 'tool', tool_call_id: 'call_0', content: expect.stringContaining('the player, who decides') },
-      { role: 'tool', tool_call_id: 'c2', content: expect.stringContaining('not something you can propose') },
+      { role: 'tool', tool_call_id: 'call_0', content: expect.stringContaining('You go with the player from here.') },
+      { role: 'tool', tool_call_id: 'c2', content: expect.stringContaining('not something you can do') },
     ]);
   });
 
@@ -287,7 +288,7 @@ describe('Converse', () => {
     const { port, requests } = streamingPort([{ content: 'No.' }]);
     expect(spoken(await events(new Converse(port).replyStream(input)))).toBe('No.');
     expect(requests[0]!.tools).toBeUndefined();
-    expect(requests[0]!.messages[1]!.content).not.toContain('A call only proposes');
+    expect(requests[0]!.messages[1]!.content).not.toContain('Their asking is their consent');
 
     expect(await events(new Converse({ complete: async () => 'Hm.' }).replyStream({ ...input, offers: { follow: true } }))).toEqual([
       { type: 'delta', text: 'Hm.' },
