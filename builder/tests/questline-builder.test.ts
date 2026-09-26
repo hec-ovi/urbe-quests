@@ -128,6 +128,19 @@ describe('QuestlineBuilder', () => {
     expect(definition.steps).toHaveLength(3);
   });
 
+  it('carries the prologue create_questline writes and leaves a blank one out', async () => {
+    const opening = (prologue: string): AgentReply[] => [{ kind: 'calls', calls: [
+      { tool: 'create_questline', input: { ...(SETUP_CALLS[0]!.input as object), prologue } },
+      ...SETUP_CALLS.slice(1), ...STEP_CALLS, FINAL_STEP, FINISH,
+    ] }];
+
+    const told = await build(scriptedAgent(opening(' You owe Sable. Mara at the Static Cafe has a favour to ask. ')).agent);
+    const blank = await build(scriptedAgent(opening('  ')).agent);
+
+    expect(told.definition.prologue).toBe('You owe Sable. Mara at the Static Cafe has a favour to ask.');
+    expect(blank.definition).not.toHaveProperty('prologue');
+  });
+
   it('answers a target or an effect missing a field its kind needs with a tool result, never an abort', async () => {
     const ask = STEP_CALLS[0]!.input as object;
     const { agent, requests } = scriptedAgent([

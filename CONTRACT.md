@@ -1,4 +1,4 @@
-# Quests 0.16.0
+# Quests 0.17.0
 
 Writes stories through injected agents, adapts them into typed quests, runs their rules in code, and prepares Engine handoffs and scoped NPC dialogue.
 
@@ -34,6 +34,8 @@ An optional role `characterName { given, family }` carries the script's authored
 NPC lines carry emotion as inline cues from one closed list, `[laugh] [sigh] [whisper] [angry] [gasp] [cry]`, where the sound or manner happens: free-chat replies when the moment calls for one, and authored openings and replies. A voice host speaks the raw line; a screen shows `stripCues(line)`. Other bracketed tags are dropped from replies and refused in authored lines. Cues live inside the lines; no bundle or saved-state field carries them.
 
 Talk steps may carry `dialogue { opening, choices: [{ id, text, reply, completesStep }] }`. The recorded Weir Line and all three side stories author every talk with character speech, informational questions and explicit commitments. `dialogueFor(stepId, npcId, timeMin)` is read-only; `chooseDialogue(stepId, npcId, choiceId, timeMin)` rechecks presence, items and gates and completes only the selected step. Opening, dismissing, free chat and informational replies never progress the quest. Authored talks reject raw `talkedTo`; legacy definitions retain that event for compatibility and receive deterministic fallback choices through the same dialogue API. This optional field changes neither step IDs nor saved-state shape.
+
+A questline may carry `prologue`, what the player reads once before the story starts, in the second person: who they are, where they stand and the job that opens the story, told no further than its first step. The builder's `create_questline` writes it for the main story, and a host shows the main questline's when a new game starts. An opening that starts a questline or meets a character for the first time works cold: a greeting or acknowledgement, who the character is to the player, why the player is here, then the matter. The field is optional and changes no saved-state shape.
 
 Materialize builds exact physical pickup requests and bindings from a recording's authored item-kind templates, while preserving explicit handoff bindings. The handoff rejects pickups without a portable asset and `take` anchor, or a material kind the family cannot wear, so an otherwise valid story cannot silently ship an impossible collection step. [One template per physical item kind](creation/samples/mission-item-templates.json) ships with the box.
 

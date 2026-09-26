@@ -44,12 +44,14 @@ export class QuestlineDraft {
     private readonly scenery?: SceneryCapabilities,
   ) {}
 
-  create(args: { id: string; title: string; premise: string }): string {
+  create(args: { id: string; title: string; premise: string; prologue?: string }): string {
     if (this.def !== undefined) throw new DraftError('questline already created');
+    const prologue = args.prologue?.trim();
     this.def = {
       id: args.id,
       title: args.title,
       premise: args.premise,
+      ...(prologue ? { prologue } : {}),
       roles: [],
       items: [],
       facts: [],

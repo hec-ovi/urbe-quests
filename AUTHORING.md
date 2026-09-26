@@ -27,6 +27,8 @@ Stop at exit 0. Any file may be edited and the run repeated. A change upstream c
 
 After a round, `requests/builds/<title>/round-NN.results.json` holds what each call answered. An answer that starts with `error:` was refused: the next round fixes it (an add tool called again with the same id replaces that piece) and calls `finish_questline` again. The build ends when `finish_questline` succeeds.
 
+The player starts with nothing but what the story tells them. The main story's `create_questline` carries `prologue`: who the player is, where they stand, and the job that opens the story, with the person and the place to go to first, in the second person and no further than that first step. Every talk that starts a questline or meets a person for the first time opens cold: a greeting or an acknowledgement, who this person is to the player, why the player is here, then the matter.
+
 `<title>` is the questline's title as a file name (`The Tuesday Barrel` is `the-tuesday-barrel`); every need spells it out.
 
 ## What you get

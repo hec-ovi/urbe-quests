@@ -13,6 +13,13 @@ export interface QuestlineDefinition {
   title: string;
   /** Why this quest exists and what it is about, in prose. */
   premise: string;
+  /**
+   * What the player reads before the story starts, in the second person: who
+   * they are, where they stand and the job that opens the story, told no
+   * further than its first step. A host shows the main questline's once, when
+   * a new game starts.
+   */
+  prologue?: string;
   roles: QuestRole[];
   items: QuestItem[];
   facts: QuestFact[];

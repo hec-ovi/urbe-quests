@@ -189,6 +189,7 @@ export function builderTools(kinds: readonly StepKind[] = STEP_KINDS, scenery?: 
         properties: {
           title: { type: 'string' },
           premise: { type: 'string', description: prompt('tools/create_questline.md#premise').trim() },
+          prologue: { type: 'string', description: prompt('tools/create_questline.md#prologue').trim() },
           id: { type: 'string', description: prompt('tools/create_questline.md#id').trim() },
         },
         required: ['title', 'premise', 'id'],

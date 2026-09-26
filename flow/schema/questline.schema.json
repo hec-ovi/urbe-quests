@@ -9,6 +9,7 @@
     "id": { "$ref": "#/$defs/id" },
     "title": { "$ref": "#/$defs/text" },
     "premise": { "$ref": "#/$defs/text" },
+    "prologue": { "$ref": "#/$defs/text", "description": "What the player reads before the story starts: who they are, where they stand and the job that opens the story, in the second person." },
     "roles": { "type": "array", "items": { "$ref": "#/$defs/role" } },
     "items": { "type": "array", "items": { "$ref": "#/$defs/item" } },
     "facts": { "type": "array", "items": { "$ref": "#/$defs/fact" } },

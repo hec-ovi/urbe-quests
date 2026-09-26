@@ -83,7 +83,7 @@ export class ToolDispatcher {
     const input = (call.input ?? {}) as Record<string, unknown>;
     switch (call.tool) {
       case 'create_questline':
-        return { result: this.draft.create(input as { id: string; title: string; premise: string }) };
+        return { result: this.draft.create(input as { id: string; title: string; premise: string; prologue?: string }) };
       case 'add_role':
         return { result: this.draft.addRole(input as never) };
       case 'add_item':
