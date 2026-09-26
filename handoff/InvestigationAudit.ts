@@ -1,9 +1,16 @@
 import { QuestError } from '../errors.js';
 import type { PlaceTarget, QuestlineDefinition } from '../flow/schema.js';
-import type { InvestigationSceneRequest } from './schema.js';
+import { isLinked } from './SceneryAudit.js';
+import type { InvestigationRequest, LinkedInvestigationRequest, SceneSpec } from './schema.js';
 
+/**
+ * Binds every investigation step to exactly one clue of one scene at its own
+ * place: a 1.1 scene's measured location, or the building of the scenery
+ * scene a 1.2 scene stands over, where each clue shows on one element.
+ */
 export class InvestigationAudit {
-  validate(definitions: QuestlineDefinition[], scenes: InvestigationSceneRequest[]): void {
+  validate(definitions: QuestlineDefinition[], scenes: InvestigationRequest[], scenery: SceneSpec[] = []): void {
+    const staged = new Map(scenery.map((spec) => [spec.sceneId, spec]));
     const definitionsById = new Map(definitions.map((definition) => [definition.id, definition]));
     const expected = new Set(
       definitions.flatMap((definition) => definition.steps
@@ -26,6 +33,7 @@ export class InvestigationAudit {
         }
       }
       this.validateEvidenceGraph(scene);
+      const placeIdOf = isLinked(scene) ? this.linkedPlace(scene, evidence, staged) : scene.location.placeId;
       const boundEvidence = new Set(scene.questBindings.map((binding) => binding.evidenceId));
       if (boundEvidence.size !== scene.questBindings.length) this.fail(`investigation ${scene.sceneId} binds evidence more than once`);
       for (const evidenceId of evidence.keys()) {
@@ -50,7 +58,7 @@ export class InvestigationAudit {
         if (binding.completionAction === 'take' && !authoredEvidence.portable) {
           this.fail(`investigation ${scene.sceneId} cannot take non-portable evidence ${binding.evidenceId}`);
         }
-        if (scene.location.placeId !== placeId(binding.place)) {
+        if (placeIdOf !== placeId(binding.place)) {
           this.fail(`investigation ${scene.sceneId} location does not match its quest place`);
         }
         found.add(key);
@@ -66,7 +74,19 @@ export class InvestigationAudit {
     for (const key of found) if (!expected.has(key)) this.fail('investigation catalog contains an unexpected step binding');
   }
 
-  private validateEvidenceGraph(scene: InvestigationSceneRequest): void {
+  /** A 1.2 scene's place is its scenery scene's building; each evidence shows on an element of its own. */
+  private linkedPlace(scene: LinkedInvestigationRequest, evidence: ReadonlyMap<string, unknown>, staged: ReadonlyMap<string, SceneSpec>): string {
+    const shown = new Set(scene.evidenceVisuals.map((visual) => visual.evidenceId));
+    const entities = new Set(scene.evidenceVisuals.map((visual) => visual.entityId));
+    if (scene.evidenceVisuals.length !== evidence.size || entities.size !== evidence.size || [...evidence.keys()].some((id) => !shown.has(id))) {
+      this.fail(`investigation ${scene.sceneId} must show each evidence on an element of its own`);
+    }
+    const spec = staged.get(scene.scenery.sceneId);
+    if (spec === undefined) this.fail(`investigation ${scene.sceneId} links unknown scene ${scene.scenery.sceneId}`);
+    return spec.place.parcelId;
+  }
+
+  private validateEvidenceGraph(scene: InvestigationRequest): void {
     const evidence = new Map(scene.evidence.map((entry) => [entry.evidenceId, entry]));
     const visiting = new Set<string>();
     const visited = new Set<string>();

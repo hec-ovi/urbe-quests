@@ -2,17 +2,17 @@
  * Authors a story with a live model and makes it a bundle. The creation
  * workflow runs against the given world and writes each stage into --out as
  * it lands; what the model said is kept as recording.json, and that
- * recording is materialized in-process into bundle 1.1, exactly as a later
+ * recording is materialized in-process into bundle 1.2, exactly as a later
  * `npm run materialize` of the same recording, world, profile and parcels
- * would write it.
+ * would write it. A host whose handoff declares scenery gets stories that
+ * stage the scenes they have, and may name investigation among its mechanics.
  */
 
 import { basename, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { playableKinds } from '../../builder/mechanics.js';
 import type { StepKind } from '../../flow/schema.js';
 import type { AgentPort, LLMPort } from '../../ports/llm.js';
-import { openParcels, QuestlineCreation } from '../QuestlineCreation.js';
+import { hostKinds, openParcels, QuestlineCreation } from '../QuestlineCreation.js';
 import type { CreationProgress, CreationResult } from '../schema.js';
 import { loadWorld, parseArgs, readJson, readParcels, readText } from './CliInputs.js';
 import { readHandoffInput } from './EngineHandoffWriter.js';
@@ -64,12 +64,12 @@ export async function author(args: readonly string[], options: AuthorOptions = {
   // Every file and option is read and checked before the model server is asked anything.
   const context = loadWorld(worldPath, typesPath);
   const prompt = (flags.has('prompt') ? readText(flags.get('prompt')!).trim() : '') || context.world.meta.naming.theme;
-  const mechanics: StepKind[] | undefined = flags.has('mechanics')
-    ? [...playableKinds(flags.get('mechanics')!.split(',').map((kind) => kind.trim()).filter((kind) => kind.length > 0))]
-    : undefined;
+  const handoff = readHandoffInput(flags.get('handoff'));
+  const scenery = handoff.hostCapabilities?.scenery;
+  const listed = flags.get('mechanics')?.split(',').map((kind) => kind.trim()).filter((kind) => kind.length > 0);
+  const mechanics: StepKind[] | undefined = listed === undefined ? undefined : [...hostKinds(listed, scenery)!];
   const parcels = openParcels(context.world, readParcels(flags.get('parcels')));
   const missionItemTemplates = checkMissionItemTemplates(readJson(flags.get('templates') ?? DEFAULT_TEMPLATES));
-  const handoff = readHandoffInput(flags.get('handoff'));
   const profile = flags.get('profile') ?? 'author';
   const writer = new SampleWriter(outDir);
   const questlinesPath = resolve(flags.get('questlines') ?? join(writer.path, 'bundle', 'questlines.json'));
@@ -82,6 +82,7 @@ export async function author(args: readonly string[], options: AuthorOptions = {
     types: basename(typesPath),
     profile,
     ...(mechanics !== undefined ? { mechanics } : {}),
+    ...(scenery !== undefined ? { scenery: true } : {}),
     ...(parcels !== undefined ? { parcels: parcels.length } : {}),
     ranAt: new Date(started).toISOString(),
   };
@@ -104,7 +105,8 @@ export async function author(args: readonly string[], options: AuthorOptions = {
   log(
     `model ${client.model}, world ${basename(worldPath)} (${context.world.parcels.length} parcels` +
       `${parcels !== undefined ? `, ${parcels.length} open` : ''}, ${context.types.types.length} types)` +
-      `, ${mechanics !== undefined ? `mechanics ${mechanics.join(', ')}` : 'every mechanic'}`,
+      `, ${mechanics !== undefined ? `mechanics ${mechanics.join(', ')}` : 'every mechanic'}` +
+      `${scenery !== undefined ? ', staged scenes' : ''}`,
   );
   const timed = (label: (prompt: string) => string, port: LLMPort): LLMPort => ({
     complete: async (request) => {
@@ -121,7 +123,7 @@ export async function author(args: readonly string[], options: AuthorOptions = {
       plan: timed((asked) => `plan "${titleOf(asked)}"`, client),
       build: client,
     },
-    { prompt, model: client.model, mechanics, missionItemTemplates },
+    { prompt, model: client.model, mechanics, scenery, missionItemTemplates },
   );
 
   let stage = 'script';
@@ -134,6 +136,7 @@ export async function author(args: readonly string[], options: AuthorOptions = {
       ports: capture.ports,
       parcels,
       mechanics,
+      scenery,
       warn: log,
       progress: (event: CreationProgress) => {
         writer.onProgress(event, log);

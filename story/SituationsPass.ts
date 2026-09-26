@@ -15,6 +15,8 @@ export interface SituationsPassInput {
   types: NPCTypeSet;
   llm: LLMPort;
   minimums?: Partial<SituationMinimums>;
+  /** The host stands what a scene leaves in a place: the story may write such places as they are found. */
+  stagesScenes?: boolean;
 }
 
 export const DEFAULT_SITUATION_MINIMUMS: SituationMinimums = { situations: 3 };
@@ -32,7 +34,7 @@ export class SituationsPass {
 
     const { value, raw } = await completeWithRepair({
       llm: input.llm,
-      system: prompt('situations-pass.md', minimums),
+      system: prompt('situations-pass.md', { ...minimums, staging: input.stagesScenes === true ? prompt('staging.md') : '' }),
       prompt: brief,
       parse: (text) => parseSituations(text, minimums, [input.script.title]),
       repair: (problems) => prompt('situations-repair.md', { shortfalls: problems.map((p) => `- ${p}`).join('\n') }),

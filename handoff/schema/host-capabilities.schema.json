@@ -10,6 +10,7 @@
       "type": "array",
       "uniqueItems": true,
       "items": { "enum": ["ride-hail", "public-transit", "vehicle", "animal", "aircraft"] }
-    }
+    },
+    "scenery": { "$ref": "https://urbe.local/quests/handoff/schema/scenery-binding-slice.schema.json#/$defs/capabilities" }
   }
 }

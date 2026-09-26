@@ -5,6 +5,7 @@
 
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import type { TranslationResult } from '../../builder/schema.js';
 import type { CreationProgress, CreationResult } from '../schema.js';
 import { QuestlineSetValidator } from '../../flow/QuestlineSet.js';
 
@@ -34,8 +35,9 @@ export class SampleWriter {
     for (const side of result.side) this.writeQuestline(labelOf(side.situationId), side);
   }
 
-  private writeQuestline(label: string, result: { definition: CreationResult['main']['definition']; cast: CreationResult['main']['cast'] }): void {
-    this.write(`${label}.questline.json`, JSON.stringify({ definition: result.definition, cast: result.cast }, null, 2) + '\n');
+  /** A questline with its cast, and the scenes it stages when it stages any. */
+  private writeQuestline(label: string, { definition, cast, scenes }: TranslationResult): void {
+    this.write(`${label}.questline.json`, JSON.stringify({ definition, cast, ...(scenes.length > 0 ? { scenes } : {}) }, null, 2) + '\n');
   }
 
   onProgress(event: CreationProgress, log: Log): void {
@@ -65,10 +67,11 @@ export class SampleWriter {
         return;
       }
       case 'questline': {
-        const { definition, cast } = event.result;
-        this.writeQuestline(labelOf(event.questline), { definition, cast });
+        const { definition, scenes } = event.result;
+        this.writeQuestline(labelOf(event.questline), event.result);
         log(
-          `questline ${event.questline} "${definition.title}": ${definition.steps.length} steps, ${definition.roles.length} roles, ${definition.items.length} items, ${definition.endings.length} endings`,
+          `questline ${event.questline} "${definition.title}": ${definition.steps.length} steps, ${definition.roles.length} roles, ${definition.items.length} items, ${definition.endings.length} endings` +
+            `${scenes.length > 0 ? `, ${scenes.length} staged scenes` : ''}`,
         );
         return;
       }

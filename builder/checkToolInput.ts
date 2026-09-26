@@ -1,8 +1,9 @@
 /**
  * Checks a tool call against that tool's own schema before it reaches the
- * draft: required fields, their types, the closed enums. A model that sends
- * half a step (or arguments that did not parse) gets told what the call needs
- * instead of throwing a TypeError through the build loop.
+ * draft: required fields, their types, the closed enums and how many a list
+ * holds. A model that sends half a step (or arguments that did not parse)
+ * gets told what the call needs instead of throwing a TypeError through the
+ * build loop.
  */
 
 type Schema = Record<string, unknown>;
@@ -51,6 +52,8 @@ function checkArray(schema: Schema, value: unknown, path: string, problems: stri
     problems.push(`${label(path)} must be an array`);
     return;
   }
+  const most = schema['maxItems'];
+  if (typeof most === 'number' && value.length > most) problems.push(`${label(path)} holds at most ${most}`);
   const items = schema['items'];
   if (isRecord(items)) value.forEach((entry, i) => check(items, entry, `${path}[${i}]`, problems));
 }

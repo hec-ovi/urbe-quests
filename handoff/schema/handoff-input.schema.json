@@ -20,6 +20,10 @@
     },
     "missionItemBindings": {
       "$ref": "https://urbe.local/quests/handoff/schema/mission-item-bindings.schema.json"
+    },
+    "scenery": {
+      "type": "array",
+      "items": { "$ref": "https://urbe.local/quests/handoff/schema/scenery-binding-slice.schema.json" }
     }
   }
 }

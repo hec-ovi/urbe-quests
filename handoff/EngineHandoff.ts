@@ -6,6 +6,7 @@ import { HandoffInputBoundary } from './HandoffInputBoundary.js';
 import { MechanicTargetAudit } from './MechanicTargetAudit.js';
 import { MissionAssetAudit } from './MissionAssetAudit.js';
 import { ObjectiveProjector } from './ObjectiveProjector.js';
+import { SceneryAudit } from './SceneryAudit.js';
 import type { HandoffBundle, HandoffInput } from './schema.js';
 
 /** Builds the complete deterministic file payload consumed by engine creation. */
@@ -14,6 +15,7 @@ export class EngineHandoff {
     private readonly investigations = new InvestigationAudit(),
     private readonly missionAssets = new MissionAssetAudit(),
     private readonly mechanicTargets = new MechanicTargetAudit(),
+    private readonly scenes = new SceneryAudit(),
     private readonly hostCapabilities = new HostCapabilityAudit(),
     private readonly objectives = new ObjectiveProjector(),
     private readonly boundary = new HandoffInputBoundary(),
@@ -27,10 +29,13 @@ export class EngineHandoff {
     const mechanicTargetBindings = input.mechanicTargetBindings ?? [];
     const missionAssetRequests = input.missionAssetRequests ?? [];
     const missionItemBindings = input.missionItemBindings ?? [];
-    this.investigations.validate(questlines, investigations);
+    const scenery = input.scenery ?? [];
+    // Scenes first: a 1.2 investigation stands where its scene does.
+    this.scenes.validate(questlines, scenery, investigations, new Set(missionAssetRequests.map((request) => request.assetId)));
+    this.investigations.validate(questlines, investigations, scenery);
     this.missionAssets.validate(questlines, missionAssetRequests, missionItemBindings, investigations);
     this.mechanicTargets.validate(questlines, missionAssetRequests, mechanicTargetBindings);
-    this.hostCapabilities.validate(questlines, hostCapabilities);
+    this.hostCapabilities.validate(questlines, hostCapabilities, scenery);
     return {
       hostCapabilities,
       questlines,
@@ -39,6 +44,7 @@ export class EngineHandoff {
       mechanicTargetBindings,
       missionAssetRequests,
       missionItemBindings,
+      scenery,
     };
   }
 }

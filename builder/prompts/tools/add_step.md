@@ -36,7 +36,7 @@ The typed objective: kind plus the fields that kind takes. Every place (place, f
 - work: atParcelId, role (the job the player takes there).
 - investigation: sceneId, evidenceId, evidenceItemId (an information item this step gives), subjectRoleIds (the roles the clue implicates; an empty list when none), place, completionFlag.
 - rescue: roleId, releaseTargetId, place, completionFlag.
-- escort: roleId, routeId, mode (follow-player or lead-player), from and to (two different places), completionFlag.
+- escort: roleId, routeId, mode (follow-player: the character follows the player; lead-player: the character walks the player there, so to is a building, station or stop), from and to (two different places), completionFlag.
 - access: accessPointId, credentialItemId (a key, information or device item this step needs), place, completionFlag.
 - hacking: targetId, place, completionFlag.
 - sabotage: targetId, place, completionFlag.

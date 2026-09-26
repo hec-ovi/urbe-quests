@@ -3,8 +3,9 @@
 Purpose: writes the story as text only: the film script from the creation prompt (characters with background and voice, four movements of passages that turn), and from the script the side situations, each with its own presentation, development, conflict and resolution.
 
 ## In
-- `new ScriptPass().run(input)` ([ScriptPass.ts](ScriptPass.ts)): `world`, `types` ([../world/types/named-world.ts](../world/types/named-world.ts)), `llm` ([../ports/llm.ts](../ports/llm.ts)), `prompt?` (the creation prompt; defaults to the world's theme), `minimums?` (defaults `{ characters: 5, passagesPerMovement: 2 }`).
-- `new SituationsPass().run(input)` ([SituationsPass.ts](SituationsPass.ts)): `script`, `world`, `types`, `llm`, `minimums?` (default `{ situations: 3 }`).
+- `new ScriptPass().run(input)` ([ScriptPass.ts](ScriptPass.ts)): `world`, `types` ([../world/types/named-world.ts](../world/types/named-world.ts)), `llm` ([../ports/llm.ts](../ports/llm.ts)), `prompt?` (the creation prompt; defaults to the world's theme), `minimums?` (defaults `{ characters: 5, passagesPerMovement: 2 }`), `stagesScenes?`.
+- `new SituationsPass().run(input)` ([SituationsPass.ts](SituationsPass.ts)): `script`, `world`, `types`, `llm`, `minimums?` (default `{ situations: 3 }`), `stagesScenes?`.
+- `stagesScenes: true` when the host stands what a scene leaves in a place: both passes are told the city can show a body, blood, an object left there or people keeping watch, so a death, a crime or an aftermath the protagonist walks into is written as it is found, and only when the story calls for one ([prompts/staging.md](prompts/staging.md)).
 Only names, kinds, tiers and type boilerplates reach the model ([worldBrief.ts](worldBrief.ts)).
 
 ## Out
@@ -20,7 +21,7 @@ Provider errors from the port pass through.
 ## Invariants
 - Text only: neither pass uses tools; parsing and minimum checks are code; a shortfall lists every problem in one repair round; raw text is always kept.
 - Minimums are floors rendered into the prompt, never exact counts.
-- Prompts live in [prompts/](prompts/): pass-input.md, script-pass.md, script-repair.md, situations-pass.md, situations-repair.md, repair-input.md. Output length is never capped.
+- Prompts live in [prompts/](prompts/): pass-input.md, script-pass.md, script-repair.md, situations-pass.md, situations-repair.md, repair-input.md, staging.md. Output length is never capped.
 
 ## Depends on
 - ../world (types), ../ports (LLMPort)

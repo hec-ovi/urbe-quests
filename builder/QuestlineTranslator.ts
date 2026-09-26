@@ -6,6 +6,7 @@
  */
 
 import type { StepKind } from '../flow/schema.js';
+import type { SceneryCapabilities } from '../handoff/schema.js';
 import type { AgentPort, LLMPort } from '../ports/llm.js';
 import type { NamedWorld, NPCTypeSet } from '../world/types/named-world.js';
 import type { SimulationPort } from '../world/types/simulation.js';
@@ -23,6 +24,8 @@ export interface TranslateInput {
   parcels?: readonly string[];
   /** The step kinds the host can play; omitted, every kind. */
   mechanics?: readonly StepKind[];
+  /** The scenery the host stages; the plan may stage scenes and the build gets stage_scene. */
+  scenery?: SceneryCapabilities;
   referenceTimeMin?: number;
   maxRounds?: number;
   /** Told the plan once it parsed, before the build starts, so a host keeps it whatever the build does. */

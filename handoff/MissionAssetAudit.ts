@@ -1,6 +1,6 @@
 import { QuestError } from '../errors.js';
 import type { QuestlineDefinition } from '../flow/schema.js';
-import type { InvestigationSceneRequest, MissionAssetCreateRequest, MissionAssetFamily, MissionAssetInteraction, MissionItemBinding } from './schema.js';
+import type { InvestigationRequest, MissionAssetCreateRequest, MissionAssetFamily, MissionAssetInteraction, MissionItemBinding } from './schema.js';
 
 type MaterialSlot = MissionAssetCreateRequest['materials'][number]['slot'];
 
@@ -49,7 +49,7 @@ export class MissionAssetAudit {
     definitions: QuestlineDefinition[],
     requests: MissionAssetCreateRequest[],
     bindings: MissionItemBinding[],
-    investigations: InvestigationSceneRequest[],
+    investigations: InvestigationRequest[],
   ): void {
     const requestIds = new Set<string>();
     for (const request of requests) {
@@ -123,10 +123,10 @@ export class MissionAssetAudit {
   }
 }
 
-function investigationAssetIds(investigations: InvestigationSceneRequest[]): Set<string> {
+function investigationAssetIds(investigations: InvestigationRequest[]): Set<string> {
   const ids = new Set<string>();
   for (const scene of investigations) {
-    for (const prop of scene.props ?? []) {
+    for (const prop of scene.contractVersion === '1.1' ? scene.props : []) {
       if (!isRecord(prop) || !isRecord(prop.missionAsset)) continue;
       if (typeof prop.missionAsset.assetId === 'string') ids.add(prop.missionAsset.assetId);
     }

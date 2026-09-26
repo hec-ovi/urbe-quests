@@ -22,7 +22,10 @@ import { materialize, materializeRecording } from '../samples/materialize.js';
 import { recordedPorts, type Recording } from '../samples/RecordedPorts.js';
 import type { CreationProgress, StagePorts } from '../schema.js';
 import { checkMissionItemTemplates, pickupAssetRequests } from '../samples/PickupAssetRequests.js';
+import { checkSceneTemplates } from '../samples/SceneTemplates.js';
 import { EngineHandoff } from '../../handoff/EngineHandoff.js';
+import { SCENERY_VOCABULARY, type SceneStaging } from '../../handoff/SceneStagings.js';
+import type { SceneSpec } from '../../handoff/schema.js';
 
 const sampleDir = fileURLToPath(new URL('../samples/urbe-small/', import.meta.url));
 const recordingPath = join(sampleDir, 'recording.json');
@@ -268,6 +271,8 @@ describe('QuestlineCreation', () => {
     await expect(run({ script: { complete: script } }, { mechanics: ['goto', 'teleport'] })).rejects.toThrowError(/unknown step kind teleport/);
     await expect(run({ script: { complete: script } }, { parcels: [] })).rejects.toThrowError(/parcels names no building/);
     await expect(run({ script: { complete: script } }, { parcels: ['p0', 'nope1', 'nope2'] })).rejects.toThrowError(/parcels not in the world: nope1, nope2$/);
+    // A live story shows its clues on the scenes it stages, so a host naming investigation declares scenery.
+    await expect(run({ script: { complete: script } }, { mechanics: ['talk', 'investigation'] })).rejects.toThrowError(/investigation needs the host scenery capability/);
     expect(script).not.toHaveBeenCalled();
   });
 });
@@ -336,6 +341,64 @@ describe('materialize entry', () => {
       log.mockRestore();
       rmSync(outputDir, { recursive: true, force: true });
     }
+  });
+});
+
+describe('recorded scene templates', () => {
+  const HOST = { hostCapabilities: { transportationModes: [], scenery: SCENERY_VOCABULARY } };
+  const [COLLAPSE] = RECORDING.sceneTemplates!['q_exchange_rate']!;
+  const materializeWith = async (recording: Recording, handoff: unknown, log: string[] = []) => {
+    const outputDir = mkdtempSync(join(tmpdir(), 'quests-scenes-'));
+    try {
+      const result = await materializeRecording({
+        world, types, recording, recordingName: 'recording.json', typesName: 'npc-types.json', profile: 'scenes',
+        outputPath: join(outputDir, 'questlines.json'), handoff, log: (line) => log.push(line),
+      });
+      return { ...result, scenery: read<SceneSpec[]>(join(outputDir, 'scenery.json')), assets: read<{ assetId: string; family: string }[]>(join(outputDir, 'mission-assets.json')) };
+    } finally {
+      rmSync(outputDir, { recursive: true, force: true });
+    }
+  };
+
+  it("stands the sample's collapse at the clinic intake for a host that declares scenery, and leaves it out for one that does not", async () => {
+    const staged = await materializeWith(RECORDING, HOST);
+    const deliver = staged.questlines.find((quest) => quest.id === 'q_exchange_rate')!.steps.find((step) => step.stepId === 's3_deliver')!.target;
+    expect(staged.manifest.counts.scenery).toBe(1);
+    expect(staged.scenery).toEqual([{
+      contractVersion: '1.0', sceneId: 'q_exchange_rate.sc3_collapse', questId: 'q_exchange_rate', seed: expect.any(Number), purpose: 'aftermath',
+      place: { kind: 'parcel-entry', parcelId: (deliver as { place: { parcelId: string } }).place.parcelId },
+      actors: [
+        { actorId: 'worker', role: 'victim', identity: { kind: 'anonymous', gender: 'male', appearanceSeed: expect.any(Number) }, pose: 'wounded-crawl', placement: { zone: 'center' } },
+        { actorId: 'nurse', role: 'bystander', identity: { kind: 'anonymous', gender: 'female', appearanceSeed: expect.any(Number) }, pose: 'kneel-examine', placement: { zone: 'incident', nearEntityId: 'worker' } },
+      ],
+      props: [],
+      activeWhen: { any: [{ kind: 'stepActive', stepId: 's3_deliver' }, { kind: 'stepDone', stepId: 's3_deliver' }] },
+    }]);
+
+    const log: string[] = [];
+    const bare = await materializeWith(RECORDING, {}, log);
+    expect(bare.scenery).toEqual([]);
+    expect(log).toContain('1 staged scene left out: the host declares no scenery');
+    expect(bare.questlines).toEqual(staged.questlines);
+  });
+
+  it('asks an item template for each item a scene shows, and refuses templates that are not stagings', async () => {
+    const showing: SceneStaging = { ...COLLAPSE!, props: [{ propId: 'kit', kind: 'mission-asset', itemId: 'i3_meds', nearActorId: 'worker' }] };
+    const recording = (templates: Recording['missionItemTemplates']): Recording => ({
+      ...RECORDING, missionItemTemplates: templates, sceneTemplates: { q_exchange_rate: [showing] },
+    });
+    const shipped = checkMissionItemTemplates(read(fileURLToPath(new URL('../samples/mission-item-templates.json', import.meta.url))));
+    await expect(materializeWith(recording(RECORDING.missionItemTemplates), HOST)).rejects.toThrowError(/shows i3_meds in prop kit, and there is no substance template/);
+    const staged = await materializeWith(recording({ ...RECORDING.missionItemTemplates, substance: shipped.substance }), HOST);
+    const kit = staged.scenery[0]!.props[0]!;
+    expect(staged.assets.find((asset) => asset.assetId === kit.assetId)).toMatchObject({ family: 'package' });
+
+    expect(() => checkSceneTemplates([])).toThrowError(/object keyed by questline id/);
+    expect(() => checkSceneTemplates({ q: COLLAPSE })).toThrowError(expect.objectContaining({ detail: ['q holds no list of stagings'] }));
+    expect(() => checkSceneTemplates({ q: [{ ...COLLAPSE, actors: [{ actorId: 'a', role: 'victim', pose: 'dancing', gender: 'male' }] }] }))
+      .toThrowError(expect.objectContaining({ detail: [expect.stringMatching(/^q\[0\]: actors\[0\]\.pose must be one of death-a/)] }));
+    expect(() => checkSceneTemplates({ q: [{ ...COLLAPSE, actors: [{ actorId: 'a', role: 'victim', pose: 'grieving', roleId: 'r_yara' }] }] }))
+      .toThrowError(expect.objectContaining({ detail: [expect.stringMatching(/stands in a scene only dead/)] }));
   });
 });
 

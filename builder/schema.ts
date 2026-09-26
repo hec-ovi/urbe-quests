@@ -1,6 +1,7 @@
 /** Translation inputs and outputs: a story arc in, a plan and a cast questline out. */
 
 import type { QuestlineDefinition, ResolvedCast } from '../flow/schema.js';
+import type { SceneStaging } from '../handoff/SceneStagings.js';
 
 /** The slice of story one questline is built from. */
 export interface QuestAssignment {
@@ -18,6 +19,8 @@ export interface TranslationResult {
   plan: string;
   definition: QuestlineDefinition;
   cast: ResolvedCast;
+  /** The scenes the questline stages; empty unless the host declares scenery. */
+  scenes: SceneStaging[];
 }
 
 /** One build round as the loop saw it, for a host's log. */

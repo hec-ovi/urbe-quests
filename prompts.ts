@@ -1,6 +1,7 @@
 /**
  * Loads a box's prompt .md files. Every prompt, boilerplate and few-shot set
- * lives in a file, never inline; `{{name}}` placeholders take the given values.
+ * lives in a file, never inline; `{{name}}` placeholders take the given values,
+ * and a placeholder paragraph given an empty value leaves no gap.
  */
 
 import { readFileSync } from 'node:fs';
@@ -19,6 +20,6 @@ export function promptLoader(promptsDir: URL): PromptLoader {
     return text.replace(/\{\{(\w+)\}\}/g, (match, name: string) => {
       const value = vars[name];
       return value === undefined ? match : String(value);
-    });
+    }).replace(/\n{3,}/g, '\n\n');
   };
 }

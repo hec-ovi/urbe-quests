@@ -11,7 +11,7 @@ import type { AgentToolCall, LLMPort } from '../../ports/llm.js';
 import type { StagePorts } from '../schema.js';
 import { titleOf, type Recording } from './RecordedPorts.js';
 
-export type RecordingMeta = Pick<Recording, 'prompt' | 'model' | 'mechanics' | 'missionItemTemplates'>;
+export type RecordingMeta = Pick<Recording, 'prompt' | 'model' | 'mechanics' | 'scenery' | 'missionItemTemplates'>;
 
 export function recordingPorts(live: StagePorts, meta: RecordingMeta): { ports: StagePorts; recording(): Recording } {
   const answers = { script: '', situations: '' };
@@ -47,6 +47,7 @@ export function recordingPorts(live: StagePorts, meta: RecordingMeta): { ports: 
         plans,
         builds,
         ...(meta.mechanics !== undefined ? { mechanics: meta.mechanics } : {}),
+        ...(meta.scenery !== undefined ? { scenery: meta.scenery } : {}),
         ...(meta.missionItemTemplates !== undefined ? { missionItemTemplates: meta.missionItemTemplates } : {}),
       }),
   };

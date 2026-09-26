@@ -3,6 +3,7 @@
 import type { BuildProgress, TranslationResult } from '../builder/schema.js';
 import type { PlanResult } from '../builder/TranslationPlanner.js';
 import type { StepKind } from '../flow/schema.js';
+import type { SceneryCapabilities } from '../handoff/schema.js';
 import type { AgentPort, LLMPort } from '../ports/llm.js';
 import type { ScriptMinimums, ScriptPassResult, SituationMinimums, SituationsPassResult } from '../story/schema.js';
 import type { NamedWorld, NPCTypeSet } from '../world/types/named-world.js';
@@ -38,6 +39,12 @@ export interface CreationInput {
    * a step of another kind is refused back to the builder. Omitted, every kind.
    */
   mechanics?: readonly StepKind[];
+  /**
+   * The scenery the host stages (its declared `hostCapabilities.scenery`). The story may write the places a death or a
+   * crime leaves, the plan says what is staged there, the builder stages it with stage_scene and every investigation
+   * step shows its clue on a staged scene. A `mechanics` list naming investigation needs it.
+   */
+  scenery?: SceneryCapabilities;
   referenceTimeMin?: number;
   maxRounds?: number;
   /** Told about a side quest that failed to build and was dropped. */

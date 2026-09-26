@@ -6,10 +6,12 @@
  */
 
 import type { StepKind } from '../../flow/schema.js';
+import type { SceneryCapabilities } from '../../handoff/schema.js';
 import type { AgentPort, AgentReply, AgentToolCall, LLMPort } from '../../ports/llm.js';
 import type { NamedWorld, ParcelType, Tier } from '../../world/types/named-world.js';
 import type { StagePorts } from '../schema.js';
 import type { MissionItemTemplates } from './PickupAssetRequests.js';
+import type { SceneTemplates } from './SceneTemplates.js';
 
 export interface RecordingBindings {
   parcels?: Record<string, { parcelTypes: ParcelType[]; tiers?: Tier[]; ordinal?: number }>;
@@ -33,10 +35,14 @@ export interface Recording {
   builds: Record<string, AgentToolCall[][]>;
   /** The step kinds the run was allowed; replay offers the same, so a refusal the model met replays as one. Omitted, every kind. */
   mechanics?: StepKind[];
+  /** The scenery the run's host declared; replay offers the same stage_scene tool. Omitted, the build staged nothing. */
+  scenery?: SceneryCapabilities;
   /** Semantic place aliases that make recorded tool calls portable between city sizes. */
   bindings?: RecordingBindings;
   /** Authored physical appearances used to bind every pickup when materializing the recording. */
   missionItemTemplates?: MissionItemTemplates;
+  /** Scenes written by hand, keyed by questline id, staged when materializing for a host that declares scenery. */
+  sceneTemplates?: SceneTemplates;
 }
 
 /** Assignments are rendered title first; that line says which questline a call belongs to. */

@@ -8,7 +8,7 @@
 import { STEP_KINDS, type StepKind } from '../flow/schema.js';
 import { promptLoader } from '../prompts.js';
 
-/** The target fields each kind needs, and the ones it may add. */
+/** The target fields each kind needs, and the ones it may add, in the order its tool line names them. */
 export const TARGET_FIELDS: Record<StepKind, { needs: readonly string[]; may?: readonly string[] }> = {
   goto: { needs: ['place'] },
   observe: { needs: ['districtId'] },

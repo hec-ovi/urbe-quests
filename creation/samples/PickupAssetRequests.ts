@@ -13,11 +13,11 @@ export type MissionItemTemplates = Partial<Record<PhysicalKind, Template>>;
 
 const PHYSICAL: Record<PhysicalKind, null> = { device: null, weapon: null, document: null, key: null, substance: null, valuable: null };
 
-/** The request a template becomes for one quest item: its identity and seed are stable per quest and item. */
-function request(template: Template, identity: string, purpose: string): MissionAssetCreateRequest {
+/** The request a template becomes for one asset: its id and seed are stable per identity (a quest item, or a scene prop). */
+export function templateRequest(template: Template, identity: string, purpose: string, assetId?: string): MissionAssetCreateRequest {
   const hash = createHash('sha256').update(identity).digest('hex');
   return {
-    ...structuredClone(template), contractVersion: '1.0', assetId: `quest-item.${hash.slice(0, 32)}`,
+    ...structuredClone(template), contractVersion: '1.0', assetId: assetId ?? `quest-item.${hash.slice(0, 32)}`,
     purpose: purpose.slice(0, 240), seed: Number.parseInt(hash.slice(0, 8), 16),
   };
 }
@@ -32,7 +32,7 @@ export function checkMissionItemTemplates(untrusted: unknown): MissionItemTempla
   }
   const unknown = Object.keys(untrusted).filter((kind) => !Object.hasOwn(PHYSICAL, kind));
   if (unknown.length > 0) throw new QuestError('E_HANDOFF', `mission item templates for no physical item kind: ${unknown.join(', ')}`);
-  const requests = Object.entries(untrusted as Record<string, Template>).map(([kind, template]) => request(template, kind, `${kind} template`));
+  const requests = Object.entries(untrusted as Record<string, Template>).map(([kind, template]) => templateRequest(template, kind, `${kind} template`));
   const parsed = new HandoffInputBoundary().parse({ missionAssetRequests: requests }).missionAssetRequests!;
   new MissionAssetAudit().validate([], parsed, [], []);
   const untakeable = Object.keys(untrusted).filter((_, i) => !takeable(parsed[i]!));
@@ -64,7 +64,7 @@ export function pickupAssetRequests(
       if (template === undefined) {
         throw new QuestError('E_HANDOFF', `pickup ${definition.id}/${step.stepId} has no mission asset binding or ${item.kind} template`);
       }
-      const asset = request(template, key, `${item.name}: ${item.description}`);
+      const asset = templateRequest(template, key, `${item.name}: ${item.description}`);
       requests.push(asset);
       bindings.push({ questId: definition.id, itemId, assetId: asset.assetId });
       bound.add(key);

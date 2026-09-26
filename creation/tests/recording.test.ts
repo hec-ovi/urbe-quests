@@ -12,6 +12,7 @@ import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { QuestlineDefinition, StepKind } from '../../flow/schema.js';
 import { EngineHandoff } from '../../handoff/EngineHandoff.js';
+import { SCENERY_VOCABULARY } from '../../handoff/SceneStagings.js';
 import { StubSimulation, WorldContextNormalizer, type NamedWorld, type NPCTypeSet } from '../../world/index.js';
 import { QuestlineCreation } from '../QuestlineCreation.js';
 import { author, type AuthorClient } from '../samples/author.js';
@@ -132,6 +133,41 @@ describe('recordingPorts', () => {
     const unlimited: CreationProgress[] = [];
     await create(recordedPorts(recording, world), { progress: (event) => unlimited.push(event) });
     expect(refusalsOf(unlimited, 'main')).not.toEqual(refused);
+  });
+});
+
+describe('recorded scenery', () => {
+  it('keeps the host scenery, so a scene staged live stands the same on replay and a host without it is refused the tool', async () => {
+    // The Exchange Rate's build stages the sample's collapse before it finishes, as a live model given the tool would.
+    const [collapse] = RECORDING.sceneTemplates!['q_exchange_rate']!;
+    const model = liveModel();
+    const recorded = recordedPorts(RECORDING, world).build;
+    model.build = {
+      step: async (request) => {
+        const reply = await recorded.step(request);
+        if (titleOf(request.prompt) !== 'The Exchange Rate' || reply.kind !== 'calls') return reply;
+        return { kind: 'calls', calls: [...reply.calls.slice(0, -1), { tool: 'stage_scene', input: collapse }, reply.calls.at(-1)!] };
+      },
+    };
+    const scripts: string[] = [];
+    const script = model.script;
+    model.script = { complete: (request) => (scripts.push(request.system), script.complete(request)) };
+    const capture = recordingPorts(model, { prompt: RECORDING.prompt, model: 'fixture-model', scenery: SCENERY_VOCABULARY, missionItemTemplates: RECORDING.missionItemTemplates });
+    const live = await create(capture.ports, { scenery: SCENERY_VOCABULARY });
+
+    expect(scripts[0]).toContain('The city can show what a scene leaves behind where it happened');
+    const exchange = (result: CreationResult) => result.side.find((side) => side.definition.id === 'q_exchange_rate')!;
+    expect(exchange(live).scenes).toEqual([collapse]);
+    const recording = JSON.parse(JSON.stringify(capture.recording())) as Recording;
+    expect(recording.scenery).toEqual(SCENERY_VOCABULARY);
+
+    const replayed = await create(recordedPorts(recording, world), { scenery: recording.scenery });
+    expect(exchange(replayed).scenes).toEqual([collapse]);
+
+    const events: CreationProgress[] = [];
+    const bare = await create(recordedPorts(recording, world), { progress: (event) => events.push(event) });
+    expect(exchange(bare).scenes).toEqual([]);
+    expect(events.flatMap((event) => (event.kind === 'build' ? event.build.refusals : []))).toContain('error: unknown tool stage_scene');
   });
 });
 

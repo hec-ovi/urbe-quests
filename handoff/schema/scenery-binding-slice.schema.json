@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://urbe.local/quests/handoff/schema/scenery-binding-slice.schema.json",
+  "title": "Consumed binding slice of an engine scenery scene spec 1.0",
+  "description": "The fields Quests audits against its questlines and the host capability. Engine scenery owns and validates the rest of the spec.",
+  "type": "object",
+  "required": ["contractVersion", "sceneId", "questId", "place", "actors", "props", "activeWhen"],
+  "properties": {
+    "contractVersion": { "const": "1.0" },
+    "sceneId": { "$ref": "#/$defs/id" },
+    "questId": { "$ref": "#/$defs/id" },
+    "place": {
+      "type": "object",
+      "required": ["kind", "parcelId"],
+      "properties": {
+        "kind": { "$ref": "#/$defs/placeKind" },
+        "parcelId": { "$ref": "#/$defs/id" }
+      }
+    },
+    "actors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["actorId", "identity", "pose", "placement"],
+        "properties": {
+          "actorId": { "$ref": "#/$defs/id" },
+          "identity": {
+            "oneOf": [
+              {
+                "type": "object", "additionalProperties": false, "required": ["kind", "roleId"],
+                "properties": { "kind": { "const": "cast" }, "roleId": { "$ref": "#/$defs/id" } }
+              },
+              {
+                "type": "object", "additionalProperties": false, "required": ["kind", "gender", "appearanceSeed"],
+                "properties": {
+                  "kind": { "const": "anonymous" },
+                  "gender": { "$ref": "#/$defs/gender" },
+                  "appearanceSeed": { "type": "integer", "minimum": 0, "maximum": 4294967295 }
+                }
+              }
+            ]
+          },
+          "pose": { "$ref": "#/$defs/pose" },
+          "placement": {
+            "type": "object",
+            "required": ["zone"],
+            "properties": { "zone": { "$ref": "#/$defs/zone" }, "nearEntityId": { "$ref": "#/$defs/id" } }
+          }
+        }
+      }
+    },
+    "props": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["propId", "kind"],
+        "properties": {
+          "propId": { "$ref": "#/$defs/id" },
+          "kind": { "$ref": "#/$defs/propKind" },
+          "assetId": { "$ref": "#/$defs/id" },
+          "nearActorId": { "$ref": "#/$defs/id" },
+          "nearPropId": { "$ref": "#/$defs/id" }
+        }
+      }
+    },
+    "lighting": {
+      "type": "object",
+      "required": ["preset"],
+      "properties": { "preset": { "$ref": "#/$defs/lightingPreset" } }
+    },
+    "activeWhen": { "$ref": "#/$defs/condition" },
+    "retireWhen": { "$ref": "#/$defs/condition" },
+    "investigationSceneId": { "$ref": "#/$defs/id" }
+  },
+  "$defs": {
+    "id": { "type": "string", "minLength": 1, "maxLength": 160 },
+    "gender": { "enum": ["male", "female"] },
+    "purpose": { "enum": ["crime-scene", "aftermath", "wake", "stakeout", "ambient"] },
+    "placeKind": { "enum": ["room", "story-slot", "parcel-entry", "street"] },
+    "pose": { "enum": ["death-a", "death-b", "wounded-crawl", "ground-sit", "kneel-examine", "crouch-examine", "search-torch", "grieving", "standing-guard"] },
+    "corpsePose": { "enum": ["death-a", "death-b"] },
+    "propKind": { "enum": ["blood-pool", "tyre-marks", "mission-asset"] },
+    "lightingPreset": { "enum": ["none"] },
+    "actorRole": { "enum": ["victim", "witness", "suspect", "officer", "bystander"] },
+    "zone": { "enum": ["center", "perimeter", "incident", "entry-side"] },
+    "roomKind": {
+      "enum": [
+        "corridor", "elevator_lobby", "concourse", "reception", "lounge", "office_open", "office_private", "meeting",
+        "executive_office", "dining_area", "kitchen", "counter_area", "bar", "sales_floor", "bedroom", "living",
+        "studio_main", "bathroom", "toilets", "gym_floor", "locker_room", "storage", "mechanical_room", "terrace_open",
+        "parking_area"
+      ]
+    },
+    "condition": {
+      "oneOf": [
+        {
+          "type": "object", "additionalProperties": false, "required": ["all"],
+          "properties": { "all": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/condition" } } }
+        },
+        {
+          "type": "object", "additionalProperties": false, "required": ["any"],
+          "properties": { "any": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/condition" } } }
+        },
+        {
+          "type": "object", "additionalProperties": false, "required": ["not"],
+          "properties": { "not": { "$ref": "#/$defs/condition" } }
+        },
+        {
+          "type": "object", "additionalProperties": false, "required": ["kind", "stepId"],
+          "properties": { "kind": { "enum": ["stepActive", "stepDone"] }, "stepId": { "$ref": "#/$defs/id" } }
+        },
+        {
+          "type": "object", "additionalProperties": false, "required": ["kind", "flag"],
+          "properties": { "kind": { "enum": ["flagSet", "flagNotSet"] }, "flag": { "$ref": "#/$defs/id" } }
+        },
+        {
+          "type": "object", "additionalProperties": false, "required": ["kind", "roleId"],
+          "properties": { "kind": { "const": "roleDead" }, "roleId": { "$ref": "#/$defs/id" } }
+        },
+        {
+          "type": "object", "additionalProperties": false, "required": ["kind"],
+          "properties": { "kind": { "enum": ["questStarted", "questEnded", "never"] } }
+        }
+      ]
+    },
+    "capabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contractVersion", "placeKinds", "poses", "propKinds", "lightingPresets", "limits"],
+      "properties": {
+        "contractVersion": { "const": "1.0" },
+        "placeKinds": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/placeKind" } },
+        "poses": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/pose" } },
+        "propKinds": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/propKind" } },
+        "lightingPresets": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/lightingPreset" } },
+        "limits": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["actors", "props"],
+          "properties": {
+            "actors": { "type": "integer", "minimum": 0, "maximum": 4 },
+            "props": { "type": "integer", "minimum": 0, "maximum": 16 }
+          }
+        }
+      }
+    }
+  }
+}

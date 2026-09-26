@@ -1567,5 +1567,22 @@
         "overhead": 0.1
       }
     }
+  },
+  "sceneTemplates": {
+    "q_exchange_rate": [
+      {
+        "sceneId": "sc3_collapse",
+        "purpose": "aftermath",
+        "description": "The dock worker who tipped Yara off lies on the intake floor of the Vitalis Spire Clinic, the ration chit still in his fist, a nurse on her knees beside him.",
+        "stagedBy": "s3_deliver",
+        "stagedWhen": "active",
+        "place": { "kind": "parcel-entry", "atStepId": "s3_deliver" },
+        "actors": [
+          { "actorId": "worker", "role": "victim", "pose": "wounded-crawl", "gender": "male" },
+          { "actorId": "nurse", "role": "bystander", "pose": "kneel-examine", "gender": "female", "nearActorId": "worker" }
+        ],
+        "props": []
+      }
+    ]
   }
 }

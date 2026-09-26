@@ -11,6 +11,7 @@ import { loadWorld, parseArgs, readJson, readParcels } from './CliInputs.js';
 import { readHandoffInput, writeEngineHandoff, type HandoffManifest } from './EngineHandoffWriter.js';
 import { recordedPorts, type Recording } from './RecordedPorts.js';
 import { pickupAssetRequests } from './PickupAssetRequests.js';
+import { checkSceneTemplates, sceneryHandoff, withTemplates } from './SceneTemplates.js';
 
 export interface MaterializeInput extends NormalizedWorldContext {
   recording: Recording;
@@ -21,7 +22,7 @@ export interface MaterializeInput extends NormalizedWorldContext {
   profile: string;
   /** Where the questlines file goes; the other bundle files land beside it. */
   outputPath: string;
-  /** Explicit bindings and host capabilities, checked at the handoff boundary. */
+  /** Explicit bindings, scenes and host capabilities, checked at the handoff boundary. */
   handoff?: unknown;
   /** The buildings the story may use; omitted, the whole city is open. */
   parcels?: readonly string[];
@@ -45,11 +46,16 @@ const USAGE =
 export const profileSimulation = (profile: string, context: NormalizedWorldContext): StubSimulation =>
   new StubSimulation({ seed: `materialize:${profile}`, ...context });
 
-/** Replays a recording against a concrete city and writes its bundle 1.1 and questlines.meta.json. */
+/**
+ * Replays a recording against a concrete city and writes its bundle 1.2 and
+ * questlines.meta.json. The scenes the questlines stage, built or written as
+ * templates, ship for a host that declares scenery.
+ */
 export async function materializeRecording(input: MaterializeInput): Promise<MaterializeResult> {
   const { recording, world, types, parcels, profile } = input;
   const log = input.log ?? ((line: string) => console.error(line));
   const outputPath = resolve(input.outputPath);
+  const sceneTemplates = checkSceneTemplates(recording.sceneTemplates ?? {});
   const result = await new QuestlineCreation().run({
     prompt: recording.prompt,
     world,
@@ -58,6 +64,7 @@ export async function materializeRecording(input: MaterializeInput): Promise<Mat
     ports: recordedPorts(recording, world),
     parcels,
     mechanics: recording.mechanics,
+    scenery: recording.scenery,
     warn: log,
   });
   // A place the open city cannot hold makes a questline unplayable: the main line stops the run, a side quest is left out by name.
@@ -84,7 +91,12 @@ export async function materializeRecording(input: MaterializeInput): Promise<Mat
     log(`side quest ${side.definition.id} blocked: ${reason}`);
   }
   new QuestlineSetValidator().validate(questlines);
-  const bundle = new EngineHandoff().assemble(questlines, pickupAssetRequests(questlines, input.handoff ?? {}, recording.missionItemTemplates));
+  const built = new Map([result.main, ...result.side].map((quest) => [quest.definition.id, quest.scenes]));
+  const unknown = Object.keys(sceneTemplates).filter((questId) => !questlines.some((definition) => definition.id === questId));
+  if (unknown.length > 0) log(`scene templates for questlines not in the bundle: ${unknown.join(', ')}`);
+  const stagings = new Map(questlines.map((definition) => [definition.id, withTemplates(built.get(definition.id) ?? [], sceneTemplates[definition.id])]));
+  const staged = sceneryHandoff(questlines, input.handoff ?? {}, stagings, recording.missionItemTemplates, log);
+  const bundle = new EngineHandoff().assemble(questlines, pickupAssetRequests(questlines, staged, recording.missionItemTemplates));
   const manifest = writeEngineHandoff(outputPath, bundle);
   const meta = {
     contractVersion: '1.0.0',

@@ -11,6 +11,11 @@ import type {
   QuestRole,
   QuestStep,
 } from '../flow/schema.js';
+import { HostCapabilityAudit } from '../handoff/HostCapabilityAudit.js';
+import { InvestigationAudit } from '../handoff/InvestigationAudit.js';
+import { SceneryAudit } from '../handoff/SceneryAudit.js';
+import { buildingOf, stagedScenery, stagingProblems, unstagedClues, type SceneStaging } from '../handoff/SceneStagings.js';
+import type { SceneryCapabilities } from '../handoff/schema.js';
 import { TARGET_FIELDS, targetLine } from './mechanics.js';
 import { MANIFEST_KINDS, manifestSize, type ManifestKind, type PlanManifest } from './PlanManifest.js';
 
@@ -31,11 +36,15 @@ const SINGULAR: Record<ManifestKind, string> = { roles: 'role', items: 'item', a
 
 export class QuestlineDraft {
   private def: QuestlineDefinition | undefined;
+  /** The scenes staged so far, one per sceneId; a staging again under its id replaces it. */
+  readonly scenes: SceneStaging[] = [];
 
+  /** `scenery`: what the host stages; with it every investigation step shows its clue on a staged scene. */
   constructor(
     private readonly manifest: PlanManifest,
     private readonly audit: DraftAudit,
     private readonly stamp: DraftStamp,
+    private readonly scenery?: SceneryCapabilities,
   ) {}
 
   create(args: { id: string; title: string; premise: string }): string {
@@ -117,6 +126,27 @@ export class QuestlineDraft {
     return `step ${rest.stepId} ${verb(replaced)}${entry === true ? ' (entry)' : ''}; ${this.status()}`;
   }
 
+  /**
+   * Stages a scene: what is wrong inside it, with the planned pieces it names,
+   * or with the building of a step already in, comes back before it enters.
+   */
+  stageScene(staging: SceneStaging): string {
+    const def = this.current();
+    const problems = stagingProblems(staging);
+    const at = def.steps.find((step) => step.stepId === staging.place.atStepId);
+    if (at !== undefined && buildingOf(def, at) === undefined) {
+      problems.push(`place.atStepId ${at.stepId} (${at.target.kind}) happens in no building; name a step that meets its people in a building, goes to or ends at one, or finds its item there, such as the investigation step whose clue the scene shows`);
+    }
+    for (const stepId of [staging.stagedBy, staging.place.atStepId, ...(staging.clearedBy !== undefined ? [staging.clearedBy] : [])]) {
+      this.reference('steps', stepId, problems);
+    }
+    for (const actor of staging.actors) if (actor.roleId !== undefined) this.reference('roles', actor.roleId, problems);
+    for (const prop of staging.props) if (prop.itemId !== undefined) this.reference('items', prop.itemId, problems);
+    if (problems.length > 0) throw new DraftError(`scene ${staging.sceneId} not staged: ${problems.join('; ')}`);
+    const replaced = put(this.scenes, staging, (held) => held.sceneId === staging.sceneId);
+    return `scene ${staging.sceneId} ${verb(replaced)}`;
+  }
+
   /** Planned pieces not yet added, by kind. */
   missing(): PlanManifest {
     const def = this.def;
@@ -153,10 +183,27 @@ export class QuestlineDraft {
     const def = this.stamp.definition(this.current());
     try {
       new FlowValidator().validate(def);
+      if (this.scenery !== undefined) this.checkScenes(def, this.scenery);
     } catch (error) {
+      if (error instanceof DraftError) throw error;
       throw new DraftError(error instanceof Error ? error.message : String(error));
     }
     return def;
+  }
+
+  /** Every clue shows on a staged scene, and every scene is one the handoff and the host accept for this questline. */
+  private checkScenes(def: QuestlineDefinition, scenery: SceneryCapabilities): void {
+    const unstaged = unstagedClues(def, this.scenes).map((step) => {
+      const { sceneId, evidenceId } = step.target as { sceneId: string; evidenceId: string };
+      return `${step.stepId} (scene ${sceneId}, clue ${evidenceId})`;
+    });
+    if (unstaged.length > 0) {
+      throw new DraftError(`investigation steps show their clue on no staged scene: ${unstaged.join(', ')}; call stage_scene with that sceneId and an evidence entry for each clue`);
+    }
+    const staged = stagedScenery(def, this.scenes);
+    new SceneryAudit().validate([def], staged.scenery, staged.investigations, new Set(staged.assets.map((asset) => asset.assetId)));
+    new InvestigationAudit().validate([def], staged.investigations, staged.scenery);
+    new HostCapabilityAudit().validateScenery(staged.scenery, scenery);
   }
 
   private current(): QuestlineDefinition {
@@ -198,7 +245,10 @@ export class QuestlineDraft {
     const absent = TARGET_FIELDS[step.target.kind].needs.filter((field) => target[field] === undefined);
     const missing = absent.length > 0 ? [`${absent.map((field) => `target.${field} is missing`).join('; ')} (${targetLine(step.target.kind)})`] : [];
     step.effects.forEach((effect, i) => {
-      if (effect.kind === 'simFlag' && effect.op === undefined) missing.push(`effects[${i}].op is missing`);
+      if (effect.kind !== 'simFlag') return;
+      for (const field of ['roleId', 'op'] as const) {
+        if (effect[field] === undefined) missing.push(`effects[${i}].${field} is missing (simFlag takes roleId, the role it happens to, and op)`);
+      }
     });
     return missing;
   }
@@ -217,6 +267,9 @@ export class QuestlineDraft {
       t.subjectRoleIds.forEach((roleId) => this.reference('roles', roleId, problems));
     }
     if (t.kind === 'rescue' || t.kind === 'escort') this.reference('roles', t.roleId, problems);
+    if (t.kind === 'escort' && t.mode === 'lead-player' && 'districtId' in t.to) {
+      problems.push(`a lead-player escort walks the player to one place, a building, station or stop, not district ${t.to.districtId}`);
+    }
     if (t.kind === 'access') this.reference('items', t.credentialItemId, problems);
     if (t.kind === 'transportation') {
       t.passengerRoleIds.forEach((roleId) => this.reference('roles', roleId, problems));

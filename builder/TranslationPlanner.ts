@@ -1,6 +1,7 @@
 /** Writes a prose plan and validates its closing ID manifest, with one repair attempt. */
 
 import type { StepKind } from '../flow/schema.js';
+import type { SceneryCapabilities } from '../handoff/schema.js';
 import { promptLoader } from '../prompts.js';
 import type { LLMPort } from '../ports/llm.js';
 import { completeWithRepair } from '../story/repairLoop.js';
@@ -18,6 +19,8 @@ export interface PlanInput {
   llm: LLMPort;
   /** The step kinds the host can play; omitted, every kind. The plan sees only their catalog sections. */
   mechanics?: readonly StepKind[];
+  /** The scenery the host stages; with it the plan says what each scene the story has leaves in its place. */
+  scenery?: SceneryCapabilities;
 }
 
 export interface PlanResult {
@@ -38,7 +41,10 @@ export class TranslationPlanner {
     }).trim();
     const { value, raw } = await completeWithRepair({
       llm: input.llm,
-      system: [prompt('translate-plan.md', mechanicVars(kinds)), stepCatalog(kinds)].join('\n\n'),
+      system: [
+        prompt('translate-plan.md', { ...mechanicVars(kinds), staging: input.scenery !== undefined ? prompt('staging.md#plan') : '' }),
+        stepCatalog(kinds),
+      ].join('\n\n'),
       prompt: body,
       parse: parsePlanManifest,
       repair: (problems) => prompt('translate-plan-repair.md', { shortfalls: problems.map((p) => `- ${p}`).join('\n') }),

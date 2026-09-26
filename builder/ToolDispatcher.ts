@@ -6,6 +6,8 @@
 
 import type { AgentTool, AgentToolCall } from '../ports/llm.js';
 import { STEP_KINDS, type QuestlineDefinition, type QuestStep, type StepKind } from '../flow/schema.js';
+import type { SceneStaging } from '../handoff/SceneStagings.js';
+import type { SceneryCapabilities } from '../handoff/schema.js';
 import { promptLoader } from '../prompts.js';
 import { toolInputProblems } from './checkToolInput.js';
 import { isStepKind } from './mechanics.js';
@@ -27,15 +29,16 @@ export interface DispatchOutcome {
 }
 
 export class ToolDispatcher {
-  /** The tools the agent is offered, rendered for the playable kinds. */
+  /** The tools the agent is offered, rendered for the playable kinds and the scenery the host stages. */
   readonly tools: AgentTool[];
   private readonly refused = new Set<string>();
 
   constructor(
     private readonly draft: QuestlineDraft,
     private readonly kinds: readonly StepKind[] = STEP_KINDS,
+    scenery?: SceneryCapabilities,
   ) {
-    this.tools = builderTools(kinds);
+    this.tools = builderTools(kinds, scenery);
   }
 
   /**
@@ -102,6 +105,8 @@ export class ToolDispatcher {
         } as unknown as QuestStep & { entry?: boolean };
         return { result: this.draft.addStep(step) };
       }
+      case 'stage_scene':
+        return { result: this.draft.stageScene(input as unknown as SceneStaging) };
       case 'finish_questline': {
         const finished = this.draft.finish();
         return { result: `questline ${finished.id} is valid and complete`, finished };

@@ -5,6 +5,8 @@
 
 import { CUE_LIST } from '../flow/cues.js';
 import { STEP_KINDS, type StepKind } from '../flow/schema.js';
+import { ROOM_KINDS, SCENE_PURPOSES, SCENE_ROLES, SCENE_ZONES } from '../handoff/SceneStagings.js';
+import type { SceneryCapabilities } from '../handoff/schema.js';
 import type { AgentTool } from '../ports/llm.js';
 import { promptLoader } from '../prompts.js';
 import { mechanicVars, TARGET_FIELDS } from './mechanics.js';
@@ -50,45 +52,54 @@ const place = {
 const id = { type: 'string' };
 const ids = { type: 'array', items: id };
 
-/** Every target field a kind can name; a tool set offers the ones its kinds use. */
+/**
+ * Every target field a kind can name; a tool set offers the ones its kinds use.
+ * They are declared in the one order every kind's target line names them
+ * (a place after the ids it is the place of, the completion flag last), so a
+ * model writing the target along the schema meets each field where its line
+ * puts it and never passes one it still needs.
+ */
 const TARGET_PROPERTIES: Record<string, object> = {
-  place,
-  districtId: id,
   roleId: id,
-  atParcelId: id,
   roleIds: { ...ids, minItems: 2, maxItems: 2 },
+  atParcelId: id,
+  role: id,
   itemId: id,
   fromRoleId: id,
-  role: id,
+  districtId: id,
   sceneId: id,
   evidenceId: id,
   evidenceItemId: id,
   subjectRoleIds: ids,
-  completionFlag: id,
   releaseTargetId: id,
-  routeId: id,
-  mode: { enum: ['follow-player', 'lead-player', 'ride-hail', 'public-transit', 'vehicle', 'animal', 'aircraft'] },
-  from: place,
-  to: place,
   accessPointId: id,
   credentialItemId: id,
   targetId: id,
+  place,
+  routeId: id,
   journeyId: id,
+  mode: { enum: ['follow-player', 'lead-player', 'ride-hail', 'public-transit', 'vehicle', 'animal', 'aircraft'] },
+  from: place,
+  to: place,
   passengerRoleIds: ids,
   cargoItemIds: ids,
+  completionFlag: id,
 };
+
+/** A tool section whose `- <id>:` lines keep only the ids offered. */
+const offered = (file: string, keep: readonly string[], vars: Record<string, string | number> = {}): string =>
+  prompt(file, vars).split('\n').filter((line) => {
+    const named = /^- ([\w-]+):/.exec(line)?.[1];
+    return named === undefined || keep.includes(named);
+  }).join('\n').trim();
 
 /** The target schema for these kinds: their enum, their fields, and the description lines that name them. */
 function target(kinds: readonly StepKind[]): object {
   const fields = new Set(kinds.flatMap((kind) => [...TARGET_FIELDS[kind].needs, ...(TARGET_FIELDS[kind].may ?? [])]));
-  const lines = prompt('tools/add_step.md#target').split('\n').filter((line) => {
-    const named = /^- (\w+):/.exec(line)?.[1];
-    return named === undefined || kinds.includes(named as StepKind);
-  });
   const authored = kinds.some((kind) => TARGET_FIELDS[kind].needs.includes('completionFlag'));
   return {
     type: 'object',
-    description: [...lines, ...(authored ? ['', prompt('tools/add_step.md#authored-ids')] : [])].join('\n').trim(),
+    description: [offered('tools/add_step.md#target', kinds), ...(authored ? ['', prompt('tools/add_step.md#authored-ids')] : [])].join('\n'),
     properties: {
       kind: { enum: [...kinds] },
       ...Object.fromEntries(Object.entries(TARGET_PROPERTIES).filter(([name]) => fields.has(name))),
@@ -97,8 +108,77 @@ function target(kinds: readonly StepKind[]): object {
   };
 }
 
-/** The builder's tools for a questline that may use these step kinds. */
-export function builderTools(kinds: readonly StepKind[] = STEP_KINDS): AgentTool[] {
+/**
+ * The stage_scene tool for the scenery a host declares: its place kinds, poses,
+ * prop kinds and limits are the whole vocabulary the agent is offered.
+ */
+export function stageSceneTool(scenery: SceneryCapabilities): AgentTool {
+  const text = (section: string) => prompt(`tools/stage_scene.md#${section}`).trim();
+  const assets = scenery.propKinds.includes('mission-asset');
+  return {
+    name: 'stage_scene',
+    description: text('description'),
+    inputSchema: {
+      type: 'object',
+      properties: {
+        description: { type: 'string', description: text('narrative') },
+        sceneId: { type: 'string', description: text('sceneId') },
+        purpose: { enum: [...SCENE_PURPOSES], description: text('purpose') },
+        stagedBy: { type: 'string', description: text('stagedBy') },
+        stagedWhen: { enum: ['active', 'done'], description: text('stagedWhen') },
+        place: {
+          type: 'object',
+          description: offered('tools/stage_scene.md#place', scenery.placeKinds),
+          properties: {
+            kind: { enum: [...scenery.placeKinds] },
+            atStepId: id,
+            roomKinds: { type: 'array', items: { enum: [...ROOM_KINDS] }, description: text('roomKinds') },
+          },
+          required: ['kind', 'atStepId'],
+        },
+        actors: {
+          type: 'array',
+          maxItems: scenery.limits.actors,
+          description: offered('tools/stage_scene.md#actors', scenery.poses, { actors: scenery.limits.actors }),
+          items: {
+            type: 'object',
+            properties: {
+              actorId: id,
+              role: { enum: [...SCENE_ROLES] },
+              pose: { enum: [...scenery.poses] },
+              gender: { enum: ['male', 'female'] },
+              roleId: id,
+              zone: { enum: [...SCENE_ZONES] },
+              nearActorId: id,
+            },
+            required: ['actorId', 'role', 'pose'],
+          },
+        },
+        props: {
+          type: 'array',
+          maxItems: scenery.limits.props,
+          description: offered('tools/stage_scene.md#props', scenery.propKinds, { props: scenery.limits.props }),
+          items: {
+            type: 'object',
+            properties: { propId: id, kind: { enum: [...scenery.propKinds] }, ...(assets ? { itemId: id } : {}), nearActorId: id, nearPropId: id },
+            required: ['propId', 'kind'],
+          },
+        },
+        evidence: {
+          type: 'array',
+          description: text('evidence'),
+          items: { type: 'object', properties: { evidenceId: id, elementId: id }, required: ['evidenceId', 'elementId'] },
+        },
+        clearedBy: { type: 'string', description: text('clearedBy') },
+        lasting: { type: 'boolean', description: text('lasting') },
+      },
+      required: ['description', 'sceneId', 'purpose', 'stagedBy', 'stagedWhen', 'place', 'actors', 'props'],
+    },
+  };
+}
+
+/** The builder's tools for a questline that may use these step kinds, and stage scenes when the host declares scenery. */
+export function builderTools(kinds: readonly StepKind[] = STEP_KINDS, scenery?: SceneryCapabilities): AgentTool[] {
   const vars = mechanicVars(kinds);
   return [
     {
@@ -261,6 +341,7 @@ export function builderTools(kinds: readonly StepKind[] = STEP_KINDS): AgentTool
         required: ['narrative', 'stepId', 'actId', 'target', 'next'],
       },
     },
+    ...(scenery !== undefined ? [stageSceneTool(scenery)] : []),
     {
       name: 'finish_questline',
       description: prompt('tools/finish_questline.md').trim(),

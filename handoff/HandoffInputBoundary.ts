@@ -8,9 +8,10 @@ import items from './schema/mission-item-bindings.schema.json' with { type: 'jso
 import mechanics from './schema/mechanic-target-bindings.schema.json' with { type: 'json' };
 import capabilities from './schema/host-capabilities.schema.json' with { type: 'json' };
 import investigations from './schema/investigation-binding-slice.schema.json' with { type: 'json' };
+import scenery from './schema/scenery-binding-slice.schema.json' with { type: 'json' };
 
 const validate = new Ajv2020({ allErrors: true, strict: true,
-  schemas: [assets, asset, items, mechanics, capabilities, investigations],
+  schemas: [assets, asset, items, mechanics, capabilities, investigations, scenery],
 }).compile<HandoffInput>(inputSchema);
 
 export class HandoffInputBoundary {

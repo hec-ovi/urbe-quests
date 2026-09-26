@@ -1,0 +1,1 @@
+The city can show what a scene leaves behind where it happened: a body on a floor or a pavement, blood beside it, an object left there, people kneeling over it or keeping watch. When the story has a death, a crime or an aftermath the protagonist walks into, write that place as it is found. Never add one the story does not call for.

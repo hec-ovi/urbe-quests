@@ -10,5 +10,6 @@ How the pieces work:
 - Facts are what a role can talk about. A fact with a gateFlag stays unknown to everyone until the flag is set, so reveals happen exactly when the story says.
 - Steps connect through next edges into a flow with acts, splits and one or more endings. Use exclusive branching where the story diverges for good. A step with no edges is terminal and names its ending.
 - The rigid rules are handled outside your control: a dead NPC gives no quests, schedule windows come from real routines, every transition is code. You declare structure only. There are no timers and no failure states.
+{{staging}}
 
 Pick scenarios that fit this world's era and theme; the step and artifact catalogs show the range. Keep the flow honest to the arc: the manifest's steps, no padding. Several tool calls in one answer are welcome. When finish_questline reports a problem, fix it (add what is missing, or call the add tool again with the same id to replace the piece at fault) and finish again.

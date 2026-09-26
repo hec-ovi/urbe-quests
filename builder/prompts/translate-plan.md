@@ -18,6 +18,8 @@ steps: s_ask (talk), s_fetch (pickup), s_pay (deliver), s_burn (deliver)
 
 Write "items: none" when the story turns on no artifact. The builder may add facts freely; everything else it adds must be in this manifest, so a beat that is not listed here is not built.
 
+{{staging}}
+
 A main questline has at least 6 steps across at least 2 acts. A side situation has at least 4 steps. Add every step and act the arc needs; there is no upper count.
 
 Expand and adapt; never contradict the story. Where a beat cannot be expressed with the vocabulary, drop the beat rather than invent a mechanic. Every step names a person who wants it: an objective nobody wants is an errand, and this story has no errands.

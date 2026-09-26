@@ -4,6 +4,8 @@ import { QuestError } from '../errors.js';
 import { promptLoader } from '../prompts.js';
 import type { AgentPort, AgentTurn } from '../ports/llm.js';
 import type { QuestlineDefinition, ResolvedCast, StepKind } from '../flow/schema.js';
+import type { SceneStaging } from '../handoff/SceneStagings.js';
+import type { SceneryCapabilities } from '../handoff/schema.js';
 import type { NamedWorld, NPCTypeSet } from '../world/types/named-world.js';
 import type { SimulationPort } from '../world/types/simulation.js';
 import { CastResolver } from './CastResolver.js';
@@ -30,6 +32,8 @@ export interface BuildInput {
   parcels?: readonly string[];
   /** The step kinds the host can play; omitted, every kind. A step of another kind is refused. */
   mechanics?: readonly StepKind[];
+  /** The scenery the host stages: the agent gets stage_scene, and every investigation step shows its clue on a staged scene. */
+  scenery?: SceneryCapabilities;
   /** Simulation time used to resolve on-duty cast; defaults to Tuesday 10:00. */
   referenceTimeMin?: number;
   /** Overrides the budget the plan sets (two rounds per planned piece plus eight). */
@@ -40,6 +44,8 @@ export interface BuildInput {
 export interface BuildResult {
   definition: QuestlineDefinition;
   cast: ResolvedCast;
+  /** The scenes it stages, in the order they were first staged. */
+  scenes: SceneStaging[];
 }
 
 /** Tuesday 10:00, when a story names no hour of its own. */
@@ -55,11 +61,12 @@ export class QuestlineBuilder {
   async build(input: BuildInput): Promise<BuildResult> {
     const kinds = playableKinds(input.mechanics);
     const vars = mechanicVars(kinds);
-    const system = [prompt('builder-system.md', vars), stepCatalog(kinds), prompt('artifact-catalog.md', vars)].join('\n\n');
+    const staging = input.scenery !== undefined ? prompt('staging.md#build') : '';
+    const system = [prompt('builder-system.md', { ...vars, staging }), stepCatalog(kinds), prompt('artifact-catalog.md', vars)].join('\n\n');
     const userPrompt = this.renderPrompt(input);
     const venues = new StoryVenues(input.world, input.types, input.parcels);
-    const draft = new QuestlineDraft(input.manifest, new WorldTargetAudit(input.world, input.types), venues);
-    const dispatcher = new ToolDispatcher(draft, kinds);
+    const draft = new QuestlineDraft(input.manifest, new WorldTargetAudit(input.world, input.types), venues, input.scenery);
+    const dispatcher = new ToolDispatcher(draft, kinds, input.scenery);
     const transcript: AgentTurn[] = [];
     const title = input.assignment.title;
     const maxRounds = input.maxRounds ?? roundBudget(manifestSize(input.manifest));
@@ -98,7 +105,7 @@ export class QuestlineBuilder {
     // A questline nobody can staff is not a questline to hand on: the build says so here.
     if (result.blocked !== undefined) throw new QuestError('E_CAST', result.blocked.reason, result.blocked);
     // Where a step happens is decided here, while it is built, so the shipped questline is the one truth.
-    return { definition: venues.pin(definition, new Map(Object.entries(result.posts))), cast: result.cast };
+    return { definition: venues.pin(definition, new Map(Object.entries(result.posts))), cast: result.cast, scenes: draft.scenes };
   }
 
   private nudgeLine(draft: QuestlineDraft): string {

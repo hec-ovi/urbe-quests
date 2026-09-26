@@ -14,6 +14,8 @@ Size: this is a full story, not a synopsis. At least {{characters}} named charac
 
 Ground everything in the named places you are given, used the way locals would say them. Nothing in the story may depend on knowledge the city does not contain. Never mention system ids, coordinates or numbers about the city.
 
+{{staging}}
+
 Format the answer with exactly these headings, your own words wherever a heading shows <angle brackets>:
 
 # <the story's title>

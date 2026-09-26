@@ -10,11 +10,12 @@ export const HANDOFF_FILES = Object.freeze({
   mechanicTargetBindings: 'mechanic-target-bindings.json',
   missionAssetRequests: 'mission-assets.json',
   missionItemBindings: 'mission-item-bindings.json',
+  scenery: 'scenery.json',
   manifest: 'quest-bundle.json',
 });
 
 export interface HandoffManifest {
-  contractVersion: '1.1';
+  contractVersion: '1.2';
   files: {
     hostCapabilities: string;
     questlines: string;
@@ -23,6 +24,7 @@ export interface HandoffManifest {
     mechanicTargetBindings: string;
     missionAssetRequests: string;
     missionItemBindings: string;
+    scenery: string;
   };
   counts: {
     questlines: number;
@@ -31,6 +33,7 @@ export interface HandoffManifest {
     mechanicTargetBindings: number;
     missionAssetRequests: number;
     missionItemBindings: number;
+    scenery: number;
   };
 }
 
@@ -44,7 +47,7 @@ export function writeEngineHandoff(questlinesPath: string, bundle: HandoffBundle
   const outputDir = dirname(outputPath);
   mkdirSync(outputDir, { recursive: true });
   const manifest: HandoffManifest = {
-    contractVersion: '1.1',
+    contractVersion: '1.2',
     files: {
       hostCapabilities: HANDOFF_FILES.hostCapabilities,
       questlines: basename(outputPath),
@@ -53,6 +56,7 @@ export function writeEngineHandoff(questlinesPath: string, bundle: HandoffBundle
       mechanicTargetBindings: HANDOFF_FILES.mechanicTargetBindings,
       missionAssetRequests: HANDOFF_FILES.missionAssetRequests,
       missionItemBindings: HANDOFF_FILES.missionItemBindings,
+      scenery: HANDOFF_FILES.scenery,
     },
     counts: {
       questlines: bundle.questlines.length,
@@ -61,6 +65,7 @@ export function writeEngineHandoff(questlinesPath: string, bundle: HandoffBundle
       mechanicTargetBindings: bundle.mechanicTargetBindings.length,
       missionAssetRequests: bundle.missionAssetRequests.length,
       missionItemBindings: bundle.missionItemBindings.length,
+      scenery: bundle.scenery.length,
     },
   };
   writeJson(resolve(outputDir, HANDOFF_FILES.hostCapabilities), bundle.hostCapabilities);
@@ -70,6 +75,7 @@ export function writeEngineHandoff(questlinesPath: string, bundle: HandoffBundle
   writeJson(resolve(outputDir, HANDOFF_FILES.mechanicTargetBindings), bundle.mechanicTargetBindings);
   writeJson(resolve(outputDir, HANDOFF_FILES.missionAssetRequests), bundle.missionAssetRequests);
   writeJson(resolve(outputDir, HANDOFF_FILES.missionItemBindings), bundle.missionItemBindings);
+  writeJson(resolve(outputDir, HANDOFF_FILES.scenery), bundle.scenery);
   writeJson(resolve(outputDir, HANDOFF_FILES.manifest), manifest);
   return manifest;
 }

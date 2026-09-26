@@ -6,11 +6,11 @@
   "additionalProperties": false,
   "required": ["contractVersion", "files", "counts"],
   "properties": {
-    "contractVersion": { "const": "1.1" },
+    "contractVersion": { "const": "1.2" },
     "files": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["questlines", "objectives", "investigations", "mechanicTargetBindings", "missionAssetRequests", "missionItemBindings", "hostCapabilities"],
+      "required": ["questlines", "objectives", "investigations", "mechanicTargetBindings", "missionAssetRequests", "missionItemBindings", "scenery", "hostCapabilities"],
       "properties": {
         "questlines": { "$ref": "#/$defs/file" },
         "objectives": { "const": "objectives.json" },
@@ -18,20 +18,22 @@
         "mechanicTargetBindings": { "const": "mechanic-target-bindings.json" },
         "missionAssetRequests": { "const": "mission-assets.json" },
         "missionItemBindings": { "const": "mission-item-bindings.json" },
+        "scenery": { "const": "scenery.json" },
         "hostCapabilities": { "const": "host-capabilities.json" }
       }
     },
     "counts": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["questlines", "objectives", "investigations", "mechanicTargetBindings", "missionAssetRequests", "missionItemBindings"],
+      "required": ["questlines", "objectives", "investigations", "mechanicTargetBindings", "missionAssetRequests", "missionItemBindings", "scenery"],
       "properties": {
         "questlines": { "$ref": "#/$defs/count" },
         "objectives": { "$ref": "#/$defs/count" },
         "investigations": { "$ref": "#/$defs/count" },
         "mechanicTargetBindings": { "$ref": "#/$defs/count" },
         "missionAssetRequests": { "$ref": "#/$defs/count" },
-        "missionItemBindings": { "$ref": "#/$defs/count" }
+        "missionItemBindings": { "$ref": "#/$defs/count" },
+        "scenery": { "$ref": "#/$defs/count" }
       }
     }
   },

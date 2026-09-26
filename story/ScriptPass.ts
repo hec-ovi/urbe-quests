@@ -15,6 +15,8 @@ export interface ScriptPassInput {
   /** The creation prompt ("create a dark cynical cyberpunk story"); defaults to the world's theme. */
   prompt?: string;
   minimums?: Partial<ScriptMinimums>;
+  /** The host stands what a scene leaves in a place: the story may write such places as they are found. */
+  stagesScenes?: boolean;
 }
 
 export const DEFAULT_SCRIPT_MINIMUMS: ScriptMinimums = { characters: 5, passagesPerMovement: 2 };
@@ -33,7 +35,7 @@ export class ScriptPass {
 
     const { value, raw } = await completeWithRepair({
       llm: input.llm,
-      system: prompt('script-pass.md', minimums),
+      system: prompt('script-pass.md', { ...minimums, staging: input.stagesScenes === true ? prompt('staging.md') : '' }),
       prompt: brief,
       parse: (text) => parseScript(text, creationPrompt, minimums),
       repair: (problems) => prompt('script-repair.md', { shortfalls: problems.map((p) => `- ${p}`).join('\n') }),

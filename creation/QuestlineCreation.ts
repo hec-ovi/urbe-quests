@@ -10,6 +10,8 @@ import type { QuestAssignment } from '../builder/schema.js';
 import { playableKinds } from '../builder/mechanics.js';
 import { QuestlineTranslator } from '../builder/QuestlineTranslator.js';
 import { QuestError } from '../errors.js';
+import type { StepKind } from '../flow/schema.js';
+import type { SceneryCapabilities } from '../handoff/schema.js';
 import { ScriptPass } from '../story/ScriptPass.js';
 import { SituationsPass } from '../story/SituationsPass.js';
 import type { SituationsPassResult } from '../story/schema.js';
@@ -31,20 +33,35 @@ export function openParcels(world: NamedWorld, parcels?: readonly string[]): rea
   return parcels;
 }
 
+/**
+ * The step kinds a host plays, as given: omitted, every kind. A list naming no
+ * real kind is a caller error, and so is one naming investigation from a host
+ * that stages no scenery: a story shows its clues on the scenes it stages.
+ */
+export function hostKinds(mechanics: readonly string[] | undefined, scenery: SceneryCapabilities | undefined): readonly StepKind[] | undefined {
+  if (mechanics === undefined) return undefined;
+  const kinds = playableKinds(mechanics);
+  if (kinds.includes('investigation') && scenery === undefined) {
+    throw new Error('investigation needs the host scenery capability: a story shows its clues on the scenes it stages');
+  }
+  return kinds;
+}
+
 export class QuestlineCreation {
   async run(input: CreationInput): Promise<CreationResult> {
-    const { world, types, sim, ports, referenceTimeMin, maxRounds } = input;
-    // An allowlist naming no real kind, or open parcels the world lacks, fail here, before any model is asked.
-    const mechanics = input.mechanics === undefined ? undefined : playableKinds(input.mechanics);
+    const { world, types, sim, ports, scenery, referenceTimeMin, maxRounds } = input;
+    // An allowlist naming no real kind or an unstageable one, or open parcels the world lacks, fail here, before any model is asked.
+    const mechanics = hostKinds(input.mechanics, scenery);
     const parcels = openParcels(world, input.parcels);
     const progress = (event: CreationProgress) => input.progress?.(event);
-    const script = await new ScriptPass().run({ world, types, llm: ports.script, prompt: input.prompt, minimums: input.minimums?.script });
+    const stagesScenes = scenery !== undefined;
+    const script = await new ScriptPass().run({ world, types, llm: ports.script, prompt: input.prompt, minimums: input.minimums?.script, stagesScenes });
     progress({ kind: 'script', result: script });
     const assignments = new Assignments(script.script);
     const translator = new QuestlineTranslator();
     const translate = async (questline: 'main' | string, assignment: QuestAssignment) => {
       const result = await translator.translate({
-        assignment, world, types, sim, parcels, mechanics, referenceTimeMin, maxRounds,
+        assignment, world, types, sim, parcels, mechanics, scenery, referenceTimeMin, maxRounds,
         ports: { plan: ports.plan, build: ports.build },
         planned: (plan) => progress({ kind: 'plan', questline, result: plan }),
         progress: (build) => progress({ kind: 'build', questline, build }),
@@ -56,7 +73,7 @@ export class QuestlineCreation {
     /** A situations text that cannot be read costs the side quests, not the run: the main line is the product. */
     const runSituations = async (): Promise<SituationsPassResult> => {
       try {
-        return await new SituationsPass().run({ script: script.script, world, types, llm: ports.situations, minimums: input.minimums?.situations });
+        return await new SituationsPass().run({ script: script.script, world, types, llm: ports.situations, minimums: input.minimums?.situations, stagesScenes });
       } catch (error) {
         if (!(error instanceof QuestError) || error.code !== 'E_LLM') throw error;
         input.warn?.(`every side quest dropped: ${error.message}`);
