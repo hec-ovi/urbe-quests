@@ -30,7 +30,7 @@ Agent-facing surface: `builderTools(kinds)` ([tools.ts](tools.ts)) with narrativ
 ## Errors
 - `E_LLM`: no usable manifest after the repair round (detail: stage, raw, problems), the agent answered in words instead of tools more than three times (each such reply is answered with [prompts/builder-nudge.md](prompts/builder-nudge.md) naming what is still missing, and the loop goes on), or the round budget ran out; the message carries the committed count.
 - `E_CAST`: a role has no castable NPC. The build raises it with the `CastBlock` in `detail`; a published questline carries the same reason in `blocked` instead.
-- `E_HANDOFF`: a staged scene no longer stands with its clue steps once the questline is pinned where its cast works.
+- `E_HANDOFF`: a staged scene that cannot stand with its clue steps where the pinned questline puts them.
 Other `SimulationError`s pass through.
 
 ## Invariants
