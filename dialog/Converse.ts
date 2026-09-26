@@ -134,7 +134,7 @@ function wellFormed(call: ChatToolCall): ChatToolCall {
 }
 
 function answer(call: ChatToolCall, options: OfferOptions | undefined): ChatMessage {
-  const result = offerOf(call, options) ? 'offers.md#accepted' : 'offers.md#refused';
+  const result = offerOf(call, options) ? 'offers.md#proposed' : 'offers.md#refused';
   return { role: 'tool', tool_call_id: call.id, content: prompts(result) };
 }
 

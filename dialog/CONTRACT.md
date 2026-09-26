@@ -47,7 +47,7 @@ The context retains its actual `npcId` and optionally carries `characterName { g
 - Closed knowledge: context text contains only world rules, type boilerplate, simulation background, attached personas, unlocked quest facts, this NPC's active wants and lived endings, the guided place and its host notes, and recorded conversation. Scope is decided by runtime state and the cast mapping, never by the model; gated facts with unset flags and other NPCs' wants never appear.
 - Shared segments are memoized per service (the cache for common instances) and stable per world/type.
 - The LLM summarizes memory, writes replies and may make offers; code selects context facts and which offers exist. Model grounding still requires evaluation with the selected provider.
-- Prompts and tool descriptions live in [prompts/](prompts/): dialog-system.md, background.md, context.md, summarize.md, reply.md, offers.md. reply.md lists the cues from `CUES`. No output caps.
+- Prompts and tool descriptions live in [prompts/](prompts/): dialog-system.md, background.md, context.md, summarize.md, reply.md, offers.md. reply.md lists the cues from `CUES`. A running host reads each section from `dist` on every call, so section ids are part of the interface and keep their names. No output caps.
 
 ## Depends on
 - ../world (types, SimulationPort, venue words), ../flow (runtime, steps, facts, cues), ../ports (LLMPort, StreamingLLMPort, Chat Completions shapes, model markup)

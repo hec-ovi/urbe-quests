@@ -15,7 +15,7 @@ Walk the player to the place they asked for and show it to them, because you agr
 
 The id of the place the player asked to be taken to.
 
-## accepted
+## proposed
 
 You go with the player from here. Say your reply to them aloud, in speech only.
 
