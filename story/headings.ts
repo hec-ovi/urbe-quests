@@ -24,6 +24,9 @@ export function titleOf(text: string): string {
   return /^#(?!#)\s*(.+)$/m.exec(text)?.[1]?.trim() ?? '';
 }
 
+/** A title copied from the format instead of written: `<...>`, or the bare word Title. */
+export const isPlaceholderTitle = (title: string): boolean => /^<.*>$/.test(title) || /^(situation )?title$/i.test(title);
+
 /** Case-insensitive lookup of a section by heading. */
 export function sectionNamed(sections: Section[], heading: string): Section | undefined {
   return sections.find((s) => s.heading.toLowerCase() === heading);

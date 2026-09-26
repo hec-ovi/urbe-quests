@@ -1,6 +1,7 @@
 /** Questline creation: one prompt in, the story, its questline and its side quests out. */
 
 import type { BuildProgress, TranslationResult } from '../builder/schema.js';
+import type { StepKind } from '../flow/schema.js';
 import type { AgentPort, LLMPort } from '../ports/llm.js';
 import type { ScriptMinimums, ScriptPassResult, SituationMinimums, SituationsPassResult } from '../story/schema.js';
 import type { NamedWorld, NPCTypeSet } from '../world/types/named-world.js';
@@ -28,6 +29,11 @@ export interface CreationInput {
   minimums?: { script?: Partial<ScriptMinimums>; situations?: Partial<SituationMinimums> };
   /** The parcels the story may use, when the host opens only some of the city; every place lands inside it. */
   parcels?: readonly string[];
+  /**
+   * The step kinds the host can play, when it cannot play all of them. The planner and builder see only these;
+   * a step of another kind is refused back to the builder. Omitted, every kind.
+   */
+  mechanics?: readonly StepKind[];
   referenceTimeMin?: number;
   maxRounds?: number;
   /** Told about a side quest that failed to build and was dropped. */

@@ -10,8 +10,8 @@ import type {
   QuestlineDefinition,
   QuestRole,
   QuestStep,
-  StepTarget,
 } from '../flow/schema.js';
+import { TARGET_FIELDS, targetLine } from './mechanics.js';
 import { MANIFEST_KINDS, manifestSize, type ManifestKind, type PlanManifest } from './PlanManifest.js';
 
 export interface DraftAudit {
@@ -28,26 +28,6 @@ export interface DraftStamp {
 export class DraftError extends Error {}
 
 const SINGULAR: Record<ManifestKind, string> = { roles: 'role', items: 'item', acts: 'act', endings: 'ending', steps: 'step' };
-
-/** The fields each target kind needs; a target missing one is refused before any check reads it. */
-const TARGET_FIELDS: Record<StepTarget['kind'], string[]> = {
-  goto: ['place'],
-  observe: ['districtId'],
-  talk: ['roleId'],
-  listen: ['roleIds', 'atParcelId'],
-  pickup: ['itemId'],
-  deliver: ['itemId', 'place'],
-  steal: ['itemId', 'fromRoleId'],
-  assassinate: ['roleId'],
-  work: ['atParcelId', 'role'],
-  investigation: ['sceneId', 'evidenceId', 'evidenceItemId', 'subjectRoleIds', 'place', 'completionFlag'],
-  rescue: ['roleId', 'releaseTargetId', 'place', 'completionFlag'],
-  escort: ['roleId', 'routeId', 'mode', 'from', 'to', 'completionFlag'],
-  access: ['accessPointId', 'credentialItemId', 'place', 'completionFlag'],
-  hacking: ['targetId', 'place', 'completionFlag'],
-  sabotage: ['targetId', 'place', 'completionFlag'],
-  transportation: ['journeyId', 'mode', 'from', 'to', 'passengerRoleIds', 'cargoItemIds', 'completionFlag'],
-};
 
 export class QuestlineDraft {
   private def: QuestlineDefinition | undefined;
@@ -209,10 +189,14 @@ export class QuestlineDraft {
     return missing.length > 0 ? `${planned}; not yet added: ${missing.join(', ')}` : planned;
   }
 
-  /** Fields the step's target and effects need before any other check can read them. */
+  /**
+   * Fields the step's target and effects need before any other check can read them; a target missing one is
+   * refused first, with what its kind takes.
+   */
   private missingFields(step: QuestStep): string[] {
     const target = step.target as unknown as Record<string, unknown>;
-    const missing = TARGET_FIELDS[step.target.kind].filter((field) => target[field] === undefined).map((field) => `target.${field} is missing`);
+    const absent = TARGET_FIELDS[step.target.kind].needs.filter((field) => target[field] === undefined);
+    const missing = absent.length > 0 ? [`${absent.map((field) => `target.${field} is missing`).join('; ')} (${targetLine(step.target.kind)})`] : [];
     step.effects.forEach((effect, i) => {
       if (effect.kind === 'simFlag' && effect.op === undefined) missing.push(`effects[${i}].op is missing`);
     });

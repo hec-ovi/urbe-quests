@@ -44,10 +44,25 @@ describe('sample model client through its text and agent ports', () => {
       { role: 'tool', results: result.calls.map(call => ({ tool: call.tool, result: 'accepted' })) },
     ] })).resolves.toEqual({ kind: 'done', text: 'Complete.' });
     const sent = JSON.parse(String(vi.mocked(fetch).mock.calls[1]![1]?.body));
+    // llama.cpp gives one tool call per turn unless asked for more.
+    expect(sent.parallel_tool_calls).toBe(true);
     expect(sent.messages.slice(-2)).toEqual([
       { role: 'tool', tool_call_id: 'call_0_0', content: 'accepted' },
       { role: 'tool', tool_call_id: 'call_0_1', content: 'accepted' },
     ]);
+  });
+
+  it('treats an empty LLM_MODEL or LLM_API_KEY as unset: the served model is named and no key is sent', async () => {
+    vi.stubEnv('LLM_MODEL', '');
+    vi.stubEnv('LLM_API_KEY', '');
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(JSON.stringify({ data: [{ id: 'served-model' }] })));
+    try {
+      expect((await OpenAICompatibleClient.connect()).model).toBe('served-model');
+      expect(String(vi.mocked(fetch).mock.calls[0]![0])).toMatch(/\/models$/);
+      expect(vi.mocked(fetch).mock.calls[0]![1]?.headers).toEqual({});
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 
   it('rejects HTTP failures, provider stream errors and interrupted replies', async () => {

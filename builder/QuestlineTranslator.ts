@@ -5,6 +5,7 @@
  * against the simulation.
  */
 
+import type { StepKind } from '../flow/schema.js';
 import type { AgentPort, LLMPort } from '../ports/llm.js';
 import type { NamedWorld, NPCTypeSet } from '../world/types/named-world.js';
 import type { SimulationPort } from '../world/types/simulation.js';
@@ -20,6 +21,8 @@ export interface TranslateInput {
   ports: { plan: LLMPort; build: AgentPort };
   /** The parcels the story may use; every place lands inside it. */
   parcels?: readonly string[];
+  /** The step kinds the host can play; omitted, every kind. */
+  mechanics?: readonly StepKind[];
   referenceTimeMin?: number;
   maxRounds?: number;
   progress?: (event: BuildProgress) => void;
@@ -27,21 +30,9 @@ export interface TranslateInput {
 
 export class QuestlineTranslator {
   async translate(input: TranslateInput): Promise<TranslationResult> {
-    const { assignment, world, types, sim, ports, parcels, referenceTimeMin, maxRounds, progress } = input;
-    const plan = await new TranslationPlanner().plan({ assignment, world, types, llm: ports.plan });
-    const built = await new QuestlineBuilder().build({
-      assignment,
-      plan: plan.text,
-      manifest: plan.manifest,
-      world,
-      types,
-      sim,
-      agent: ports.build,
-      ...(parcels !== undefined ? { parcels } : {}),
-      ...(referenceTimeMin !== undefined ? { referenceTimeMin } : {}),
-      ...(maxRounds !== undefined ? { maxRounds } : {}),
-      ...(progress !== undefined ? { progress } : {}),
-    });
+    const { ports, ...shared } = input;
+    const plan = await new TranslationPlanner().plan({ ...shared, llm: ports.plan });
+    const built = await new QuestlineBuilder().build({ ...shared, plan: plan.text, manifest: plan.manifest, agent: ports.build });
     return { plan: plan.text, ...built };
   }
 }

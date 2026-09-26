@@ -4,9 +4,9 @@ Each situation is a complete small arc with its own presentation, development, c
 
 Write as many situations as the story genuinely supports, at least {{situations}}; a few strong situations beat many thin ones. Ground them in the named places, used the way locals would say them. Text only: no mechanics, no tasks, no system ids.
 
-Format the answer with exactly these headings, one block per situation:
+Give each situation its own title, never the script's. Format the answer with exactly these headings, one block per situation, your own words wherever a heading shows <angle brackets>:
 
-## Situation Title
+## <the situation's title>
 
 ### Characters
 - Name: who they are in this city and how they speak (or "from the script" for a borrowed character)

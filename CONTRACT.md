@@ -1,4 +1,4 @@
-# Quests 0.12.1
+# Quests 0.13.0
 
 Writes stories through injected agents, adapts them into typed quests, runs their rules in code, and prepares Engine handoffs and scoped NPC dialogue.
 
@@ -11,8 +11,9 @@ The Node library entry is [index.ts](index.ts), compiled to `dist/index.js`; bro
 | `AuthoringHarness.writeStory(input, agent)` | [Story request](authoring/schema/story-request.schema.json), [agent port](authoring/src/schema.ts) | [Story](authoring/schema/story-output.schema.json), narrative only |
 | `AuthoringHarness.adaptGameplay(input, agent)` | [Adaptation request](authoring/schema/adaptation-request.schema.json), [agent port](authoring/src/schema.ts) | [Definition and narrative trace](authoring/schema/adaptation-output.schema.json) |
 | `AuthoringHarness.skillIndex()`, `route(message)`, `resolveSkills(names)` | [Resolver queries](authoring/CONTRACT.md#inputs) | [Skill index and selected bodies](authoring/CONTRACT.md#outputs) |
-| `QuestlineCreation.run(input)` | [CreationInput](creation/schema.ts), prompt, named world/types, Simulation, per-stage model ports and the parcels the story may use | [CreationResult](creation/schema.ts), script, situations, main and side translations |
+| `QuestlineCreation.run(input)` | [CreationInput](creation/schema.ts), prompt, named world/types, Simulation, per-stage model ports, the parcels the story may use and the step kinds the host can play | [CreationResult](creation/schema.ts), script, situations, main and side translations |
 | `ScriptPass.run`, `SituationsPass.run`, `QuestlineTranslator.translate` | [Story](story/CONTRACT.md), [translation](builder/CONTRACT.md) | [Story text](story/schema.ts), [plan, definition and feasibility cast](builder/schema.ts) |
+| `STEP_KINDS`, `builderTools(kinds?)`, `BUILDER_TOOLS` | The step kinds a questline may use, in catalog order | The closed 16-kind vocabulary; the builder's [tools](builder/tools.ts) for those kinds only, every kind by default |
 | `CastResolver.cast(definition, timeMin, options?)` | [Definition](flow/schema/questline.schema.json), [SimulationPort](world/types/simulation.ts), optional `StoryVenues(world, types)` and `{taken, characters}` | [CastResult](builder/CastResolver.ts): `cast` role to NPC IDs, `posts` role to the building it holds a post in, `blocked` when a role cannot be filled |
 | `QuestlineRuntime`, `advance`, `restore` | [Definition](flow/schema/questline.schema.json), cast, Simulation, [event](flow/schema/player-event.schema.json), time, [saved state](flow/schema/questline-state.schema.json) | [State and advance result](flow/QuestlineRuntime.ts), [availability](flow/availability.ts), [guidance](flow/schema/step-guidance.schema.json) |
 | `QuestlineRuntime.dialogueFor`, `chooseDialogue` | Exact active step, resolved NPC, current time; declared choice ID for selection | [Authored dialogue and explicit choice result](flow/CONTRACT.md), offline, scoped to one step |
@@ -33,7 +34,9 @@ NPC lines carry emotion as inline cues from one closed list, `[laugh] [sigh] [wh
 
 Talk steps may carry `dialogue { opening, choices: [{ id, text, reply, completesStep }] }`. The recorded Weir Line and all three side stories author every talk with character speech, informational questions and explicit commitments. `dialogueFor(stepId, npcId, timeMin)` is read-only; `chooseDialogue(stepId, npcId, choiceId, timeMin)` rechecks presence, items and gates and completes only the selected step. Opening, dismissing, free chat and informational replies never progress the quest. Authored talks reject raw `talkedTo`; legacy definitions retain that event for compatibility and receive deterministic fallback choices through the same dialogue API. This optional field stays within bundle 1.1 and changes neither step IDs nor saved-state shape.
 
-Materialize builds exact physical pickup requests and bindings from a recording's authored item-kind templates, while preserving explicit handoff bindings. The handoff rejects pickups without a portable asset and `take` anchor, so an otherwise valid story cannot silently ship an impossible collection step.
+Materialize builds exact physical pickup requests and bindings from a recording's authored item-kind templates, while preserving explicit handoff bindings. The handoff rejects pickups without a portable asset and `take` anchor, or a material kind the family cannot wear, so an otherwise valid story cannot silently ship an impossible collection step. [One template per physical item kind](creation/samples/mission-item-templates.json) ships with the box.
+
+A host that plays only some mechanics names them: `mechanics` on a creation run, `--mechanics` on the author CLI. The planner and builder then see only those kinds, and a step of another kind is refused back to the builder by name. `npm run author` runs creation against a live OpenAI-compatible model, writes each stage, keeps what the model said as a replayable recording (with its `mechanics`, an additive field) and materializes that recording into bundle 1.1 in the same run ([creation CLI](creation/CONTRACT.md#sample)).
 
 Hosts pass `new CastResolver(sim, new StoryVenues(world, types))`: with the world it looks past the pinned venue to the other buildings that publish the post, which is what keeps every character a different person, and it can move a step onto the building its character really works in. `options.taken` and `options.characters` carry both across a questline set.
 
@@ -53,7 +56,7 @@ Time is simulation minutes since Monday 00:00. Creative calls use separate conte
 
 [AuthoringError](authoring/schema/authoring-error.schema.json), `{code, message, details}`: `E_AUTHORING_INPUT`, `E_AUTHORING_OUTPUT`, `E_SKILL_CONTRACT`, `E_UNKNOWN_SKILL`, `E_UNSUPPORTED_MECHANIC`, `E_MECHANIC_SELECTION`, `E_WORLD_TARGET`, `E_CAUSE_EFFECT`, `E_INVALID_FLOW`. Meanings: [authoring errors](authoring/CONTRACT.md#errors).
 
-These are closed domain sets. Injected provider/Simulation exceptions pass through, except cast reservation and exhausted vendor matches, which become `E_CAST` while a questline is built and its `blocked` reason once it is published. Standalone [SimulationError](world/types/simulation.ts) uses the consumed Simulation error set. CLI file/JSON/usage failures are ordinary exceptions, not domain codes.
+These are closed domain sets. Injected provider/Simulation exceptions pass through, except cast reservation and exhausted vendor matches, which become `E_CAST` while a questline is built and its `blocked` reason once it is published. Standalone [SimulationError](world/types/simulation.ts) uses the consumed Simulation error set. CLI file/JSON/usage failures and a `mechanics` list naming no real step kind are ordinary exceptions, not domain codes.
 
 ## Dependencies
 

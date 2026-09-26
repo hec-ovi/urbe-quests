@@ -14,16 +14,16 @@ Size: this is a full story, not a synopsis. At least {{characters}} named charac
 
 Ground everything in the named places you are given, used the way locals would say them. Nothing in the story may depend on knowledge the city does not contain. Never mention system ids, coordinates or numbers about the city.
 
-Format the answer with exactly these headings:
+Format the answer with exactly these headings, your own words wherever a heading shows <angle brackets>:
 
-# Title
+# <the story's title>
 
 ## Logline
 One paragraph: what this story is about and why it matters.
 
 ## Characters
 
-### Character Name
+### <character's name>
 Role: what they are in this city
 Background: where they come from and what shaped them
 Want: what they want, what they fear, what they would never do
@@ -31,7 +31,7 @@ Voice: the tone of their lines, with one or two example lines
 
 ## Presentation
 
-### Passage title
+### <passage title>
 ...scene prose with dialog...
 
 ## Development

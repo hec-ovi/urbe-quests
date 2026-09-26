@@ -5,12 +5,15 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import type { AgentPort, AgentReply, AgentToolCall, LLMPort } from '../../ports/llm.js';
+import { STEP_KINDS } from '../../flow/schema.js';
+import type { AgentPort, AgentReply, AgentTool, AgentToolCall, LLMPort } from '../../ports/llm.js';
 import { loadFixtureWorld, StubSimulation } from '../../world/index.js';
+import { playableKinds, targetLine } from '../mechanics.js';
 import { parsePlanManifest } from '../PlanManifest.js';
 import { QuestlineBuilder } from '../QuestlineBuilder.js';
 import { QuestlineTranslator } from '../QuestlineTranslator.js';
 import type { BuildProgress, QuestAssignment } from '../schema.js';
+import { BUILDER_TOOLS } from '../tools.js';
 
 const ASSIGNMENT: QuestAssignment = {
   title: 'The Kettle Debt',
@@ -71,6 +74,18 @@ function scriptedAgent(script: AgentReply[]) {
   return { agent, requests };
 }
 
+function planPort(answers: string[]) {
+  const prompts: { system: string; prompt: string }[] = [];
+  const queue = [...answers];
+  const port: LLMPort = {
+    complete: async (request) => {
+      prompts.push(request);
+      return queue.shift() ?? '';
+    },
+  };
+  return { port, prompts };
+}
+
 function fixtureDeps() {
   const { world, types } = loadFixtureWorld('neon-bay');
   const sim = new StubSimulation({ seed: 'builder-test', world, types });
@@ -126,11 +141,27 @@ describe('QuestlineBuilder', () => {
     const { definition } = await build(agent);
 
     expect(toolResults(requests[1]!.transcript)).toEqual(expect.arrayContaining([
-      'error: step s_ask not added: target.roleIds is missing',
-      'error: step s_ask not added: target.place is missing',
+      'error: step s_ask not added: target.roleIds is missing (listen: roleIds, exactly two different roles; atParcelId.)',
+      'error: step s_ask not added: target.place is missing (goto: place.)',
       'error: step s_ask not added: effects[0].op is missing',
     ]));
     expect(definition.steps).toHaveLength(3);
+  });
+
+  it('tells a model that resends a refused call word for word, in any key order, that nothing changed', async () => {
+    const ask = STEP_CALLS[0]!.input as Record<string, unknown>;
+    const bad = step({ ...ask, target: { kind: 'talk', atParcelId: 'p4', roleIds: ['barista', 'lender'] } });
+    const reordered = step(Object.fromEntries(Object.entries(bad.input as object).reverse()));
+    const { agent, requests } = scriptedAgent([
+      { kind: 'calls', calls: [...SETUP_CALLS, bad] },
+      { kind: 'calls', calls: [reordered] },
+      { kind: 'calls', calls: [...STEP_CALLS, FINAL_STEP, FINISH] },
+    ]);
+    await build(agent);
+
+    const [first, again] = toolResults(requests[2]!.transcript).filter((result) => result.startsWith('error: step s_ask'));
+    expect(first).toBe('error: step s_ask not added: target.roleId is missing (talk: roleId; optional atParcelId, the parcel where the talk happens.)');
+    expect(again).toBe(`${first}\nThis exact call was refused before, for the same reason. Sending it again changes nothing: change what the error names, or build another planned piece first.`);
   });
 
   it('reports E_LLM when the configured build round budget is exhausted', async () => {
@@ -158,6 +189,10 @@ describe('QuestlineBuilder', () => {
     const feedback = toolResults(requests[2]!.transcript).join('\n');
     expect(feedback).toContain('not in the plan');
     expect(feedback).toContain('unknown parcel missing');
+    expect(events[0]!.refusals).toEqual([]);
+    expect(events[1]!.refusals).toEqual([
+      expect.stringContaining('not in the plan'), expect.stringContaining('unknown parcel missing'), expect.stringContaining('not finished'),
+    ]);
     expect(events.at(-1)).toMatchObject({
       round: 3,
       committed: MANIFEST.roles.length + MANIFEST.items.length + MANIFEST.acts.length + MANIFEST.endings.length + MANIFEST.steps.length,
@@ -278,17 +313,6 @@ describe('QuestlineBuilder', () => {
 });
 
 describe('QuestlineTranslator', () => {
-  function planPort(answers: string[]) {
-    const prompts: { system: string; prompt: string }[] = [];
-    const queue = [...answers];
-    const port: LLMPort = {
-      complete: async (request) => {
-        prompts.push(request);
-        return queue.shift() ?? '';
-      },
-    };
-    return { port, prompts };
-  }
 
   it('plans in prose from the arc and the world brief, builds from the plan, and repairs a missing manifest once', async () => {
     const plan = planPort([`\n${PLAN}\n`]);
@@ -318,5 +342,52 @@ describe('QuestlineTranslator', () => {
     ).rejects.toThrowError(
       expect.objectContaining({ code: 'E_LLM', detail: expect.objectContaining({ problems: ['roles entry "The Barista" is not a machine id (letters, digits, underscores)'] }) }),
     );
+  });
+});
+
+describe('mechanic allowlist', () => {
+  const PLAYABLE = ['goto', 'observe', 'talk', 'listen', 'pickup', 'deliver', 'steal', 'work'] as const;
+  type Schema = { properties: Record<string, Schema>; description?: string; enum?: string[] };
+  const targetSchema = (tools: AgentTool[]) => (tools.find((tool) => tool.name === 'add_step')!.inputSchema as Schema).properties['target']!;
+
+  it('shows the planner and the builder only the playable kinds, and refuses a step of another kind by name', async () => {
+    const plan = planPort([PLAN]);
+    const hack = step({ ...(STEP_CALLS[0]!.input as object), target: { kind: 'hacking', targetId: 'till', place: { parcelId: 'p4' }, completionFlag: 'hacked' } });
+    const { agent, requests } = scriptedAgent([
+      { kind: 'calls', calls: [...SETUP_CALLS, hack] },
+      { kind: 'calls', calls: [...STEP_CALLS, FINAL_STEP, FINISH] },
+    ]);
+    const { definition } = await new QuestlineTranslator().translate({
+      assignment: ASSIGNMENT, ports: { plan: plan.port, build: agent }, mechanics: PLAYABLE, ...fixtureDeps(),
+    });
+
+    const planner = plan.prompts[0]!.system;
+    expect(planner).toContain(`Each step is one of: ${PLAYABLE.join(', ')}.`);
+    expect(planner).toContain('## steal (take what a person guards)');
+    expect(planner).not.toMatch(/## (assassinate|investigation|rescue|escort|access|hacking|sabotage|transportation)\b/);
+
+    const { system, tools } = requests[0]!;
+    expect(system).not.toContain('## hacking');
+    expect(system).toContain('(a talk, listen or observe step)');
+    const target = targetSchema(tools);
+    expect(target.properties['kind']!.enum).toEqual(PLAYABLE);
+    expect(Object.keys(target.properties)).not.toContain('completionFlag');
+    expect(target.description).toContain('- work: atParcelId, role');
+    expect(target.description).not.toMatch(/- hacking:|completionFlag/);
+
+    expect(toolResults(requests[1]!.transcript)).toContain(`error: step kind hacking is not playable here; use one of ${PLAYABLE.join(', ')}`);
+    expect(definition.steps.map((entry) => entry.target.kind)).toEqual(['talk', 'pickup', 'deliver']);
+  });
+
+  it('offers every kind without an allowlist, and an allowlist naming no real kind is a caller error', () => {
+    const target = targetSchema(BUILDER_TOOLS);
+    expect(target.properties['kind']!.enum).toEqual(STEP_KINDS);
+    expect(STEP_KINDS).toHaveLength(16);
+    expect(target.description).toContain('- transportation: journeyId');
+    expect(target.description).toContain('Each completionFlag must be set by a setFlag');
+    expect(() => playableKinds(['goto', 'teleport'])).toThrowError(/unknown step kind teleport/);
+    expect(() => playableKinds([])).toThrowError(/names no step kind/);
+    expect(playableKinds(['work', 'goto'])).toEqual(['goto', 'work']);
+    for (const kind of STEP_KINDS) expect(targetLine(kind)).toMatch(new RegExp(`^${kind}: \\w`));
   });
 });

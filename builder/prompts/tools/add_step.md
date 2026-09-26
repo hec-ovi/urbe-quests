@@ -38,9 +38,13 @@ The typed objective: kind plus the fields that kind takes. Every place (place, f
 - rescue: roleId, releaseTargetId, place, completionFlag.
 - escort: roleId, routeId, mode (follow-player or lead-player), from and to (two different places), completionFlag.
 - access: accessPointId, credentialItemId (a key, information or device item this step needs), place, completionFlag.
-- hacking, sabotage: targetId, place, completionFlag.
+- hacking: targetId, place, completionFlag.
+- sabotage: targetId, place, completionFlag.
 - transportation: journeyId, mode (ride-hail, public-transit, vehicle, animal or aircraft), from and to (two different places), passengerRoleIds (roles travelling with the player; an empty list when the player travels alone), cargoItemIds (physical items this step needs; an empty list when none), completionFlag.
-sceneId, evidenceId, releaseTargetId, routeId, accessPointId, targetId and journeyId are short ids you author for this questline; the host's completion event repeats them exactly. Each completionFlag must be set by a setFlag in this step's effects.
+
+## authored-ids
+
+Ids a target names that are not a role, item or place (sceneId, routeId, targetId and the like) are short ids you author for this questline; the host's completion event repeats them exactly. Each completionFlag must be set by a setFlag in this step's effects.
 
 ## gives
 

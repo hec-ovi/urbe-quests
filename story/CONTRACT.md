@@ -9,7 +9,7 @@ Only names, kinds, tiers and type boilerplates reach the model ([worldBrief.ts](
 
 ## Out
 - `ScriptPassResult { script, raw }` ([schema.ts](schema.ts)): `StoryScript` with prompt, title, logline, characters (name, role, background, want, voice) and movements (presentation, development, conflict, resolution, each passages with heading and text).
-- `SituationsPassResult { situations, raw }`: each `Situation` with id, title, characters (name, description) and its four parts.
+- `SituationsPassResult { situations, raw }`: each `Situation` with id, title, characters (name, description) and its four parts. Every title is its own, distinct from the script's and each other's (case aside), because a questline and its recording are known by title; a repeated one is a shortfall for the repair round. A title copied from the format (`<...>` or the bare word Title) is a shortfall too, for the script and for a situation.
 - `renderScript`, `renderCards`, `renderMovements` ([renderScript.ts](renderScript.ts)): prose views for the stages that read the story.
 - `loadFixtureStory('cyberpunk')` ([fixtures.ts](fixtures.ts)): committed raw texts of both passes, so later stages run without a model.
 

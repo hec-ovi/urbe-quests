@@ -18,10 +18,10 @@ import type { QuestlineDefinition } from '../../flow/schema.js';
 import { StubSimulation, WorldContextNormalizer, type NamedWorld, type NPCTypeSet } from '../../world/index.js';
 import { QuestlineCreation } from '../QuestlineCreation.js';
 import { questlineSetFromSample, writeQuestlineSet } from '../samples/QuestlineSetWriter.js';
-import { materialize } from '../samples/materialize.js';
+import { materialize, materializeRecording } from '../samples/materialize.js';
 import { recordedPorts, type Recording } from '../samples/RecordedPorts.js';
 import type { CreationProgress, StagePorts } from '../schema.js';
-import { pickupAssetRequests } from '../samples/PickupAssetRequests.js';
+import { checkMissionItemTemplates, pickupAssetRequests } from '../samples/PickupAssetRequests.js';
 import { EngineHandoff } from '../../handoff/EngineHandoff.js';
 
 const sampleDir = fileURLToPath(new URL('../samples/urbe-small/', import.meta.url));
@@ -233,6 +233,23 @@ describe('QuestlineCreation', () => {
       .toBeUndefined();
   });
 
+  it('drops a side quest built under a questline id the set already holds, and keeps the rest', async () => {
+    const recorded = recordedPorts(RECORDING, world);
+    const warnings: string[] = [];
+    const result = await run({
+      build: {
+        step: async (request) => {
+          const reply = await recorded.build.step(request);
+          if (reply.kind !== 'calls' || !request.prompt.includes('Title: Signal Under Sump Row')) return reply;
+          return { kind: 'calls', calls: reply.calls.map((call) => call.tool === 'create_questline' ? { ...call, input: { ...(call.input as object), id: MAIN.id } } : call) };
+        },
+      },
+    }, { warn: (message: string) => warnings.push(message) });
+
+    expect(result.side.map((quest) => quest.situationId)).toEqual(['sit_1', 'sit_3']);
+    expect(warnings).toEqual([`side quest sit_2 dropped: questline id ${MAIN.id} is already taken`]);
+  });
+
   it('fails the run with E_LLM when the script or the main line is unusable', async () => {
     await expect(run({ script: junk('no script') })).rejects.toThrowError(
       expect.objectContaining({ code: 'E_LLM', detail: expect.objectContaining({ stage: 'script' }) }),
@@ -308,7 +325,68 @@ describe('materialize entry', () => {
   });
 });
 
+describe('mechanic allowlist on a recording', () => {
+  const materializeWith = async (mechanics: Recording['mechanics'], warn: string[] = []) => {
+    const outputDir = mkdtempSync(join(tmpdir(), 'quests-mechanics-'));
+    try {
+      return await materializeRecording({
+        world, types, recording: { ...RECORDING, mechanics }, recordingName: 'recording.json', typesName: 'npc-types.json',
+        profile: 'mechanics', outputPath: join(outputDir, 'questlines.json'), log: (line) => warn.push(line),
+      });
+    } finally {
+      rmSync(outputDir, { recursive: true, force: true });
+    }
+  };
+
+  it('replays the allowlist it was made under: the host set keeps every questline, a narrower one refuses what it bans', async () => {
+    const playable = await materializeWith(['goto', 'observe', 'talk', 'listen', 'pickup', 'deliver', 'steal', 'work']);
+    expect(playable.questlines).toHaveLength(4);
+
+    // Last Call at Oxide Filter turns on a theft; without steal the builder is refused that step and the side quest is dropped.
+    const warnings: string[] = [];
+    const narrow = await materializeWith(['goto', 'observe', 'talk', 'listen', 'pickup', 'deliver', 'work'], warnings);
+    expect(narrow.questlines.map((quest) => quest.title)).not.toContain('Last Call at Oxide Filter');
+    expect(narrow.questlines).toHaveLength(3);
+    expect(warnings).toContainEqual(expect.stringContaining('side quest sit_1 dropped'));
+  });
+
+  it('refuses an allowlist naming no step kind before any model is asked', async () => {
+    const script = vi.fn(async () => RECORDING.script);
+    await expect(run({ script: { complete: script } }, { mechanics: ['goto', 'teleport'] })).rejects.toThrowError(/unknown step kind teleport/);
+    expect(script).not.toHaveBeenCalled();
+  });
+});
+
 describe('recorded pickup appearance templates', () => {
+  it('ships one checked template per physical item kind, each a pickup the handoff accepts', () => {
+    const templates = checkMissionItemTemplates(read(fileURLToPath(new URL('../samples/mission-item-templates.json', import.meta.url))));
+    expect(Object.keys(templates).sort()).toEqual(['device', 'document', 'key', 'substance', 'valuable', 'weapon']);
+    expect(templates.device).toEqual(RECORDING.missionItemTemplates!.device);
+
+    // The recorded main line once per kind, its one pickup made of that kind.
+    const pickedUp = (MAIN.steps.find((step) => step.target.kind === 'pickup')!.target as { itemId: string }).itemId;
+    const definitions = Object.keys(templates).map((kind) => {
+      const definition = structuredClone(MAIN);
+      definition.id = `q_${kind}`;
+      definition.items.find((item) => item.itemId === pickedUp)!.kind = kind as keyof typeof templates;
+      return definition;
+    });
+    const bundle = new EngineHandoff().assemble(definitions, pickupAssetRequests(definitions, {}, templates));
+    const families = new Map(bundle.missionAssetRequests.map((request) => [request.assetId, request.family]));
+    expect(Object.fromEntries(bundle.missionItemBindings.map((binding) => [binding.questId, families.get(binding.assetId)]))).toEqual({
+      q_device: 'data-drive', q_weapon: 'tool', q_document: 'document', q_key: 'data-drive', q_substance: 'package', q_valuable: 'package',
+    });
+  });
+
+  it('refuses a template for no physical kind, one the creator would reject, and one nobody can pick up', () => {
+    const device = RECORDING.missionItemTemplates!.device!;
+    expect(() => checkMissionItemTemplates({ information: device })).toThrowError(/no physical item kind: information/);
+    expect(() => checkMissionItemTemplates({ device: { ...device, materials: [{ slot: 'surface', key: 'cyberpunk/fabric/mid', variantId: 'flat' }] } }))
+      .toThrowError(/cannot use fabric material on its surface/);
+    expect(() => checkMissionItemTemplates({ device: { ...device, requiredInteractions: ['inspect', 'use'] } }))
+      .toThrowError(/cannot pick up: device/);
+  });
+
   it('uses quest and item identities, keeps explicit assets, and refuses unrenderable pickups', () => {
     const definition = structuredClone(MAIN);
     definition.id = 'another_quest';

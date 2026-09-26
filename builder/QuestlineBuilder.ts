@@ -3,17 +3,17 @@
 import { QuestError } from '../errors.js';
 import { promptLoader } from '../prompts.js';
 import type { AgentPort, AgentTurn } from '../ports/llm.js';
-import type { QuestlineDefinition, ResolvedCast } from '../flow/schema.js';
+import type { QuestlineDefinition, ResolvedCast, StepKind } from '../flow/schema.js';
 import type { NamedWorld, NPCTypeSet } from '../world/types/named-world.js';
 import type { SimulationPort } from '../world/types/simulation.js';
 import { CastResolver } from './CastResolver.js';
+import { mechanicVars, playableKinds, stepCatalog } from './mechanics.js';
 import { manifestSize, type PlanManifest } from './PlanManifest.js';
 import { QuestlineDraft } from './QuestlineDraft.js';
 import { StoryVenues } from './StoryVenues.js';
 import { renderAssignment } from './renderAssignment.js';
 import type { BuildProgress, QuestAssignment } from './schema.js';
 import { ToolDispatcher } from './ToolDispatcher.js';
-import { BUILDER_TOOLS } from './tools.js';
 import { WorldCatalog } from './WorldCatalog.js';
 import { WorldTargetAudit } from './WorldTargetAudit.js';
 
@@ -28,6 +28,8 @@ export interface BuildInput {
   agent: AgentPort;
   /** The parcels the story may use; every place lands inside it. Omitted, the whole world is open. */
   parcels?: readonly string[];
+  /** The step kinds the host can play; omitted, every kind. A step of another kind is refused. */
+  mechanics?: readonly StepKind[];
   /** Simulation time used to resolve on-duty cast; defaults to Tuesday 10:00. */
   referenceTimeMin?: number;
   /** Overrides the budget the plan sets (two rounds per planned piece plus eight). */
@@ -51,20 +53,23 @@ const prompt = promptLoader(new URL('./prompts/', import.meta.url));
 
 export class QuestlineBuilder {
   async build(input: BuildInput): Promise<BuildResult> {
-    const system = [prompt('builder-system.md'), prompt('step-catalog.md'), prompt('artifact-catalog.md')].join('\n\n');
+    const kinds = playableKinds(input.mechanics);
+    const vars = mechanicVars(kinds);
+    const system = [prompt('builder-system.md', vars), stepCatalog(kinds), prompt('artifact-catalog.md', vars)].join('\n\n');
     const userPrompt = this.renderPrompt(input);
     const venues = new StoryVenues(input.world, input.types, input.parcels);
     const draft = new QuestlineDraft(input.manifest, new WorldTargetAudit(input.world, input.types), venues);
-    const dispatcher = new ToolDispatcher(draft);
+    const dispatcher = new ToolDispatcher(draft, kinds);
     const transcript: AgentTurn[] = [];
     const title = input.assignment.title;
     const maxRounds = input.maxRounds ?? roundBudget(manifestSize(input.manifest));
-    const report = (round: number, note: string) => input.progress?.({ title, round, maxRounds, ...draft.progress(), note });
+    const report = (round: number, note: string, refusals: string[] = []) =>
+      input.progress?.({ title, round, maxRounds, ...draft.progress(), note, refusals });
 
     let definition: QuestlineDefinition | undefined;
     let nudges = 0;
     for (let round = 1; round <= maxRounds && definition === undefined; round++) {
-      const reply = await input.agent.step({ system, prompt: userPrompt, tools: BUILDER_TOOLS, transcript });
+      const reply = await input.agent.step({ system, prompt: userPrompt, tools: dispatcher.tools, transcript });
       if (reply.kind === 'done') {
         // Words instead of tools: a model summarizing what it thinks it did. Send it back with what is missing, a few times.
         if (nudges >= MAX_NUDGES) throw new QuestError('E_LLM', `builder agent stopped without finishing ${title}: ${this.standing(draft)}`);
@@ -82,8 +87,8 @@ export class QuestlineBuilder {
         if (outcome.finished !== undefined) definition = outcome.finished;
       }
       transcript.push({ role: 'tool', results });
-      const refused = results.filter((r) => r.result.startsWith('error:')).length;
-      report(round, `${reply.calls.map((c) => c.tool).join(', ')}${refused > 0 ? ` (${refused} refused)` : ''}`);
+      const refused = results.filter((r) => r.result.startsWith('error:')).map((r) => r.result);
+      report(round, `${reply.calls.map((c) => c.tool).join(', ')}${refused.length > 0 ? ` (${refused.length} refused)` : ''}`, refused);
     }
     if (definition === undefined) {
       throw new QuestError('E_LLM', `builder agent did not finish ${title} within ${maxRounds} rounds: ${this.standing(draft)}`);

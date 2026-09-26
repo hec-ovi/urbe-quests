@@ -5,6 +5,7 @@
  * real one: parsing, the manifest bound, the tools, validation, casting.
  */
 
+import type { StepKind } from '../../flow/schema.js';
 import type { AgentPort, AgentReply, AgentToolCall, LLMPort } from '../../ports/llm.js';
 import type { NamedWorld, ParcelType, Tier } from '../../world/types/named-world.js';
 import type { StagePorts } from '../schema.js';
@@ -30,6 +31,8 @@ export interface Recording {
   plans: Record<string, string>;
   /** Build rounds per assignment title; each round is the tool calls that answer one turn. */
   builds: Record<string, AgentToolCall[][]>;
+  /** The step kinds the run was allowed; replay offers the same, so a refusal the model met replays as one. Omitted, every kind. */
+  mechanics?: StepKind[];
   /** Semantic place aliases that make recorded tool calls portable between city sizes. */
   bindings?: RecordingBindings;
   /** Authored physical appearances used to bind every pickup when materializing the recording. */
@@ -37,7 +40,7 @@ export interface Recording {
 }
 
 /** Assignments are rendered title first; that line says which questline a call belongs to. */
-const titleOf = (prompt: string): string => /^Title: (.+)$/m.exec(prompt)?.[1] ?? 'untitled';
+export const titleOf = (prompt: string): string => /^Title: (.+)$/m.exec(prompt)?.[1] ?? 'untitled';
 
 const text = (answer: string): LLMPort => ({ complete: async () => answer });
 

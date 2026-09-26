@@ -66,6 +66,14 @@ describe('ScriptPass', () => {
       expect.objectContaining({ code: 'E_LLM', detail: expect.objectContaining({ stage: 'script', raw: 'still none' }) }),
     );
   });
+
+  it('asks again for a title copied from the format rather than written', async () => {
+    const { llm, calls } = fakeLLM([FIXTURE.script.replace('# The Water Bill', '# Title'), FIXTURE.script]);
+    const { script } = await new ScriptPass().run(scriptInput(llm));
+    expect(calls[0]!.system).toContain("# <the story's title>");
+    expect(calls[1]!.prompt).toContain('- the title line reads "Title", copied from the format; write the story\'s own title');
+    expect(script.title).toBe('The Water Bill');
+  });
 });
 
 describe('SituationsPass', () => {
@@ -100,5 +108,20 @@ describe('SituationsPass', () => {
     await expect(new SituationsPass().run(situationsInput(hopeless.llm))).rejects.toThrowError(
       expect.objectContaining({ code: 'E_LLM', detail: expect.objectContaining({ stage: 'situations' }) }),
     );
+  });
+
+  it('asks again for a situation titled from the format, like another one or like the script, since a questline is known by its title', async () => {
+    const [first, second, third] = [...FIXTURE.situations.matchAll(/^## (.+)$/gm)].map((heading) => heading[1]!);
+    const clashing = FIXTURE.situations.replace(`## ${second}\n`, `## ${first!.toUpperCase()}\n`).replace(`## ${third}\n`, `## ${SCRIPT.title}\n`);
+    const { llm, calls } = fakeLLM([clashing, FIXTURE.situations]);
+    const { situations } = await new SituationsPass().run(situationsInput(llm));
+    expect(calls[1]!.prompt).toContain(`- situation "${first!.toUpperCase()}": the title is already taken; give it its own`);
+    expect(calls[1]!.prompt).toContain(`- situation "${SCRIPT.title}": the title is already taken; give it its own`);
+    expect(new Set(situations.map((situation) => situation.title)).size).toBe(3);
+
+    const copied = fakeLLM([FIXTURE.situations.replace(`## ${first}\n`, "## <the situation's title>\n"), FIXTURE.situations]);
+    await new SituationsPass().run(situationsInput(copied.llm));
+    expect(copied.calls[0]!.system).toContain("## <the situation's title>");
+    expect(copied.calls[1]!.prompt).toContain(`- situation "<the situation's title>": the title is copied from the format; write the situation's own`);
   });
 });

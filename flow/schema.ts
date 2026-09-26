@@ -82,6 +82,15 @@ export interface QuestEnding {
 
 export type StepKind = StepTarget['kind'];
 
+/** Every step kind once, in catalog order; the record makes a kind added to StepTarget fail to compile until it is listed. */
+const CATALOG_ORDER: Record<StepKind, null> = {
+  goto: null, observe: null, talk: null, listen: null, pickup: null, deliver: null, steal: null, assassinate: null, work: null,
+  investigation: null, rescue: null, escort: null, access: null, hacking: null, sabotage: null, transportation: null,
+};
+
+/** The closed step vocabulary, in catalog order. */
+export const STEP_KINDS: readonly StepKind[] = Object.freeze(Object.keys(CATALOG_ORDER) as StepKind[]);
+
 /** Closed step vocabulary; era fit is a builder catalog concern, not a code one. */
 export type StepTarget =
   | { kind: 'goto'; place: PlaceTarget }

@@ -1,0 +1,60 @@
+{
+  "device": {
+    "family": "data-drive",
+    "dimensions": { "width": 0.12, "height": 0.025, "depth": 0.075 },
+    "materials": [
+      { "slot": "surface", "key": "cyberpunk/metal/mid", "variantId": "paint" },
+      { "slot": "accent", "key": "cyberpunk/metal/mid", "variantId": "zinc" }
+    ],
+    "requiredInteractions": ["inspect", "take", "use"],
+    "clearance": { "approachDepth": 0.8, "sideMargin": 0.2, "overhead": 0.1 }
+  },
+  "weapon": {
+    "family": "tool",
+    "dimensions": { "width": 0.3, "height": 0.14, "depth": 0.06 },
+    "materials": [
+      { "slot": "surface", "key": "cyberpunk/metal/mid", "variantId": "paint" },
+      { "slot": "grip", "key": "cyberpunk/rubber/mid", "variantId": "1" }
+    ],
+    "requiredInteractions": ["inspect", "take", "use"],
+    "clearance": { "approachDepth": 0.8, "sideMargin": 0.2, "overhead": 0.1 }
+  },
+  "document": {
+    "family": "document",
+    "dimensions": { "width": 0.21, "height": 0.015, "depth": 0.297 },
+    "materials": [
+      { "slot": "surface", "key": "cyberpunk/fabric/mid", "variantId": "flat" }
+    ],
+    "requiredInteractions": ["inspect", "read", "take"],
+    "clearance": { "approachDepth": 0.8, "sideMargin": 0.2, "overhead": 0.1 }
+  },
+  "key": {
+    "family": "data-drive",
+    "dimensions": { "width": 0.086, "height": 0.015, "depth": 0.054 },
+    "materials": [
+      { "slot": "surface", "key": "cyberpunk/metal/mid", "variantId": "paint" },
+      { "slot": "accent", "key": "cyberpunk/metal/mid", "variantId": "zinc" }
+    ],
+    "requiredInteractions": ["inspect", "take", "use"],
+    "clearance": { "approachDepth": 0.8, "sideMargin": 0.2, "overhead": 0.1 }
+  },
+  "substance": {
+    "family": "package",
+    "dimensions": { "width": 0.12, "height": 0.1, "depth": 0.12 },
+    "materials": [
+      { "slot": "surface", "key": "cyberpunk/metal/mid", "variantId": "zinc" },
+      { "slot": "seal", "key": "cyberpunk/rubber/mid", "variantId": "1" }
+    ],
+    "requiredInteractions": ["inspect", "take", "open"],
+    "clearance": { "approachDepth": 0.8, "sideMargin": 0.2, "overhead": 0.1 }
+  },
+  "valuable": {
+    "family": "package",
+    "dimensions": { "width": 0.18, "height": 0.08, "depth": 0.12 },
+    "materials": [
+      { "slot": "surface", "key": "cyberpunk/metal/mid", "variantId": "zinc" }
+    ],
+    "requiredInteractions": ["inspect", "take"],
+    "clearance": { "approachDepth": 0.8, "sideMargin": 0.2, "overhead": 0.1 }
+  }
+}

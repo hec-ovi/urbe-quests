@@ -160,9 +160,12 @@ describe('EngineHandoff', () => {
     const fixed = pickupHandoff();
     fixed.missionAssetRequests![0] = {
       ...assetRequest(), family: 'table', dimensions: { width: 1, height: 0.8, depth: 0.6 },
-      requiredInteractions: ['inspect'],
+      materials: [{ slot: 'surface', key: 'cyberpunk/wood/mid', variantId: '1' }], requiredInteractions: ['inspect'],
     };
     expect(() => handoff.assemble(fixtureQuestlines, fixed)).toThrowError(/portable mission asset with a take interaction anchor/);
+    // The creator's material rule: a table has no fabric top.
+    fixed.missionAssetRequests![0].materials = assetRequest().materials;
+    expect(() => handoff.assemble(fixtureQuestlines, fixed)).toThrowError(/cannot use fabric material on its surface/);
   });
 
   it('writes exact fixed mechanic anchors and negotiated transportation capabilities', () => {

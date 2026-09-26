@@ -34,7 +34,7 @@ export class SituationsPass {
       llm: input.llm,
       system: prompt('situations-pass.md', minimums),
       prompt: brief,
-      parse: (text) => parseSituations(text, minimums),
+      parse: (text) => parseSituations(text, minimums, [input.script.title]),
       repair: (problems) => prompt('situations-repair.md', { shortfalls: problems.map((p) => `- ${p}`).join('\n') }),
       stage: 'situations',
     });

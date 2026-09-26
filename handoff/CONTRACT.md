@@ -19,7 +19,7 @@ Purpose: projects validated quest definitions, physical assets, interaction anch
 - `objectives` ([schema/objectives.schema.json](schema/objectives.schema.json)): one `{ questId, stepId, action }` per step in quest and definition order. `action` is the exact flow target, including every place, role, item, scene, evidence, access point, route, journey, passenger, cargo, mode, and completion flag field authored for that mechanic. A place is `{ <identity>, name }`; the hour a step is gated on stays on the step, in `questlines`.
 - `investigations`: requests unchanged after binding validation.
 - `mechanicTargetBindings`: exact fixed mechanic asset and anchor associations.
-- `missionAssetRequests`: engine mission asset create requests unchanged after family, dimensions, material slot, interaction, clearance, and identity validation.
+- `missionAssetRequests`: engine mission asset create requests unchanged after family, dimensions, material slot and kind, interaction, clearance, and identity validation. A material's kind is the middle part of its key (`cyberpunk/metal/mid` is metal); a family's surface and accent take the kinds engine mission-assets allows it, and grip, seal, display and upholstery take their own. Material keys and variants resolve in Engine's catalog, not here.
 - `missionItemBindings`: explicit physical quest item associations.
 - `hostCapabilities`: the validated host declaration used to admit transportation steps.
 

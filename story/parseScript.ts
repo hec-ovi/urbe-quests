@@ -1,6 +1,6 @@
 /** Deterministic, tolerant parser for the script pass format; enforces the minimums. */
 
-import { ProseShortfall, sectionNamed, splitSections, titleOf } from './headings.js';
+import { isPlaceholderTitle, ProseShortfall, sectionNamed, splitSections, titleOf } from './headings.js';
 import { MOVEMENTS, type MovementName, type Passage, type ScriptCharacter, type ScriptMinimums, type StoryScript } from './schema.js';
 
 const CARD_FIELDS = ['role', 'background', 'want', 'voice'] as const;
@@ -11,7 +11,8 @@ export function parseScript(raw: string, prompt: string, minimums: ScriptMinimum
   const sections = splitSections(raw, 2);
 
   const title = titleOf(raw);
-  if (title.length === 0) problems.push('no "# Title" line');
+  if (title.length === 0) problems.push('no "# <the story\'s title>" line');
+  else if (isPlaceholderTitle(title)) problems.push(`the title line reads "${title}", copied from the format; write the story's own title`);
   const logline = sectionNamed(sections, 'logline')?.body ?? '';
   if (logline.length === 0) problems.push('"## Logline" missing or empty');
 

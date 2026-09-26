@@ -2,26 +2,43 @@ import { QuestError } from '../errors.js';
 import type { QuestlineDefinition } from '../flow/schema.js';
 import type { InvestigationSceneRequest, MissionAssetCreateRequest, MissionAssetFamily, MissionAssetInteraction, MissionItemBinding } from './schema.js';
 
+type MaterialSlot = MissionAssetCreateRequest['materials'][number]['slot'];
+
+/** Engine mission-assets v1.0 family rules, mirrored so a bad request fails here rather than in the game. */
 interface FamilyRule {
   min: [number, number, number];
   max: [number, number, number];
   interactions: MissionAssetInteraction[];
-  slots: MissionAssetCreateRequest['materials'][number]['slot'][];
-  requiredSlots?: MissionAssetCreateRequest['materials'][number]['slot'][];
+  /** Material kinds (a key's middle part) a surface or accent may use. */
+  surfaceKinds: string[];
+  slots: MaterialSlot[];
+  requiredSlots?: MaterialSlot[];
 }
 
 const RULES: Record<MissionAssetFamily, FamilyRule> = {
-  document: { min: [0.08, 0.002, 0.08], max: [1.2, 0.12, 1.5], interactions: ['inspect', 'read', 'take'], slots: ['surface', 'accent'] },
-  'data-drive': { min: [0.03, 0.01, 0.03], max: [0.5, 0.2, 0.5], interactions: ['inspect', 'take', 'use'], slots: ['surface', 'accent'] },
-  'evidence-container': { min: [0.15, 0.08, 0.12], max: [2.5, 1.5, 1.5], interactions: ['inspect', 'open', 'close', 'store'], slots: ['surface', 'accent'] },
-  tool: { min: [0.08, 0.12, 0.04], max: [1.5, 2.2, 0.8], interactions: ['inspect', 'take', 'use'], slots: ['surface', 'accent', 'grip'] },
-  'control-terminal': { min: [0.3, 0.4, 0.2], max: [3, 3, 1.5], interactions: ['inspect', 'use', 'access', 'hack', 'sabotage'], slots: ['surface', 'accent', 'display'], requiredSlots: ['surface', 'display'] },
-  package: { min: [0.08, 0.05, 0.08], max: [2.5, 2, 2.5], interactions: ['inspect', 'take', 'open'], slots: ['surface', 'seal'] },
-  table: { min: [0.5, 0.4, 0.4], max: [5, 1.3, 3], interactions: ['inspect', 'place-item'], slots: ['surface', 'accent'] },
-  chair: { min: [0.35, 0.5, 0.35], max: [1.5, 1.8, 1.5], interactions: ['inspect', 'sit'], slots: ['surface', 'accent', 'upholstery'] },
-  shelf: { min: [0.3, 0.5, 0.15], max: [5, 4, 1.5], interactions: ['inspect', 'store', 'place-item'], slots: ['surface', 'accent'] },
-  cabinet: { min: [0.35, 0.5, 0.25], max: [4, 3.5, 2], interactions: ['inspect', 'open', 'close', 'store'], slots: ['surface', 'accent'] },
+  document: { min: [0.08, 0.002, 0.08], max: [1.2, 0.12, 1.5], interactions: ['inspect', 'read', 'take'], surfaceKinds: ['fabric', 'plastic', 'metal'], slots: ['surface', 'accent'] },
+  'data-drive': { min: [0.03, 0.01, 0.03], max: [0.5, 0.2, 0.5], interactions: ['inspect', 'take', 'use'], surfaceKinds: ['metal', 'plastic'], slots: ['surface', 'accent'] },
+  'evidence-container': { min: [0.15, 0.08, 0.12], max: [2.5, 1.5, 1.5], interactions: ['inspect', 'open', 'close', 'store'], surfaceKinds: ['metal', 'plastic', 'wood'], slots: ['surface', 'accent'] },
+  tool: { min: [0.08, 0.12, 0.04], max: [1.5, 2.2, 0.8], interactions: ['inspect', 'take', 'use'], surfaceKinds: ['metal', 'plastic', 'rubber'], slots: ['surface', 'accent', 'grip'] },
+  'control-terminal': { min: [0.3, 0.4, 0.2], max: [3, 3, 1.5], interactions: ['inspect', 'use', 'access', 'hack', 'sabotage'], surfaceKinds: ['metal', 'plastic'], slots: ['surface', 'accent', 'display'], requiredSlots: ['surface', 'display'] },
+  package: { min: [0.08, 0.05, 0.08], max: [2.5, 2, 2.5], interactions: ['inspect', 'take', 'open'], surfaceKinds: ['fabric', 'plastic', 'wood', 'metal'], slots: ['surface', 'seal'] },
+  table: { min: [0.5, 0.4, 0.4], max: [5, 1.3, 3], interactions: ['inspect', 'place-item'], surfaceKinds: ['wood', 'metal', 'glass'], slots: ['surface', 'accent'] },
+  chair: { min: [0.35, 0.5, 0.35], max: [1.5, 1.8, 1.5], interactions: ['inspect', 'sit'], surfaceKinds: ['wood', 'metal', 'plastic', 'fabric'], slots: ['surface', 'accent', 'upholstery'] },
+  shelf: { min: [0.3, 0.5, 0.15], max: [5, 4, 1.5], interactions: ['inspect', 'store', 'place-item'], surfaceKinds: ['wood', 'metal', 'glass'], slots: ['surface', 'accent'] },
+  cabinet: { min: [0.35, 0.5, 0.25], max: [4, 3.5, 2], interactions: ['inspect', 'open', 'close', 'store'], surfaceKinds: ['wood', 'metal', 'glass'], slots: ['surface', 'accent'] },
 };
+
+/** Slots with their own material kinds, whatever the family. */
+const SLOT_KINDS: Partial<Record<MaterialSlot, string[]>> = {
+  display: ['ad-screen', 'glass'],
+  upholstery: ['fabric', 'plastic'],
+  grip: ['rubber', 'plastic', 'fabric'],
+  seal: ['rubber', 'plastic', 'fabric', 'metal'],
+};
+
+/** A request the player can pick up: a portable family with a take anchor. */
+export const takeable = (request: MissionAssetCreateRequest): boolean =>
+  ['document', 'data-drive', 'tool', 'package'].includes(request.family) && request.requiredInteractions.includes('take');
 
 export class MissionAssetAudit {
   validate(
@@ -59,8 +76,7 @@ export class MissionAssetAudit {
         if (step.target.kind !== 'pickup') continue;
         const binding = bindingByItem.get(`${definition.id}\u0000${step.target.itemId}`);
         if (binding === undefined) this.fail(`pickup ${definition.id}/${step.stepId} has no mission asset binding`);
-        const request = requestById.get(binding.assetId)!;
-        if (!['document', 'data-drive', 'tool', 'package'].includes(request.family) || !request.requiredInteractions.includes('take')) {
+        if (!takeable(requestById.get(binding.assetId)!)) {
           this.fail(`pickup ${definition.id}/${step.stepId} requires a portable mission asset with a take interaction anchor`);
         }
       }
@@ -79,12 +95,15 @@ export class MissionAssetAudit {
     }
     const slots = new Set<string>();
     for (const material of request.materials) {
-      if (!rule.slots.includes(material.slot as never)) {
+      if (!rule.slots.includes(material.slot)) {
         this.fail(`mission asset ${request.assetId} has an incompatible material slot`);
       }
       if (slots.has(material.slot)) this.fail(`mission asset ${request.assetId} repeats material slot ${material.slot}`);
       slots.add(material.slot);
-
+      const kind = material.key.split('/')[1]!;
+      if (!(SLOT_KINDS[material.slot] ?? rule.surfaceKinds).includes(kind)) {
+        this.fail(`mission asset ${request.assetId} cannot use ${kind} material on its ${material.slot}`);
+      }
     }
     for (const slot of rule.requiredSlots ?? ['surface']) if (!slots.has(slot)) this.fail(`mission asset ${request.assetId} requires material slot ${slot}`);
     const minimumApproach = request.requiredInteractions.includes('sit') ? 0.9 :

@@ -31,4 +31,6 @@ export interface BuildProgress {
   planned: number;
   /** The tools called this round (with refusals counted), or what happened instead. */
   note: string;
+  /** This round's refused calls as the agent read them, so a host log says why a build stalls. */
+  refusals: string[];
 }

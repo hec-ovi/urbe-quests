@@ -7,7 +7,8 @@ import type { ChatMessage, ChatToolCall } from '../../ports/chat.js';
 import { cleanMarkup } from '../../ports/markup.js';
 import type { AgentPort, AgentReply, AgentTool, AgentTurn, LLMPort } from '../../ports/llm.js';
 
-export const BASE_URL = process.env['LLM_BASE_URL'] ?? 'http://localhost:8080/v1';
+// Compose passes an unset LLM_* variable as an empty string; an empty one counts as unset.
+export const BASE_URL = process.env['LLM_BASE_URL'] || 'http://localhost:8080/v1';
 
 // A local model can think for many minutes on one build round; the default five-minute header timeout would end the run.
 const dispatcher = new Agent({ headersTimeout: 0, bodyTimeout: 0 });
@@ -16,7 +17,7 @@ export class OpenAICompatibleClient implements LLMPort, AgentPort {
   constructor(readonly model: string) {}
 
   static async connect(): Promise<OpenAICompatibleClient> {
-    const model = process.env['LLM_MODEL'] ?? (await OpenAICompatibleClient.firstModel());
+    const model = process.env['LLM_MODEL'] || (await OpenAICompatibleClient.firstModel());
     return new OpenAICompatibleClient(model);
   }
 
@@ -49,7 +50,8 @@ export class OpenAICompatibleClient implements LLMPort, AgentPort {
       method: 'POST',
       dispatcher,
       headers: { 'Content-Type': 'application/json', ...authHeader() },
-      body: JSON.stringify({ model: this.model, messages, stream: true, ...(tools !== undefined ? { tools } : {}) }),
+      // llama.cpp answers one tool call per turn unless parallel calls are asked for; the builder takes several.
+      body: JSON.stringify({ model: this.model, messages, stream: true, ...(tools !== undefined ? { tools, parallel_tool_calls: true } : {}) }),
     });
     if (!response.ok) throw new Error(`${response.status} ${response.statusText}: ${await response.text()}`);
     return readChatStream(response.body);
@@ -68,7 +70,7 @@ export class OpenAICompatibleClient implements LLMPort, AgentPort {
 /** A hosted OpenAI-compatible server wants its key; a local one ignores the header. */
 function authHeader(): Record<string, string> {
   const key = process.env['LLM_API_KEY'];
-  return key !== undefined ? { Authorization: `Bearer ${key}` } : {};
+  return key ? { Authorization: `Bearer ${key}` } : {};
 }
 
 function parseArguments(text: string): unknown {

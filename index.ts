@@ -45,7 +45,7 @@ export { parsePlanManifest, type PlanManifest } from './builder/PlanManifest.js'
 export { TranslationPlanner, type PlanInput, type PlanResult } from './builder/TranslationPlanner.js';
 export { QuestlineBuilder, type BuildInput, type BuildResult } from './builder/QuestlineBuilder.js';
 export { QuestlineTranslator, type TranslateInput } from './builder/QuestlineTranslator.js';
-export { BUILDER_TOOLS } from './builder/tools.js';
+export { BUILDER_TOOLS, builderTools } from './builder/tools.js';
 export { CastResolver, type CastBlock, type CastOptions, type CastResult } from './builder/CastResolver.js';
 export { StoryVenues } from './builder/StoryVenues.js';
 

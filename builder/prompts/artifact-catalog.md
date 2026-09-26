@@ -1,6 +1,6 @@
 # Artifact catalog
 
-Seven item kinds. An artifact is introduced with whose it is and what it means to them, never only what it is. Physical kinds start placed at a parcel (then a pickup step) or in a person's hands (then a steal step, or a talk step that gives it). Information is never picked up: a person tells it or the player uncovers it (a talk, listen, observe, investigation or hacking step gives it) and a later step may need it.
+Seven item kinds. An artifact is introduced with whose it is and what it means to them, never only what it is. Physical kinds start placed at a parcel (then a pickup step) or in a person's hands (then a steal step, or a talk step that gives it). Information is never picked up: the step where the player learns it gives it ({{informs}}), and a later step may need it.
 
 ## device
 - Cyberpunk: a data chip with the only copy of a boardroom recording, stashed by the barista who made it.

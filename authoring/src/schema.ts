@@ -1,25 +1,9 @@
-import type { QuestlineDefinition } from '../../flow/schema.js';
+import { STEP_KINDS, type QuestlineDefinition, type StepKind } from '../../flow/schema.js';
 import type { NamedWorld, NPCTypeSet } from '../../world/types/named-world.js';
 
-export const MECHANICS = [
-  'goto',
-  'observe',
-  'talk',
-  'listen',
-  'pickup',
-  'deliver',
-  'steal',
-  'assassinate',
-  'work',
-  'investigation',
-  'rescue',
-  'escort',
-  'access',
-  'hacking',
-  'sabotage',
-  'transportation',
-] as const;
-export type Mechanic = (typeof MECHANICS)[number];
+/** The flow's closed step vocabulary; a mechanic skill covers exactly one kind. */
+export const MECHANICS = STEP_KINDS;
+export type Mechanic = StepKind;
 
 export interface WorldContext {
   world: NamedWorld;
