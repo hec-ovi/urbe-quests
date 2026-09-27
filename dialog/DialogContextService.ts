@@ -15,6 +15,7 @@ import type {
   ContextOptions,
   ContextSegment,
   DialogContext,
+  DialogEvent,
   DialogExchange,
   DialogGuide,
   DialogLine,
@@ -80,6 +81,7 @@ export class DialogContextService {
       segments.push({ id: 'memory', text: prompt('context.md#memory', { notes: bullets(memory.digest) }), shared: false });
     }
     if (options.guide) segments.push({ id: 'place', text: this.renderPlace(npc, options.guide), shared: false });
+    if (options.events?.length) segments.push({ id: 'events', text: this.renderEvents(options.events, timeMin), shared: false });
     const turns = [...memory.turns, ...said(options.prior ?? [], timeMin)];
     segments.push({ id: 'turns', text: this.renderNow(npcId, timeMin, turns), shared: false });
     return { npcId, ...(characterName ? { characterName: { ...characterName } } : {}), segments };
@@ -202,6 +204,22 @@ export class DialogContextService {
     return lines.join('\n');
   }
 
+  /** What happened around the NPC, each with where and how long ago, as the host saw it. */
+  private renderEvents(events: DialogEvent[], timeMin: number): string {
+    const lines = events.map((event) => {
+      const where = {
+        place: this.places.place({ kind: 'parcel', id: event.parcelId }),
+        distance: event.metres < 15 ? prompt('context.md#distance-here') : prompt('context.md#distance', { metres: Math.round(event.metres / 10) * 10 }),
+        span: span(timeMin - event.atMin),
+      };
+      if (event.kind === 'scene') return prompt('context.md#event-scene', { ...where, notes: event.notes.join(' ') });
+      if (event.self) return prompt('context.md#event-struck-you', where);
+      const struck = prompt(event.hard ? 'context.md#event-run-down' : 'context.md#event-struck', where);
+      return event.down ? `${struck} ${prompt('context.md#event-down')}` : struck;
+    });
+    return prompt('context.md#events', { events: bullets(lines) });
+  }
+
   private renderNow(npcId: string, timeMin: number, turns: DialogTurn[]): string {
     const behavior = this.sim.behaviorAt(npcId, timeMin);
     const day = dayName(Math.floor(timeMin / 1440) % 7);
@@ -222,6 +240,16 @@ export class DialogContextService {
 }
 
 const bullets = (lines: string[]): string => lines.map((line) => `- ${line}`).join('\n');
+
+/** How long `minutes` is, in the words context.md gives it: a moment, minutes, an hour, hours, a day, days. */
+function span(minutes: number): string {
+  if (minutes < 2) return prompt('context.md#span-moment');
+  if (minutes < 60) return prompt('context.md#span-minutes', { minutes: Math.round(minutes) });
+  if (minutes < 90) return prompt('context.md#span-hour');
+  if (minutes < 1440) return prompt('context.md#span-hours', { hours: Math.round(minutes / 60) });
+  if (minutes < 2160) return prompt('context.md#span-day');
+  return prompt('context.md#span-days', { days: Math.round(minutes / 1440) });
+}
 
 /** Lines as memory keeps them: each at the minute it was said, else at `atMin`, the NPC's without their cues. */
 const said = (lines: DialogLine[], atMin: number): DialogTurn[] =>

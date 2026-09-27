@@ -1,4 +1,4 @@
-# Quests 0.18.0
+# Quests 0.19.0
 
 Writes stories through injected agents, adapts them into typed quests, runs their rules in code, and prepares Engine handoffs and scoped NPC dialogue.
 
@@ -20,7 +20,7 @@ The Node library entry is [index.ts](index.ts), compiled to `dist/index.js`; bro
 | `QuestlineRuntime.dialogueFor`, `chooseDialogue` | Exact active step, resolved NPC, current time; declared choice ID for selection | [Authored dialogue and explicit choice result](flow/CONTRACT.md), offline, scoped to one step |
 | `EngineHandoff.assemble(questlines, input?)` | [Quest set](creation/schema/questline-set.schema.json), [bindings, scenes and capabilities](handoff/schema/handoff-input.schema.json) | [HandoffBundle](handoff/schema.ts), definitions, objectives, investigations, assets, bindings and scenes |
 | `stagedScenery(definition, stagings, itemAssets?)`, `scopedScenes`, `auditStagings`, `stagingProblems`, `stagingConflicts`, `unstagedClues` | One questline and the scenes it [stages](handoff/CONTRACT.md#stagings) | Engine scene specs, the 1.2 investigations over their clues and the items their props show; the questline and stagings under bundle-unique scene ids; the full audit; what is wrong in a staging and against its steps; the clues no staging shows |
-| `DialogContextService.contextFor(npcId, timeMin, { guide?, prior? })`, `recordExchange` | [Context inputs](dialog/CONTRACT.md#in), optional guided place and lines shown since the last exchange, completed exchange | [Scoped segments and memory](dialog/schema.ts) |
+| `DialogContextService.contextFor(npcId, timeMin, { guide?, events?, prior? })`, `recordExchange` | [Context inputs](dialog/CONTRACT.md#in), optional guided place, what happened nearby and lines shown since the last exchange, completed exchange | [Scoped segments and memory](dialog/schema.ts) |
 | `Converse.reply`, `Converse.replyStream`, `cleanReply` | [Reply input](dialog/Converse.ts), optional companion offers and abort signal, [LLMPort or StreamingLLMPort](ports/llm.ts) | Cleaned reply string with its inline cues, or streamed `delta`, `offer` and `done` [events](dialog/CONTRACT.md#out) |
 | `CUES`, `stripCues(text)` | An NPC line, free chat or authored, with [inline cues](flow/cues.ts) | The closed cue list `laugh, sigh, whisper, angry, gasp, cry`; the line as shown: cues removed, a cue between two words leaving one space, trimmed. On both entries |
 | `chatDeltas(body, onUsage?)`, `ChatToolCalls` | OpenAI-compatible `stream: true` response body, [chat shapes](ports/chat.ts) | Choice deltas in order and the reported token usage; whole tool calls in index order |

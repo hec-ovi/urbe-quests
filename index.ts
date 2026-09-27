@@ -61,6 +61,7 @@ export type {
   ContextOptions,
   ContextSegment,
   DialogContext,
+  DialogEvent,
   DialogExchange,
   DialogGuide,
   DialogLine,

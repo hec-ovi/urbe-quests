@@ -2,7 +2,7 @@
 
 import type { NamedDistrict, NamedWorld } from '../world/types/named-world.js';
 
-export type SegmentId = 'world' | 'type' | 'npc' | 'quest' | 'memory' | 'place' | 'turns';
+export type SegmentId = 'world' | 'type' | 'npc' | 'quest' | 'memory' | 'place' | 'events' | 'turns';
 
 /**
  * One layer of an NPC's dialog context. Segments come in a fixed order so
@@ -45,9 +45,39 @@ export interface DialogGuide {
   notes?: string[];
 }
 
+/**
+ * Something the host saw happen near where the NPC stands, which the NPC saw
+ * or heard of: `struck`, a car hit someone; `scene`, a quest scene stands there.
+ */
+export type DialogEvent = {
+  /** When it happened, or since when the scene stands. */
+  atMin: number;
+  /** The building it happened at or in front of. */
+  parcelId: string;
+  /** How far from where the NPC stands, in metres. */
+  metres: number;
+} & (
+  | {
+    kind: 'struck';
+    /** The car was fast. */
+    hard?: boolean;
+    /** The NPC talked to is the person the car hit. */
+    self?: boolean;
+    /** The person hit still lies where they fell. */
+    down?: boolean;
+  }
+  | {
+    kind: 'scene';
+    /** What shows there, one plain sentence each, never who someone is or what happened. */
+    notes: string[];
+  }
+);
+
 export interface ContextOptions {
   /** Adds the `place` segment. */
   guide?: DialogGuide;
+  /** Adds the `events` segment, in the order given. */
+  events?: DialogEvent[];
   /** Lines the host showed in this conversation that memory does not hold yet, oldest first; they follow the remembered turns. */
   prior?: DialogLine[];
 }

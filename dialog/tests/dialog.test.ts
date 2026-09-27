@@ -286,6 +286,33 @@ describe('DialogContextService', () => {
     expect(service.contextFor(informerId, TUE_10).segments.some((s) => s.id === 'place')).toBe(false);
   });
 
+  it('tells what the host saw happen nearby, with where and how long ago, after the place and before the turns', () => {
+    const { service, informerId } = setup();
+    const work = 'p4';
+    const context = service.contextFor(informerId, TUE_10, {
+      guide: { placeId: work, kind: 'parcel' },
+      events: [
+        { kind: 'struck', atMin: TUE_10 - 1, parcelId: work, metres: 34, hard: true, down: true },
+        { kind: 'struck', atMin: TUE_10 - 25, parcelId: 'p8', metres: 6 },
+        { kind: 'struck', atMin: TUE_10 - 70, parcelId: work, metres: 3, self: true, down: true },
+        { kind: 'scene', atMin: TUE_10 - 3 * 60, parcelId: 'p8', metres: 52, notes: ['It looks like a crime scene.', 'A body lies on the ground.'] },
+        { kind: 'scene', atMin: TUE_10 - 2 * 1440, parcelId: 'p8', metres: 52, notes: ['Someone stands there crying.'] },
+      ],
+    });
+    expect(context.segments.map((s) => s.id)).toEqual(['world', 'type', 'npc', 'quest', 'place', 'events', 'turns']);
+    const events = segment(context, 'events');
+    expect(events).toMatch(/^What has happened around you lately, as you saw it or heard it from the people nearby\. The player may not know\./);
+    expect(events.split('\n').slice(1)).toEqual([
+      '- A car ran someone down at speed in the street by Static Cafe in Kanaal Market, about 30 metres from where you stand, a moment ago. They still lie there.',
+      '- A car hit someone in the street by Precinct 9 in Kanaal Market, right where you stand, 25 minutes ago.',
+      '- A car hit you in the street by Static Cafe in Kanaal Market, about an hour ago. You are shaken, but back on your feet.',
+      '- At Precinct 9 in Kanaal Market, about 50 metres from where you stand, for about 3 hours now: It looks like a crime scene. A body lies on the ground.',
+      '- At Precinct 9 in Kanaal Market, about 50 metres from where you stand, for 2 days now: Someone stands there crying.',
+    ]);
+    expect(events).not.toMatch(/\bp[48]\b/);
+    expect(service.contextFor(informerId, TUE_10, { events: [] }).segments.some((s) => s.id === 'events')).toBe(false);
+  });
+
   it('stores an exchange at once and folds overflow after it, keeping the turns until their note exists', async () => {
     const notes: ((note: string) => void)[] = [];
     const folds: string[] = [];

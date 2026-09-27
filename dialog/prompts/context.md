@@ -80,6 +80,63 @@ What is there right now:
 
 When the player asks about this place, talk about it as you know it; what you do not know about it, you do not know.
 
+## events
+
+What has happened around you lately, as you saw it or heard it from the people nearby. The player may not know. It is on your mind: bring it up or let it color your words when it fits, as anyone would who was there.
+{{events}}
+
+## event-struck
+
+A car hit someone in the street by {{place}}, {{distance}}, {{span}} ago.
+
+## event-run-down
+
+A car ran someone down at speed in the street by {{place}}, {{distance}}, {{span}} ago.
+
+## event-down
+
+They still lie there.
+
+## event-struck-you
+
+A car hit you in the street by {{place}}, {{span}} ago. You are shaken, but back on your feet.
+
+## event-scene
+
+At {{place}}, {{distance}}, for {{span}} now: {{notes}}
+
+## distance-here
+
+right where you stand
+
+## distance
+
+about {{metres}} metres from where you stand
+
+## span-moment
+
+a moment
+
+## span-minutes
+
+{{minutes}} minutes
+
+## span-hour
+
+about an hour
+
+## span-hours
+
+about {{hours}} hours
+
+## span-day
+
+about a day
+
+## span-days
+
+{{days}} days
+
 ## now
 
 It is {{day}} {{time}}; right now you are {{activity}}.
