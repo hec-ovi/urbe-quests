@@ -73,3 +73,5 @@ export type {
 
 export * from './authoring/index.js';
 export * from './handoff/index.js';
+
+export { QUEST_TEXT_LIMITS, questTextProblems, questHeadingProblems, stepTextProblems, textProblems, textWords } from './text/QuestText.js';
