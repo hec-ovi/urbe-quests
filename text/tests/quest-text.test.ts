@@ -21,6 +21,11 @@ describe('quest text reading budgets', () => {
     expect(textProblems('hint', 'Talk to\nMira.', 'objective')).toContain('hint must fit one line');
   });
 
+  it('counts cue-shaped text in unvoiced labels exactly as the UI displays it', () => {
+    expect(textProblems('hint', '[sigh] '.repeat(11), 'objective')).toContain('hint has 11 words; use at most 10');
+    expect(textProblems('title', '[sigh]'.repeat(11), 'title')).toContain('title has 66 characters; use at most 60');
+  });
+
   it('allows an absent scene but refuses blank speech and multiple scene sentences', () => {
     expect(textProblems('scene', '', 'scene')).toEqual([]);
     expect(textProblems('opening', ' [sigh] ', 'speech')).toContain('opening must not be blank');

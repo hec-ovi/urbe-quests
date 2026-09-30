@@ -16,17 +16,17 @@ type TextKind = keyof typeof QUEST_TEXT_LIMITS;
 const sentences = new Intl.Segmenter('en', { granularity: 'sentence' });
 
 /** Whitespace-separated visible words; contractions and hyphenated words count once. */
+const wordCount = (visible: string): number => visible ? visible.split(/\s+/u).length : 0;
 export function textWords(text: string): number {
-  const visible = stripCues(text);
-  return visible ? visible.split(/\s+/u).length : 0;
+  return wordCount(stripCues(text));
 }
 
 /** Never truncate: each failure names the field and limit for an author's repair. */
 export function textProblems(path: string, text: string, kind: TextKind): string[] {
-  const visible = stripCues(text);
+  const visible = kind === 'speech' ? stripCues(text) : text.trim();
   const limit = QUEST_TEXT_LIMITS[kind];
   const problems: string[] = [];
-  const words = textWords(text);
+  const words = wordCount(visible);
   const characters = [...visible].length;
   if (!visible && kind !== 'scene') problems.push(`${path} must not be blank`);
   if (words > limit.words) problems.push(`${path} has ${words} words; use at most ${limit.words}`);

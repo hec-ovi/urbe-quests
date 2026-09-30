@@ -17,7 +17,7 @@ whitespace-separated visible words. `QUEST_TEXT_LIMITS` publishes the limits.
 | speech (opening/reply) | 45 | 300 | 3 |
 | choice | 12 | 100 | 2 |
 
-Visible text excludes the six supported speech cues. Sentences use the runtime's
+Speech counts exclude the six supported inline cues; other fields count their literal display text. Sentences use the runtime's
 English `Intl.Segmenter`, with Dr/Mr/Mrs/Ms/Prof/St titles before a name protected; words split on whitespace. Non-prologue fields reject
 line breaks. Scenes and optional prologues may be blank (the builder omits a blank prologue); other checked fields must contain visible text.
 Premises, act summaries, epilogues, personas and facts keep the longer story.
