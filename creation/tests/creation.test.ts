@@ -11,6 +11,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Ajv2020 } from 'ajv/dist/2020.js';
 import { describe, expect, it, vi } from 'vitest';
+import { questTextProblems } from '../../text/QuestText.js';
 import { QuestlineSetValidator } from '../../flow/QuestlineSet.js';
 import { QuestlineRuntime } from '../../flow/QuestlineRuntime.js';
 import type { PlayerEvent } from '../../flow/events.js';
@@ -77,6 +78,18 @@ const refuses = (title: string): Partial<StagePorts> => {
 const MAIN: QuestlineDefinition = (await run()).main.definition;
 
 describe('QuestlineCreation', () => {
+  it('opens the recorded first quest on one step and offers side jobs only after their context', async () => {
+    const result = await run();
+    const main = result.main.definition;
+    expect(main.entryStepIds).toEqual(['s_grief']);
+    expect(main.steps.find((step) => step.stepId === 's_grief')!.next.map((edge) => edge.toStepId)).toEqual(['s_kip']);
+    expect(main.steps.find((step) => step.stepId === 's_kip')!.next.map((edge) => edge.toStepId)).toEqual(['s_pickup']);
+    expect(result.side.map((side) => [side.definition.id, side.definition.offeredAfter])).toEqual([
+      ['q_oxide_filter', 's_confront_talis1'], ['q_signal_sump', 's_kip'], ['q_exchange_rate', 's_grief'],
+    ]);
+    for (const built of [result.main, ...result.side]) expect(questTextProblems(built.definition)).toEqual([]);
+  });
+
   it('runs script, main translation, situations and side translations from one prompt', async () => {
     const recorded = recordedPorts(RECORDING, world);
     const planPrompts: string[] = [];

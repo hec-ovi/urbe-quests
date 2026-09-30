@@ -39,3 +39,12 @@ describe('quest text reading budgets', () => {
     expect(() => new FlowValidator().validate(quest)).not.toThrow();
   });
 });
+
+describe('an omitted scene line', () => {
+  it('passes both authoring and persisted-flow boundaries without inventing scene text', () => {
+    const quest = fixture();
+    quest.steps[0]!.narrative.description = '';
+    expect(questTextProblems(quest)).toEqual([]);
+    expect(() => new FlowValidator().validate(quest)).not.toThrow();
+  });
+});

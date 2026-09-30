@@ -762,6 +762,7 @@
           "tool": "create_questline",
           "input": {
             "id": "q_oxide_filter",
+            "offeredAfter": "s_confront_talis1",
             "title": "Last Call at Oxide Filter",
             "premise": "A barista who has poured the same order for two years starts noticing what her regular writes on the cups she never finishes, and has to decide what to do with someone else's guilt before building security decides for her."
           }
@@ -1029,6 +1030,7 @@
           "tool": "create_questline",
           "input": {
             "id": "q_signal_sump",
+            "offeredAfter": "s_kip",
             "title": "Signal Under Sump Row",
             "premise": "A street kid who fished a company drive out of the flood finds something stranger in the same water: a junction box quietly stealing power from the district's own storm pumps, and needs a maintenance tech willing to look at it instead of look away."
           }
@@ -1306,6 +1308,7 @@
           "tool": "create_questline",
           "input": {
             "id": "q_exchange_rate",
+            "offeredAfter": "s_grief",
             "title": "The Exchange Rate",
             "premise": "A mall vendor's grey-market ration chit turns out to be stolen from a batch that was supposed to be destroyed, and when the man who tipped her off to it collapses in her queue, she and the transit agent who caught the serial have to get him help before they decide who's to blame."
           }
