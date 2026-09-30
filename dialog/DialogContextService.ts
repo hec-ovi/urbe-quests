@@ -10,7 +10,8 @@ import type { NPCType, NPCTypeSet } from '../world/types/named-world.js';
 import type { NPCInstance, RoutineEntry, SimulationPort } from '../world/types/simulation.js';
 import { BackgroundRenderer } from './BackgroundRenderer.js';
 import { MemoryStore, type MemoryStoreOptions } from './MemoryStore.js';
-import { ordinal, PlaceWords } from './places.js';
+import { listed, ordinal, PlaceWords } from './places.js';
+import type { DialogPeople } from './people.js';
 import type {
   ContextOptions,
   ContextSegment,
@@ -25,7 +26,7 @@ import type {
   DialogWorld,
   MemorySnapshot,
 } from './schema.js';
-import { clock, dayName } from './time.js';
+import { clock, dayName, spoken } from './time.js';
 
 export interface DialogContextServiceInput {
   world: DialogWorld;
@@ -84,6 +85,7 @@ export class DialogContextService {
     }
     if (options.guide) segments.push({ id: 'place', text: this.renderPlace(npc, options.guide), shared: false });
     if (options.events?.length) segments.push({ id: 'events', text: this.renderEvents(options.events, timeMin), shared: false });
+    if (options.people) segments.push({ id: 'people', text: this.renderPeople(options.people), shared: false });
     const turns = [...memory.turns, ...said(options.prior ?? [], timeMin)];
     segments.push({ id: 'turns', text: this.renderNow(npc, timeMin, turns, options.here), shared: false });
     return { npcId, ...(characterName ? { characterName: { ...characterName } } : {}), segments };
@@ -213,6 +215,39 @@ export class DialogContextService {
     if (guide.notes !== undefined && guide.notes.length > 0) lines.push(prompt('context.md#place-notes', { notes: bullets(guide.notes) }));
     lines.push(prompt('context.md#place-talk'));
     return lines.join('\n');
+  }
+
+  /**
+   * The people this NPC knows, each with who they are to it, their work and
+   * hours and where they are now; then the names the player asked about that
+   * it does not know. Nobody else's whereabouts, hours or ties are its to say.
+   */
+  private renderPeople(people: DialogPeople): string {
+    const lines = people.known.map((person) => {
+      const name = `${person.name.given} ${person.name.family}`;
+      const who = person.relation === 'household' ? prompt('context.md#person-kin', { name, kin: person.kin ?? 'family' })
+        : prompt(`context.md#person-${person.relation}`, { name });
+      // Someone in sight is where they are, whatever their hours: their role says who they are, their hours would only mislead.
+      const here = person.now.kind === 'here';
+      const work = !person.job ? ''
+        : here ? prompt('context.md#person-role', { name, role: person.job.role.replace(/_/g, ' '), place: this.places.short(person.job.place) })
+          : prompt('context.md#person-work', {
+            name,
+            role: person.job.role.replace(/_/g, ' '),
+            place: this.places.short(person.job.place),
+            days: person.job.days.length === 7 ? 'every day' : listed(person.job.days.map(dayName)),
+            from: spoken(person.job.startMin),
+            to: spoken(person.job.endMin),
+          });
+      const now = person.now.kind === 'place'
+        ? prompt('context.md#person-at', { name, place: this.places.short(person.now.place) })
+        : prompt(`context.md#person-${person.now.kind}`, { name });
+      const asked = person.asked ? prompt(here ? 'context.md#person-asked-here' : 'context.md#person-asked', { name }) : '';
+      return [who, now, work, asked].filter(Boolean).join(' ');
+    });
+    const blocks = [prompt('context.md#people', { people: lines.length > 0 ? bullets(lines) : prompt('context.md#people-none') })];
+    for (const word of people.unknown) blocks.push(prompt('context.md#people-unknown', { word }));
+    return blocks.join('\n');
   }
 
   /** What happened around the NPC, each with where and how long ago, as the host saw it. */

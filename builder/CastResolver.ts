@@ -106,7 +106,24 @@ export class CastResolver {
     return { cast, posts };
   }
 
+  /**
+   * A character the script names is drawn as that name's gender, so someone
+   * of that gender plays them when the city holds one who can; only when
+   * nobody of it can is the part cast as before, whoever holds it.
+   */
   private resolveRole(def: QuestlineDefinition, role: QuestRole, referenceTimeMin: number, taken: Set<string>): string {
+    const gender = this.venues?.genderOfRole(role);
+    if (gender !== undefined) {
+      try {
+        return this.resolveAs(def, role, referenceTimeMin, taken, (npc) => npc.gender === undefined || npc.gender === gender);
+      } catch (error) {
+        if (!blocks(error)) throw error;
+      }
+    }
+    return this.resolveAs(def, role, referenceTimeMin, taken, () => true);
+  }
+
+  private resolveAs(def: QuestlineDefinition, role: QuestRole, referenceTimeMin: number, taken: Set<string>, fits: (npc: NPCInstance) => boolean): string {
     const times = this.storyTimes(def, role.roleId, referenceTimeMin);
     const timeMin = times[0]!;
     const workplace = workplaceOf(def, role.roleId);
@@ -114,12 +131,11 @@ export class CastResolver {
     // The same character across questlines is the same person, whoever else is cast.
     const known = this.reservedPerson(role);
     if (known !== undefined && !taken.has(known.npcId)) return known.npcId;
-
     // Loading after closing time does not erase a city's day staff. Search
     // the weekly posts before reserving or reusing an established person.
     if (workplace !== undefined) {
       for (const at of times) {
-        const found = this.fromPost(def, role, workplace, at, taken);
+        const found = this.fromPost(def, role, workplace, at, taken, fits);
         if (found !== undefined) return found;
       }
     }
@@ -142,12 +158,12 @@ export class CastResolver {
     }
 
     for (const at of times) {
-      const found = this.fromPost(def, role, undefined, at, taken);
+      const found = this.fromPost(def, role, undefined, at, taken, fits);
       if (found !== undefined) return found;
     }
 
     // Nobody of that type holds a post at that hour: someone of that type already in the world can play the part.
-    const living = this.sim.findNPCs({ type: role.npcType }).filter((npc) => !npc.flags.dead);
+    const living = this.sim.findNPCs({ type: role.npcType }).filter((npc) => !npc.flags.dead && fits(npc));
     const free = living.find((npc) => !taken.has(npc.npcId));
     if (free !== undefined) return free.npcId;
 
@@ -164,6 +180,7 @@ export class CastResolver {
     workplace: string | undefined,
     timeMin: number,
     taken: Set<string>,
+    fits: (npc: NPCInstance) => boolean = () => true,
   ): string | undefined {
     const staffRole = this.venues?.staffRoleFor(def, role);
     const window = storyWindow(def, role.roleId);
@@ -180,7 +197,7 @@ export class CastResolver {
     if (workplace === undefined) queries.push({ type: role.npcType, timeMin });
     for (const query of queries) {
       const found = this.workplaces.vendor(query);
-      if (found === undefined || found.flags.dead || taken.has(found.npcId)) continue;
+      if (found === undefined || found.flags.dead || taken.has(found.npcId) || !fits(found)) continue;
       // Found on a post: this is the building the story meets them in.
       if (query.parcelId !== undefined) this.postOf.set(found.npcId, query.parcelId);
       else if (found.job !== undefined) this.postOf.set(found.npcId, found.job.parcelId);

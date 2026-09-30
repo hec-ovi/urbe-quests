@@ -39,6 +39,36 @@ export class StoryVenues {
     this.allowed = allowed === undefined ? undefined : new Set(allowed);
   }
 
+  /**
+   * The gender a named character is written as: the one the world's name pool
+   * tags their given name with, else the one their persona's pronouns name
+   * (she and her against he and his), else undefined. They are drawn in a
+   * body of that gender.
+   */
+  genderOfRole(role: QuestRole): 'male' | 'female' | undefined {
+    if (role.characterName === undefined) return undefined;
+    const tagged = this.genderOf(role.characterName);
+    if (tagged !== undefined) return tagged;
+    const count = (pattern: RegExp) => (role.persona.match(pattern) ?? []).length;
+    const she = count(/\b(she|her|hers|herself)\b/gi);
+    const he = count(/\b(he|him|his|himself)\b/gi);
+    return she > he ? 'female' : he > she ? 'male' : undefined;
+  }
+
+  /**
+   * The gender a given name carries in the world's name pool, or undefined
+   * when the pool has it for both, as neutral, or not at all.
+   */
+  genderOf(name: { given: string }): 'male' | 'female' | undefined {
+    const pools = this.types.namePool.givenByGender;
+    if (pools === undefined) return undefined;
+    const given = name.given.toLowerCase();
+    const has = (list: string[] | undefined) => (list ?? []).some((entry) => entry.toLowerCase() === given);
+    const male = has(pools.male);
+    const female = has(pools.female);
+    return male === female ? undefined : male ? 'male' : 'female';
+  }
+
   /** Hour gates first, then every role's venue, then the set, then the place names of where it all lands. */
   definition(def: QuestlineDefinition): QuestlineDefinition {
     const timed = this.stamp.definition(def);

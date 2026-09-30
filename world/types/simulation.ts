@@ -133,6 +133,8 @@ export interface NPCQuery {
 
 export interface ReservedSpec {
   name: NPCName;
+  /** Absent: the simulation infers it from the name pool's tag for the given name. */
+  gender?: 'male' | 'female';
   type: string;
   homeDistrictId?: string;
   jobParcelId?: string;

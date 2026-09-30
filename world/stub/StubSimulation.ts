@@ -105,7 +105,9 @@ export class StubSimulation implements SimulationPort {
     const job: Job | undefined = spec.jobParcelId
       ? { parcelId: this.workplace(spec.jobParcelId).id, role: spec.role ?? type.type, shift: DAY_SHIFT }
       : undefined;
-    return this.createInstance({ name: spec.name, type, job, homeDistrictId: spec.homeDistrictId, rng });
+    const npc = this.createInstance({ name: spec.name, type, job, homeDistrictId: spec.homeDistrictId, rng });
+    if (spec.gender !== undefined) npc.gender = spec.gender;
+    return npc;
   }
 
   behaviorAt(npcId: string, timeMin: number): BehaviorState {
@@ -227,6 +229,15 @@ export class StubSimulation implements SimulationPort {
     return found;
   }
 
+  private genderOfName(given: string): 'male' | 'female' | undefined {
+    const pools = this.namePool.givenByGender;
+    if (pools === undefined) return undefined;
+    const has = (list: string[]) => list.some((entry) => entry.toLowerCase() === given.toLowerCase());
+    const male = has(pools.male);
+    const female = has(pools.female);
+    return male === female ? undefined : male ? 'male' : 'female';
+  }
+
   private instantiateWorker(parcel: NamedParcel, type: NPCType, role: string, shift: Shift, slotKey: string): NPCInstance {
     const rng = new Rng(`${this.seed}:${slotKey}`);
     const name: NPCName = { given: rng.pick(this.namePool.given), family: rng.pick(this.namePool.family) };
@@ -249,10 +260,12 @@ export class StubSimulation implements SimulationPort {
     // A separate stream, so the draws below match instances made before persona facts existed.
     const persona = new Rng(`${this.seed}:persona:${npcId}`);
     const trait = persona.pick(TRAITS);
+    // A name the pool tags carries its gender, as the simulation draws names by gender; the draw stays in the stream.
+    const drawn = persona.pick(['male', 'female'] as const);
     const npc: NPCInstance = {
       npcId,
       name,
-      gender: persona.pick(['male', 'female'] as const),
+      gender: this.genderOfName(name.given) ?? drawn,
       age: 18 + persona.int(50),
       traits: [trait, persona.pick(TRAITS.filter((t) => t !== trait))],
       type: type.type,

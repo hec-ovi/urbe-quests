@@ -204,4 +204,23 @@ describe('CastResolver', () => {
     vi.spyOn(sim, 'reserveNPC').mockReturnValue(person);
     expect(resolver.cast(other, TUE_03, options).blocked?.reason).toContain('already plays a different character');
   });
+
+  it('casts a named character only onto a person of the gender the name carries', () => {
+    const { world, types } = loadFixtureWorld('neon-bay');
+    const gendered = { ...types, namePool: { ...types.namePool, givenByGender: { male: ['Bren', 'Oskar'], female: ['Mira', 'Lena'], neutral: [] } } };
+    // A name the pool does not tag is read from the persona's pronouns.
+    for (const [given, gender, persona] of [
+      ['Mira', 'female', 'Tired, exact.'], ['Oskar', 'male', 'Tired, exact.'], ['Petra', 'female', 'Keeps her brother\'s logs; she wants a name.'],
+    ] as const) {
+      for (const seed of ['g1', 'g2', 'g3', 'g4']) {
+        const sim = new StubSimulation({ seed, world, types: gendered });
+        const resolver = new CastResolver(sim, new StoryVenues(world, gendered));
+        const def = questline('q_doc', [{ ...role('r_doc', 'cafe_barista'), persona, characterName: { given, family: 'Chen' } }],
+          [step('s1', { kind: 'talk', roleId: 'r_doc', atParcelId: 'p4' })]);
+        const { cast, blocked } = resolver.cast(def, TUE_10);
+        expect(blocked).toBeUndefined();
+        expect(sim.getNPC(cast.r_doc!).gender).toBe(gender);
+      }
+    }
+  });
 });

@@ -2,8 +2,9 @@
 
 import type { NamedDistrict, NamedWorld } from '../world/types/named-world.js';
 import type { StreetGeometry } from '../world/streets.js';
+import type { DialogPeople } from './people.js';
 
-export type SegmentId = 'world' | 'type' | 'npc' | 'quest' | 'memory' | 'place' | 'events' | 'turns';
+export type SegmentId = 'world' | 'type' | 'npc' | 'quest' | 'memory' | 'place' | 'events' | 'people' | 'turns';
 
 /**
  * One layer of an NPC's dialog context. Segments come in a fixed order so
@@ -87,6 +88,8 @@ export interface ContextOptions {
   look?: DialogLook;
   /** Where the person stands now: the turns segment says where that is and what is around. */
   here?: DialogHere;
+  /** Who the person knows and where they are, and the names the player asked about that they do not know (`peopleKnown`): adds the `people` segment. */
+  people?: DialogPeople;
 }
 
 /** What a person looks like, in plain words the host takes from the look it draws them in. */

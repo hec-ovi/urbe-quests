@@ -141,6 +141,71 @@ about a day
 
 {{days}} days
 
+## people
+
+The people you know, and where they are as far as you know it right now. Where someone is right now is what this says, whatever their working hours. This is all you know of anyone in this city: never make up where somebody else is, when they work, what they do or how you are tied to them, and a shared family name means nothing unless this says you are family.
+{{people}}
+
+## people-none
+
+- Nobody in particular: you know no one here by name.
+
+## people-unknown
+
+The player asked about "{{word}}": you know nobody by that name, so you cannot say who they are, where they are or when they work. Say so as this person would.
+
+## person-coworker
+
+{{name}} works with you.
+
+## person-neighbour
+
+{{name}} lives in your building.
+
+## person-kin
+
+{{name}} is your {{kin}}.
+
+## person-work
+
+{{name}} works as {{role}} at {{place}}, {{days}}, from {{from}} to {{to}}.
+
+## person-role
+
+{{name}} works as {{role}} at {{place}}.
+
+## person-here
+
+{{name}} is here with you right now, in this building or a few steps away: you can see them.
+
+## person-at
+
+{{name}} is not here: at {{place}} right now, as far as you know.
+
+## person-home
+
+{{name}} is not here: at home right now, as far as you know.
+
+## person-street
+
+{{name}} is not here: out in the streets right now, as far as you know.
+
+## person-transit
+
+{{name}} is not here: riding the transit right now, as far as you know.
+
+## person-unknown
+
+{{name}} is not here, and you have not seen them lately: you do not know where they are right now.
+
+## person-asked
+
+The player is asking about {{name}}, who is someone else, not you.
+
+## person-asked-here
+
+The player is looking for {{name}}, who is someone else, not you: tell them {{name}} is here and point the way.
+
 ## now
 
 It is {{day}} {{time}}; right now you are {{activity}}.
