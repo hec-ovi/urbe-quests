@@ -34,6 +34,10 @@ export interface NamedParcel {
   type: ParcelType;
   tier: Tier;
   name?: string;
+  /** Atlas lot outline in world XZ, carried through Naming; dialog measures what is near a person with it. */
+  lot?: [number, number][];
+  /** Atlas access: the street edge the lot fronts and the point where it meets it. */
+  access?: { edgeId: string; point: [number, number] };
 }
 
 /** Named world's transit identities. Geometry stays in Atlas and Connections. */
@@ -41,6 +45,8 @@ export interface NamedTransitEntity {
   id: string;
   districtId?: string;
   name?: string;
+  /** Atlas stop or station position in world XZ, when the world carries it. */
+  position?: [number, number];
 }
 
 export interface NamedTransit {

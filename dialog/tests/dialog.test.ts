@@ -65,6 +65,33 @@ function setup(options: {
 
 const segment = (context: DialogContext, id: SegmentId) => context.segments.find((s) => s.id === id)?.text ?? '';
 
+/** A small street grid: First and Second Street run east-west, First and Second Avenue north-south. */
+const withStreets = (world: DialogWorld): DialogWorld => ({
+  ...world,
+  streets: {
+    edges: [
+      { id: 'e_a', class: 'road', path: [[0, 0], [200, 0]] },
+      { id: 'e_b', class: 'street', path: [[0, 100], [200, 100]] },
+      { id: 'e_c', class: 'road', path: [[0, 0], [0, 100]] },
+      { id: 'e_d', class: 'street', path: [[100, 0], [100, 100]] },
+    ],
+  },
+  parcels: world.parcels.map((parcel) => {
+    const lots: Record<string, { lot: [number, number][]; access: { edgeId: string; point: [number, number] } }> = {
+      p4: { lot: [[10, 5], [40, 5], [40, 30], [10, 30]], access: { edgeId: 'e_a', point: [25, 5] } },
+      p5: { lot: [[50, 5], [80, 5], [80, 30], [50, 30]], access: { edgeId: 'e_a', point: [65, 5] } },
+      p9: { lot: [[10, 70], [40, 70], [40, 95], [10, 95]], access: { edgeId: 'e_b', point: [25, 95] } },
+    };
+    return lots[parcel.id] ? { ...parcel, ...lots[parcel.id] } : parcel;
+  }),
+});
+
+const LOOK = {
+  height: 'tall', build: 'a slim build', face: ['a wide jaw', 'large eyes'], hair: 'short black hair, slicked back',
+  skin: 'deep brown', eyes: 'grey-green', wearing: ['a navy bomber jacket with slate sleeves', 'charcoal joggers', 'grey high-top sneakers'],
+  fabric: 'leather',
+};
+
 describe('DialogContextService', () => {
   it('layers context in cache order with shared world and type segments and the closed knowledge scope', () => {
     const { service, sim, informerId, buyerId } = setup();
@@ -375,5 +402,46 @@ describe('DialogContextService', () => {
     expect(() => unknownType.contextFor(informerId, TUE_10)).toThrowError(expect.objectContaining({ code: 'E_UNKNOWN_ID' }));
     sim.applyFlag(informerId, { kind: 'die' });
     expect(() => service.contextFor(informerId, TUE_10)).toThrowError(expect.objectContaining({ code: 'E_WRONG_STATE' }));
+  });
+
+  it('tells a person what they look like, where they live and work by street and apartment, their day and how they take to strangers', () => {
+    const { service, sim, informerId } = setup({ world: withStreets });
+    const person = sim.getNPC(informerId);
+    person.home = { parcelId: 'p9', unit: 3, apartment: { id: 'floor:2/f1-home-1', floor: 2, number: '201' } };
+    person.traits = ['warm', 'helpful'];
+    const npc = segment(service.contextFor(informerId, TUE_10, { look: LOOK }), 'npc');
+    expect(npc).toContain('What you look like, as anyone who sees you can tell: you are tall, with a slim build, a wide jaw and large eyes.');
+    expect(npc).toContain('Your hair: short black hair, slicked back. Your skin is deep brown and your eyes are grey-green.');
+    expect(npc).toContain('You are wearing a navy bomber jacket with slate sleeves, charcoal joggers and grey high-top sneakers; your clothes are leather.');
+    expect(npc).toContain('You live in apartment 201 on the second floor of Blockhouse Elin, an apartment block on Second Street near the corner of First Avenue, in The Sump.');
+    expect(npc).toContain('You work at Static Cafe, a coffee shop on First Street near the corner of First Avenue, in Kanaal Market as');
+    expect(npc).toContain('You are friendly with strangers');
+    expect(npc).toMatch(/Your day today, Tuesday: .*at work/);
+
+    person.traits = ['suspicious', 'brusque'];
+    expect(segment(service.contextFor(informerId, TUE_10), 'npc')).toContain('You do not like strangers');
+  });
+
+  it('says where a person stands: the street and corner, the building beside them, what is around, the light and where they are headed', () => {
+    const { service, informerId } = setup({ world: withStreets });
+    const turns = segment(service.contextFor(informerId, TUE_10, { here: { x: 30, z: -3, light: 'night, under street lamps and neon' } }), 'turns');
+    expect(turns).toContain('You are standing on First Street near the corner of First Avenue, in Kanaal Market.');
+    expect(turns).toContain('You are outside Static Cafe, a coffee shop.');
+    expect(turns).toContain('Around you:\n- Noodle Saint, a restaurant, about 20 metres to the south-east');
+    expect(turns).toContain('The light: night, under street lamps and neon.');
+
+    const inside = segment(service.contextFor(informerId, TUE_10, { here: { x: 25, z: 20, parcelId: 'p4', floor: 0 } }), 'turns');
+    expect(inside).toContain('You are inside Static Cafe, a coffee shop, on the ground floor.');
+    expect(inside).not.toContain('- Static Cafe');
+
+    const guided = segment(service.contextFor(informerId, TUE_10, { guide: { placeId: 'street:2', kind: 'street' } }), 'place');
+    expect(guided).toContain('You have led the player to Second Street');
+  });
+
+  it('knows the apartment it has led the player to as its own home', () => {
+    const { service, sim, informerId } = setup({ world: withStreets });
+    sim.getNPC(informerId).home = { parcelId: 'p9', unit: 3, apartment: { id: 'floor:2/f1-home-1', floor: 2, number: '201' } };
+    const place = segment(service.contextFor(informerId, TUE_10, { guide: { placeId: 'p9', kind: 'parcel' } }), 'place');
+    expect(place).toContain('This is your own apartment, number 201, on the second floor; you stand at its door.');
   });
 });

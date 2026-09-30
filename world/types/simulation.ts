@@ -66,6 +66,8 @@ export interface RoutineEntry {
   endMin: number;
   activity: Activity;
   place: PlaceRef;
+  /** Present for a walk between two scheduled places. */
+  walk?: { from: PlaceRef; to: PlaceRef };
 }
 
 export interface NPCFlags {
@@ -82,7 +84,7 @@ export interface NPCInstance {
   /** Two to four plain words, such as `wary` or `chatty`. */
   traits?: string[];
   type: string;
-  home: { parcelId: string; unit: number };
+  home: Home;
   /** Building employment. */
   job?: Job;
   /** Station or vehicle employment; absent for building workers. */
@@ -91,6 +93,20 @@ export interface NPCInstance {
   /** Weekly plan; entries cover the full week with no gaps. */
   routine: RoutineEntry[];
   flags: NPCFlags;
+}
+
+/** Where a person lives: the building, its unit and, in a building the game opened, the apartment. */
+export interface Home {
+  parcelId: string;
+  unit: number;
+  apartment?: HomeApartment;
+}
+
+/** One real dwelling: its id in the building, its floor and the number on its door. */
+export interface HomeApartment {
+  id: string;
+  floor: number;
+  number?: string;
 }
 
 export interface BehaviorState {

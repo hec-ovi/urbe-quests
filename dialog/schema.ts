@@ -1,6 +1,7 @@
 /** Dialog context types: cache-ordered segments, the world they read, memory turns, digests. */
 
 import type { NamedDistrict, NamedWorld } from '../world/types/named-world.js';
+import type { StreetGeometry } from '../world/streets.js';
 
 export type SegmentId = 'world' | 'type' | 'npc' | 'quest' | 'memory' | 'place' | 'events' | 'turns';
 
@@ -28,17 +29,19 @@ export interface DialogContext {
  * and parcels are not named yet. Unnamed places are described, never shown by id.
  */
 export interface DialogWorld {
-  meta: { naming: { theme: string } };
+  meta: { naming: { theme: string }; gridAngle?: number };
   districts: Array<Omit<NamedDistrict, 'name'> & { name?: string }>;
   parcels: NamedWorld['parcels'];
   transit?: NamedWorld['transit'];
+  /** Atlas `streets`: with it, places carry their street and a person knows where they stand. */
+  streets?: StreetGeometry;
 }
 
 /** A place the NPC has led the player to, as the host describes it. */
 export interface DialogGuide {
   placeId: string;
-  /** Simulation place kind: a building parcel, or a stop or station. */
-  kind: 'parcel' | 'stop';
+  /** Simulation place kind: a building parcel, or a stop or station; `street` a street by its StreetNames id. */
+  kind: 'parcel' | 'stop' | 'street';
   /** What the player sees it called; the world's name or the kind of building when absent. */
   name?: string;
   /** What the host shows there right now, one plain sentence each. */
@@ -80,6 +83,42 @@ export interface ContextOptions {
   events?: DialogEvent[];
   /** Lines the host showed in this conversation that memory does not hold yet, oldest first; they follow the remembered turns. */
   prior?: DialogLine[];
+  /** What the person looks like, as the host draws them: the npc segment carries it. */
+  look?: DialogLook;
+  /** Where the person stands now: the turns segment says where that is and what is around. */
+  here?: DialogHere;
+}
+
+/** What a person looks like, in plain words the host takes from the look it draws them in. */
+export interface DialogLook {
+  /** "tall", "of average height", "short". */
+  height: string;
+  /** "a slight build", "a broad, heavy build". */
+  build: string;
+  /** Face features worth a word, "a wide jaw", "large eyes"; may be empty. */
+  face: string[];
+  /** "short black hair, slicked back", "a shaved head". */
+  hair: string;
+  /** Skin tone: "deep brown". */
+  skin: string;
+  /** Eye colour: "grey-green". */
+  eyes: string;
+  /** What they wear, top to toe: "a navy bomber jacket with slate-grey sleeves". */
+  wearing: string[];
+  /** The fabric the clothes are made of: "leather". */
+  fabric?: string;
+}
+
+/** Where a person stands, as the host sees it. */
+export interface DialogHere {
+  /** World position on the ground plane, metres (Atlas XZ). */
+  x: number;
+  z: number;
+  /** The building they stand in, and its floor (0 the ground floor), when inside one. */
+  parcelId?: string;
+  floor?: number;
+  /** The light where they stand, in plain words: "night, under street lamps and neon". */
+  light?: string;
 }
 
 /** One line said in a conversation that no model reply carried: an authored opening, a story choice and its reply, a greeting. */

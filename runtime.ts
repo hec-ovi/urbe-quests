@@ -24,6 +24,8 @@ export type { QuestPlace } from './flow/places.js';
 export { storyWindow, workplaceOf } from './flow/roles.js';
 export { StepStamp } from './flow/StepStamp.js';
 export { POST_WINDOWS, VENUES, venueName, type Post, type StaffRole } from './world/venues.js';
+export { StreetNames, type Street, type StreetGeometry, type StreetSpot } from './world/streets.js';
+export { dispositionOf, willingTo, type Disposition, type RequestPrivacy } from './world/disposition.js';
 export { guidanceFor, type GuidanceReason, type RouteDestination, type StepGuidance } from './flow/guidance.js';
 export { QuestlineStateValidator } from './flow/state.js';
 export { CastResolver, type CastBlock, type CastOptions, type CastResult } from './builder/CastResolver.js';

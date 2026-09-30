@@ -7,10 +7,10 @@ import type { QuestlineRuntime } from '../flow/QuestlineRuntime.js';
 import type { QuestRole, QuestStep, QuestStepDialogue } from '../flow/schema.js';
 import type { LLMPort } from '../ports/llm.js';
 import type { NPCType, NPCTypeSet } from '../world/types/named-world.js';
-import type { NPCInstance, SimulationPort } from '../world/types/simulation.js';
+import type { NPCInstance, RoutineEntry, SimulationPort } from '../world/types/simulation.js';
 import { BackgroundRenderer } from './BackgroundRenderer.js';
 import { MemoryStore, type MemoryStoreOptions } from './MemoryStore.js';
-import { PlaceWords } from './places.js';
+import { ordinal, PlaceWords } from './places.js';
 import type {
   ContextOptions,
   ContextSegment,
@@ -18,7 +18,9 @@ import type {
   DialogEvent,
   DialogExchange,
   DialogGuide,
+  DialogHere,
   DialogLine,
+  DialogLook,
   DialogTurn,
   DialogWorld,
   MemorySnapshot,
@@ -72,7 +74,7 @@ export class DialogContextService {
     const segments: ContextSegment[] = [
       { id: 'world', text: this.renderWorld(), shared: true },
       { id: 'type', text: this.renderType(npc.type), shared: true },
-      { id: 'npc', text: this.renderNpc(npc, characterName), shared: false },
+      { id: 'npc', text: this.renderNpc(npc, characterName, timeMin, options.look), shared: false },
     ];
     const quest = this.renderQuestKnowledge(npcId);
     if (quest.length > 0) segments.push({ id: 'quest', text: quest, shared: false });
@@ -83,7 +85,7 @@ export class DialogContextService {
     if (options.guide) segments.push({ id: 'place', text: this.renderPlace(npc, options.guide), shared: false });
     if (options.events?.length) segments.push({ id: 'events', text: this.renderEvents(options.events, timeMin), shared: false });
     const turns = [...memory.turns, ...said(options.prior ?? [], timeMin)];
-    segments.push({ id: 'turns', text: this.renderNow(npcId, timeMin, turns), shared: false });
+    segments.push({ id: 'turns', text: this.renderNow(npc, timeMin, turns, options.here), shared: false });
     return { npcId, ...(characterName ? { characterName: { ...characterName } } : {}), segments };
   }
 
@@ -138,10 +140,11 @@ export class DialogContextService {
     return undefined;
   }
 
-  private renderNpc(npc: NPCInstance, characterName: QuestRole['characterName']): string {
+  private renderNpc(npc: NPCInstance, characterName: QuestRole['characterName'], timeMin: number, look: DialogLook | undefined): string {
     // Only the dialog projection uses the story name. Identity, routines,
     // relations, saved conversation and simulation state retain this npcId.
-    const parts = [this.background.render(characterName ? { ...npc, name: characterName } : npc)];
+    const category = this.typeOf(npc.type).category;
+    const parts = [this.background.render(characterName ? { ...npc, name: characterName } : npc, { timeMin, category, ...(look ? { look } : {}) })];
     if (characterName) parts.push(prompt('context.md#character', characterName));
     for (const runtime of this.questlines) {
       for (const role of runtime.def.roles) {
@@ -194,10 +197,18 @@ export class DialogContextService {
 
   /** The place the NPC led the player to, and what this NPC's own life ties it to. */
   private renderPlace(npc: NPCInstance, guide: DialogGuide): string {
-    const lines = [prompt('context.md#place', { place: this.places.named({ kind: guide.kind, id: guide.placeId }, guide.name) })];
+    const place = guide.kind === 'street'
+      ? this.places.street(guide.placeId) ?? guide.name ?? 'a street'
+      : this.places.named({ kind: guide.kind, id: guide.placeId }, guide.name);
+    const lines = [prompt('context.md#place', { place })];
     const at = (place: { kind: string; id: string } | undefined) => place?.kind === guide.kind && place.id === guide.placeId;
     if (at(npc.job && { kind: 'parcel', id: npc.job.parcelId }) || at(npc.transitJob?.place)) lines.push(prompt('context.md#place-work'));
-    if (at({ kind: 'parcel', id: npc.home.parcelId })) lines.push(prompt('context.md#place-home'));
+    if (at({ kind: 'parcel', id: npc.home.parcelId })) {
+      const apartment = npc.home.apartment;
+      lines.push(apartment?.number === undefined
+        ? prompt('context.md#place-home')
+        : prompt('context.md#place-apartment', { number: apartment.number, floor: ordinal(apartment.floor) }));
+    }
     if (npc.routine.some((e) => (e.activity === 'leisure' || e.activity === 'shopping') && at(e.place))) lines.push(prompt('context.md#place-haunt'));
     if (guide.notes !== undefined && guide.notes.length > 0) lines.push(prompt('context.md#place-notes', { notes: bullets(guide.notes) }));
     lines.push(prompt('context.md#place-talk'));
@@ -220,16 +231,54 @@ export class DialogContextService {
     return prompt('context.md#events', { events: bullets(lines) });
   }
 
-  private renderNow(npcId: string, timeMin: number, turns: DialogTurn[]): string {
-    const behavior = this.sim.behaviorAt(npcId, timeMin);
+  private renderNow(npc: NPCInstance, timeMin: number, turns: DialogTurn[], here: DialogHere | undefined): string {
+    const behavior = this.sim.behaviorAt(npc.npcId, timeMin);
     const day = dayName(Math.floor(timeMin / 1440) % 7);
     const lines = [prompt('context.md#now', { day, time: clock(timeMin % 1440), activity: prompt(`context.md#activity-${behavior.activity}`) })];
+    const around = here && this.places.surroundings(here);
+    if (around) {
+      lines.push(prompt('context.md#here', { where: around.where }));
+      if (around.at) lines.push(prompt('context.md#here-at', { at: around.at }));
+      if (around.around.length > 0) lines.push(prompt('context.md#around', { places: bullets(around.around) }));
+    }
+    if (here?.light) lines.push(prompt('context.md#light', { light: here.light }));
+    const heading = this.heading(npc, timeMin);
+    if (heading) lines.push(heading);
     if (turns.length > 0) {
       lines.push(prompt('context.md#conversation', {
         turns: turns.map(turn => `${turn.speaker === 'player' ? 'Player' : 'You'}: ${turn.text}`).join('\n'),
       }));
     }
     return lines.join('\n');
+  }
+
+  /**
+   * Where the person's day takes them next, read from their routine at this
+   * minute: the end of the walk they are on, else the next place it has them
+   * at and when. Nothing when the routine keeps them where they are.
+   */
+  private heading(npc: NPCInstance, timeMin: number): string | undefined {
+    const day = Math.floor(timeMin / 1440) % 7;
+    const minute = timeMin % 1440;
+    const index = npc.routine.findIndex((e) => e.days.includes(day) && minute >= e.startMin && minute < e.endMin);
+    if (index < 0) return undefined;
+    const entry = npc.routine[index]!;
+    const words = (place: RoutineEntry['place']) => place.kind === 'parcel' && place.id === npc.home.parcelId
+      ? 'your home'
+      : place.kind === 'parcel' || place.kind === 'stop' ? this.places.short({ kind: place.kind, id: place.id }) : undefined;
+    if (entry.walk) {
+      const place = words(entry.walk.to);
+      return place && prompt('context.md#heading-walk', { place });
+    }
+    // The next stay somewhere else, and when it starts: the walks and rides there are the way to it.
+    for (let step = 1; step < npc.routine.length; step++) {
+      const next = npc.routine[(index + step) % npc.routine.length]!;
+      if (next.walk || next.activity === 'commuting' || next.activity === 'transit_wait') continue;
+      if (next.place.kind === entry.place.kind && next.place.id === entry.place.id) continue;
+      const place = words(next.place);
+      return place && prompt('context.md#heading-next', { place, time: clock(next.startMin) });
+    }
+    return undefined;
   }
 
   private typeOf(type: string): NPCType {

@@ -208,7 +208,7 @@ describe('Converse', () => {
     expect(signals).toEqual([signal]);
     const [sent] = requests;
     expect(sent!.messages[0]).toEqual({ role: 'system', content: 'WORLD LAYER\n\nTYPE LAYER\n\nNPC LAYER\n\nTURNS LAYER' });
-    expect(sent!.messages[1]!.content).toContain('Their asking is their consent, so your call starts it at once');
+    expect(sent!.messages[1]!.content).toContain('Their asking is their consent, and your call means you set off with them as soon as the two of you are done talking');
     expect(sent!.messages[1]!.content).toContain('decline in character, in words only, and call nothing');
     expect(sent!.tools?.map((tool) => tool.function.name)).toEqual(['lead_player_to']);
     const lead = sent!.tools![0]!.function;
@@ -239,7 +239,7 @@ describe('Converse', () => {
         { id: 'call_0', type: 'function', function: { name: 'follow_player', arguments: '{}' } },
         { id: 'c2', type: 'function', function: { name: 'lead_player_to', arguments: '{}' } },
       ] },
-      { role: 'tool', tool_call_id: 'call_0', content: expect.stringContaining('You go with the player from here.') },
+      { role: 'tool', tool_call_id: 'call_0', content: expect.stringContaining('you set off with the player as soon as the two of you are done talking') },
       { role: 'tool', tool_call_id: 'c2', content: expect.stringContaining('not something you can do') },
     ]);
   });

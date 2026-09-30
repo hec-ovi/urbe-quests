@@ -67,6 +67,10 @@ You work here.
 
 You live here.
 
+## place-apartment
+
+This is your own apartment, number {{number}}, on the {{floor}} floor; you stand at its door.
+
 ## place-haunt
 
 You spend your free time here.
@@ -140,6 +144,31 @@ about a day
 ## now
 
 It is {{day}} {{time}}; right now you are {{activity}}.
+
+## here
+
+You are standing {{where}}.
+
+## here-at
+
+You are {{at}}.
+
+## around
+
+Around you:
+{{places}}
+
+## light
+
+The light: {{light}}.
+
+## heading-walk
+
+When the player stopped you, you were on your way to {{place}}.
+
+## heading-next
+
+Next you are due at {{place}} at {{time}}.
 
 ## activity-sleeping
 
