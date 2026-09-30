@@ -69,7 +69,15 @@ You live here.
 
 ## place-apartment
 
-This is your own apartment, number {{number}}, on the {{floor}} floor; you stand at its door.
+You live here: your own apartment is number {{number}}, on the {{floor}} floor.
+
+## place-person
+
+You have walked the player to {{name}}, who stands here with you both now. You have done what they asked; say so, and leave them to talk.
+
+## place-spot
+
+You have walked the player to {{name}}, and you are both standing there now.
 
 ## place-haunt
 
@@ -217,6 +225,23 @@ You are standing {{where}}.
 ## here-at
 
 You are {{at}}.
+
+## building-room
+
+You are in the {{room}}.
+
+## building-floors
+
+The building as you know it, {{count}} floors: {{floors}}.
+
+## building-ways
+
+Between its floors there are {{ways}}.
+
+## building-people
+
+In the building right now, as far as you can tell:
+{{people}}
 
 ## around
 

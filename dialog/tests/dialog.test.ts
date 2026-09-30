@@ -434,6 +434,22 @@ describe('DialogContextService', () => {
     expect(inside).toContain('You are inside Static Cafe, a coffee shop, on the ground floor.');
     expect(inside).not.toContain('- Static Cafe');
 
+    const building = {
+      room: 'lobby', lifts: 2, stairs: 1,
+      floors: [
+        { index: 0, rooms: ['lobby', 'mechanical_room'] },
+        { index: 1, rooms: [], apartments: ['101', '102'] },
+        { index: 2, rooms: [], apartments: ['201', '202'] },
+        { index: 3, rooms: ['gym'] },
+      ],
+      people: [{ name: 'Mira Chen', role: 'receptionist', floor: 0, room: 'lobby' }, { role: 'security', floor: 3 }],
+    };
+    const housed = segment(service.contextFor(informerId, TUE_10, { here: { x: 25, z: 20, parcelId: 'p4', floor: 0, building } }), 'turns');
+    expect(housed).toContain('You are in the lobby.');
+    expect(housed).toContain('The building as you know it, 4 floors: ground floor: lobby, mechanical room; first floor to second floor: apartments 101 to 202; third floor: gym.');
+    expect(housed).toContain('Between its floors there are 2 lifts and a staircase.');
+    expect(housed).toContain('In the building right now, as far as you can tell:\n- Mira Chen, receptionist, on this floor in the lobby\n- a security, on the third floor');
+
     const guided = segment(service.contextFor(informerId, TUE_10, { guide: { placeId: 'street:2', kind: 'street' } }), 'place');
     expect(guided).toContain('You have led the player to Second Street');
   });
@@ -442,6 +458,12 @@ describe('DialogContextService', () => {
     const { service, sim, informerId } = setup({ world: withStreets });
     sim.getNPC(informerId).home = { parcelId: 'p9', unit: 3, apartment: { id: 'floor:2/f1-home-1', floor: 2, number: '201' } };
     const place = segment(service.contextFor(informerId, TUE_10, { guide: { placeId: 'p9', kind: 'parcel' } }), 'place');
-    expect(place).toContain('This is your own apartment, number 201, on the second floor; you stand at its door.');
+    expect(place).toContain('You live here: your own apartment is number 201, on the second floor.');
+    const door = segment(service.contextFor(informerId, TUE_10, { guide: { placeId: 'p9', kind: 'parcel', notes: ['You stand at the door of your apartment, which you have opened.'] } }), 'place');
+    expect(door).toContain('What is there right now:\n- You stand at the door of your apartment, which you have opened.');
+    expect(segment(service.contextFor(informerId, TUE_10, { guide: { placeId: 'a103', kind: 'person', name: 'Mira Chen' } }), 'place'))
+      .toBe('You have walked the player to Mira Chen, who stands here with you both now. You have done what they asked; say so, and leave them to talk.');
+    expect(segment(service.contextFor(informerId, TUE_10, { guide: { placeId: 'lift', kind: 'spot', name: 'the lift on the ground floor' } }), 'place'))
+      .toBe('You have walked the player to the lift on the ground floor, and you are both standing there now.');
   });
 });

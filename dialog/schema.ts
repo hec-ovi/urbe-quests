@@ -41,8 +41,13 @@ export interface DialogWorld {
 /** A place the NPC has led the player to, as the host describes it. */
 export interface DialogGuide {
   placeId: string;
-  /** Simulation place kind: a building parcel, or a stop or station; `street` a street by its StreetNames id. */
-  kind: 'parcel' | 'stop' | 'street';
+  /**
+   * Simulation place kind: a building parcel, or a stop or station; `street` a
+   * street by its StreetNames id; `person` somebody the NPC walked the player
+   * to (`placeId` their npcId) and `spot` a place inside a building (a lift,
+   * the stairs, a room, a floor), both told by `name`.
+   */
+  kind: 'parcel' | 'stop' | 'street' | 'person' | 'spot';
   /** What the player sees it called; the world's name or the kind of building when absent. */
   name?: string;
   /** What the host shows there right now, one plain sentence each. */
@@ -122,6 +127,21 @@ export interface DialogHere {
   floor?: number;
   /** The light where they stand, in plain words: "night, under street lamps and neon". */
   light?: string;
+  /** The building they stand in, as the host's interior data has it: its floors, the ways between them and who is inside now. */
+  building?: DialogBuilding;
+}
+
+/** A building a person stands in, in plain words from the host's interior data. */
+export interface DialogBuilding {
+  /** Each floor from the ground up: the kinds of rooms people share on it, and the numbers on its apartment doors. */
+  floors: Array<{ index: number; rooms: string[]; apartments?: string[] }>;
+  /** The kind of room the person stands in: "lobby", "reception". */
+  room?: string;
+  /** How many lifts and staircases join the floors. */
+  lifts: number;
+  stairs: number;
+  /** Who else the host sees in the building now: a name when this person knows them, what they are, their floor and room. */
+  people?: Array<{ name?: string; role: string; floor: number; room?: string }>;
 }
 
 /** One line said in a conversation that no model reply carried: an authored opening, a story choice and its reply, a greeting. */

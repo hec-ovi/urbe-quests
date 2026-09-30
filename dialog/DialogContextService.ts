@@ -10,7 +10,7 @@ import type { NPCType, NPCTypeSet } from '../world/types/named-world.js';
 import type { NPCInstance, RoutineEntry, SimulationPort } from '../world/types/simulation.js';
 import { BackgroundRenderer } from './BackgroundRenderer.js';
 import { MemoryStore, type MemoryStoreOptions } from './MemoryStore.js';
-import { listed, ordinal, PlaceWords } from './places.js';
+import { listed, ordinal, PlaceWords, withArticle } from './places.js';
 import type { DialogPeople } from './people.js';
 import type {
   ContextOptions,
@@ -18,6 +18,7 @@ import type {
   DialogContext,
   DialogEvent,
   DialogExchange,
+  DialogBuilding,
   DialogGuide,
   DialogHere,
   DialogLine,
@@ -199,6 +200,11 @@ export class DialogContextService {
 
   /** The place the NPC led the player to, and what this NPC's own life ties it to. */
   private renderPlace(npc: NPCInstance, guide: DialogGuide): string {
+    if (guide.kind === 'person' || guide.kind === 'spot') {
+      const lines = [prompt(`context.md#place-${guide.kind}`, { name: guide.name ?? (guide.kind === 'person' ? 'the person they asked for' : 'the place they asked for') })];
+      if (guide.notes !== undefined && guide.notes.length > 0) lines.push(prompt('context.md#place-notes', { notes: bullets(guide.notes) }));
+      return lines.join('\n');
+    }
     const place = guide.kind === 'street'
       ? this.places.street(guide.placeId) ?? guide.name ?? 'a street'
       : this.places.named({ kind: guide.kind, id: guide.placeId }, guide.name);
@@ -274,6 +280,7 @@ export class DialogContextService {
     if (around) {
       lines.push(prompt('context.md#here', { where: around.where }));
       if (around.at) lines.push(prompt('context.md#here-at', { at: around.at }));
+      if (here.building && here.parcelId !== undefined) lines.push(...this.renderBuilding(here.building, here.floor));
       if (around.around.length > 0) lines.push(prompt('context.md#around', { places: bullets(around.around) }));
     }
     if (here?.light) lines.push(prompt('context.md#light', { light: here.light }));
@@ -285,6 +292,46 @@ export class DialogContextService {
       }));
     }
     return lines.join('\n');
+  }
+
+  /**
+   * The building the person stands in: the room they are in, what each floor
+   * holds (floors alike told together), the lifts and stairs between them and
+   * who the host sees inside now, each with their floor and room.
+   */
+  private renderBuilding(building: DialogBuilding, floor: number | undefined): string[] {
+    const lines: string[] = [];
+    if (building.room) lines.push(prompt('context.md#building-room', { room: words(building.room) }));
+    const groups: Array<{ from: number; to: number; rooms: string[]; apartments: string[] }> = [];
+    for (const entry of [...building.floors].sort((a, b) => a.index - b.index)) {
+      const last = groups.at(-1);
+      const alike = last && last.to === entry.index - 1 && last.rooms.join('|') === entry.rooms.join('|') && (last.apartments.length > 0) === ((entry.apartments?.length ?? 0) > 0);
+      if (alike) {
+        last.to = entry.index;
+        last.apartments.push(...(entry.apartments ?? []));
+      } else groups.push({ from: entry.index, to: entry.index, rooms: entry.rooms, apartments: [...(entry.apartments ?? [])] });
+    }
+    const told = groups.map((group) => {
+      const where = group.from === group.to ? `${floorWords(group.from)}` : `${floorWords(group.from)} to ${floorWords(group.to)}`;
+      const holds = [
+        ...group.rooms.map(words),
+        ...(group.apartments.length === 0 ? [] : [group.apartments.length === 1 ? `apartment ${group.apartments[0]}` : `apartments ${group.apartments[0]} to ${group.apartments.at(-1)}`]),
+      ];
+      return `${where}: ${holds.length > 0 ? holds.join(', ') : 'nothing you know of'}`;
+    });
+    if (told.length > 0) lines.push(prompt('context.md#building-floors', { count: building.floors.length, floors: told.join('; ') }));
+    const ways = [
+      ...(building.lifts > 0 ? [building.lifts === 1 ? 'a lift' : `${building.lifts} lifts`] : []),
+      ...(building.stairs > 0 ? [building.stairs === 1 ? 'a staircase' : `${building.stairs} staircases`] : []),
+    ];
+    if (ways.length > 0 && building.floors.length > 1) lines.push(prompt('context.md#building-ways', { ways: listed(ways) }));
+    const people = (building.people ?? []).map((person) => {
+      const who = person.name === undefined ? withArticle(words(person.role)) : `${person.name}, ${words(person.role)}`;
+      const where = floor !== undefined && person.floor === floor ? 'on this floor' : `on the ${floorWords(person.floor)}`;
+      return `${who}, ${where}${person.room ? ` in the ${words(person.room)}` : ''}`;
+    });
+    if (people.length > 0) lines.push(prompt('context.md#building-people', { people: bullets(people) }));
+    return lines;
   }
 
   /**
@@ -324,6 +371,12 @@ export class DialogContextService {
 }
 
 const bullets = (lines: string[]): string => lines.map((line) => `- ${line}`).join('\n');
+
+/** A room kind or role as people say it: underscores are spaces. */
+const words = (kind: string): string => kind.replace(/_/g, ' ');
+
+/** "the ground floor", "the third floor". */
+const floorWords = (index: number): string => `${ordinal(index)} floor`;
 
 /** How long `minutes` is, in the words context.md gives it: a moment, minutes, an hour, hours, a day, days. */
 function span(minutes: number): string {

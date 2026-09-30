@@ -64,6 +64,7 @@ export type {
   DialogContext,
   DialogEvent,
   DialogExchange,
+  DialogBuilding,
   DialogGuide,
   DialogHere,
   DialogLine,
