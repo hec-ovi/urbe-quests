@@ -1,5 +1,6 @@
 /** Collects planned pieces, checks their references and validates the completed definition. */
 
+import { questHeadingProblems, questTextProblems, stepTextProblems, textProblems } from '../text/QuestText.js';
 import { FlowValidator } from '../flow/validate.js';
 import type {
   Predicate,
@@ -46,6 +47,7 @@ export class QuestlineDraft {
 
   create(args: { id: string; title: string; premise: string; prologue?: string; offeredAfter?: string }): string {
     if (this.def !== undefined) throw new DraftError('questline already created');
+    this.rejectAudit(questHeadingProblems(args));
     const prologue = args.prologue?.trim();
     this.def = {
       id: args.id,
@@ -94,6 +96,7 @@ export class QuestlineDraft {
   addAct(act: QuestAct): string {
     const def = this.current();
     this.accept('acts', act.actId);
+    this.rejectAudit(textProblems(`acts.${act.actId}.title`, act.title, 'title'));
     const replaced = put(def.acts, act, (a) => a.actId === act.actId);
     return `act ${act.actId} ${verb(replaced)}; ${this.status()}`;
   }
@@ -101,6 +104,7 @@ export class QuestlineDraft {
   addEnding(ending: QuestEnding): string {
     const def = this.current();
     this.accept('endings', ending.endingId);
+    this.rejectAudit(textProblems(`endings.${ending.endingId}.title`, ending.title, 'title'));
     const replaced = put(def.endings, ending, (e) => e.endingId === ending.endingId);
     return `ending ${ending.endingId} ${verb(replaced)}; ${this.status()}`;
   }
@@ -111,7 +115,7 @@ export class QuestlineDraft {
     const { entry, ...rest } = step;
     const missing = this.missingFields(rest);
     if (missing.length > 0) throw new DraftError(`step ${rest.stepId} not added: ${missing.join('; ')}`);
-    const problems = [...this.stepProblems(rest), ...this.audit.stepProblems(rest)];
+    const problems = [...stepTextProblems(rest), ...this.stepProblems(rest), ...this.audit.stepProblems(rest)];
     if (problems.length > 0) throw new DraftError(`step ${rest.stepId} not added: ${problems.join('; ')}`);
     for (const p of [...rest.conditions, ...rest.next.flatMap((e) => e.when)]) {
       if (p.kind === 'flagSet' || p.kind === 'flagNotSet') this.declareFlag(p.flag);
@@ -179,6 +183,7 @@ export class QuestlineDraft {
     const def = this.stamp.definition(this.current());
     try {
       new FlowValidator().validate(def);
+      this.rejectAudit(questTextProblems(def));
       if (this.scenery !== undefined) this.checkScenes(def, this.scenery);
     } catch (error) {
       if (error instanceof DraftError) throw error;

@@ -42,7 +42,7 @@ export function textProblems(path: string, text: string, kind: TextKind): string
 export function questHeadingProblems(quest: Pick<QuestlineDefinition, 'title' | 'prologue'>): string[] {
   return [
     ...textProblems('title', quest.title, 'title'),
-    ...(quest.prologue === undefined ? [] : textProblems('prologue', quest.prologue, 'prologue')),
+    ...(!quest.prologue?.trim() ? [] : textProblems('prologue', quest.prologue, 'prologue')),
   ];
 }
 

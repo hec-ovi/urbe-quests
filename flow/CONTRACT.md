@@ -74,3 +74,5 @@ Completion events:
 
 ## Depends on
 - ../world (types, SimulationPort, [venue names, staffing and posts](../world/venues.ts))
+
+A step’s scene (`narrative.description`) may be an empty string when no scene line is needed. Creation text budgets live in [quest text](../text/CONTRACT.md); loading a definition or save does not apply them.

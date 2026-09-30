@@ -23,3 +23,5 @@ Write "items: none" when the story turns on no artifact. The builder may add fac
 A main questline has at least 6 steps across at least 2 acts. A side situation has at least 4 steps. Add every step and act the arc needs; there is no upper count.
 
 Expand and adapt; never contradict the story. Where a beat cannot be expressed with the vocabulary, drop the beat rather than invent a mechanic. Every step names a person who wants it: an objective nobody wants is an errand, and this story has no errands.
+
+Plan the first act as one clear chain with one entry step: go to the named person, talk, choose, then learn the next lead. Use ordinary names and explain unfamiliar terms when first needed. Keep premise and act summaries for the longer story; objectives name one action, person/object and actual place in about eight words. Do not introduce a branch or side job before the player understands the first task.

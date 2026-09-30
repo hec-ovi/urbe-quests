@@ -4,15 +4,15 @@ Add a step. Write the narrative and the stake first, then the mechanics. Every s
 
 ## narrative
 
-What happens in the story at this step.
+The scene shown before speech and in a completion notice: one sentence, at most 24 words and 180 characters, or empty. Describe the present situation without deciding for the player.
 
 ## playerHint
 
-What the player sees as the objective. Name an hour ("during the slow hour", "after dark", "before noon", "at 21:00") only when the step really is open then: the city turns those words into a gate the runtime checks, and the character is cast from whoever holds that post at that hour.
+One imperative objective, about 8 words, at most 10 words and 90 characters. Name the action, person/object and actual venue or building kind. Name an hour ("during the slow hour", "after dark", "before noon", "at 21:00") only when the step really is open then: the city turns those words into a gate the runtime checks, and the character is cast from whoever holds that post at that hour.
 
 ## stake
 
-What this step means to the person who wants it and what it costs them if it does not happen, in their own truth.
+One concrete reason this matters now, at most one sentence, 24 words and 180 characters.
 
 ## wantedByRoleId
 
@@ -20,7 +20,7 @@ The role whose want this step serves; they speak the stake to the player.
 
 ## dialogue
 
-For talk targets, author the conversation the player actually reads: opening in the named character's voice, then choices with unique id, the player's spoken text, the NPC's reply, and completesStep. Include a question with completesStep false and an explicit commitment with completesStep true. The commitment reply explains the next lead or the ending's consequences. Do not copy the objective or retrospective narrative into the opening. An opening that starts a questline, or where the player meets this character for the first time, works cold, because the player knows only the prologue and the objective: a greeting or an acknowledgement, who the character is to the player, why the player is here, then the matter, in a few spoken sentences. A later opening picks up from the last meeting. All completing choices on a step have that step's outcome; represent different outcomes with separate graph steps, and name the consequences in their choices. Opening, typing free chat, or closing the conversation never commits a choice. The NPC's lines are voiced: the opening and a reply may carry an inline cue where the sound belongs, one of {{cues}} and no other bracketed word, and only where the moment calls for it; the player's text carries none. No dialogue on other mechanic targets.
+For talk targets, author the conversation the player actually reads (opening and each reply: at most 3 sentences, 45 words, 300 characters; each choice: at most 2 sentences, 12 words, 100 characters, one line): opening in the named character's voice, then choices with unique id, the player's spoken text, the NPC's reply, and completesStep. Include a question with completesStep false and an explicit commitment with completesStep true. The commitment reply explains the next lead or the ending's consequences. Do not copy the objective or retrospective narrative into the opening. An opening that starts a questline, or where the player meets this character for the first time, works cold, because the player knows only the prologue and the objective: a greeting or an acknowledgement, who the character is to the player, why the player is here, then the matter, in a few spoken sentences. A later opening picks up from the last meeting. All completing choices on a step have that step's outcome; represent different outcomes with separate graph steps, and name the consequences in their choices. Opening, typing free chat, or closing the conversation never commits a choice. The NPC's lines are voiced: the opening and a reply may carry an inline cue where the sound belongs, one of {{cues}} and no other bracketed word, and only where the moment calls for it; the player's text carries none. No dialogue on other mechanic targets.
 
 ## target
 

@@ -65,7 +65,7 @@ export class QuestlineBuilder {
     const kinds = playableKinds(input.mechanics);
     const vars = mechanicVars(kinds);
     const staging = input.scenery !== undefined ? prompt('staging.md#build') : '';
-    const system = [prompt('builder-system.md', { ...vars, staging }), stepCatalog(kinds), prompt('artifact-catalog.md', vars)].join('\n\n');
+    const system = [prompt('builder-system.md', { ...vars, staging }), prompt('quest-text.md'), stepCatalog(kinds), prompt('artifact-catalog.md', vars)].join('\n\n');
     const userPrompt = this.renderPrompt(input);
     const venues = new StoryVenues(input.world, input.types, input.parcels);
     const draft = new QuestlineDraft(input.manifest, new WorldTargetAudit(input.world, input.types), venues, input.scenery);

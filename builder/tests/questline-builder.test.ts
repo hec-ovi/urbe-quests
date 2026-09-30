@@ -560,3 +560,40 @@ steps: s_ask (talk), s_kill (assassinate), s_look (investigation)`;
   });
 });
 
+
+
+describe('player text repair', () => {
+  it('returns an oversized step to the writer, then accepts the replacement with the same mechanics', async () => {
+    const bad = structuredClone(STEP_CALLS[0]!);
+    const input = bad.input as { narrative: { playerHint: string } };
+    input.narrative.playerHint = 'Talk '.repeat(11).trim();
+    const { agent, requests } = scriptedAgent([
+      { kind: 'calls', calls: [...SETUP_CALLS, bad, STEP_CALLS[1]!, FINAL_STEP, FINISH] },
+      { kind: 'calls', calls: [STEP_CALLS[0]!, FINISH] },
+    ]);
+    const built = await build(agent);
+    expect(toolResults(requests[1]!.transcript).join(' ')).toContain('steps.s_ask.narrative.playerHint has 11 words; use at most 10');
+    expect(built.definition.steps.find((step) => step.stepId === 's_ask')!.narrative.playerHint).toBe('Talk to the barista at the Static Cafe.');
+    expect(built.definition.entryStepIds).toEqual(['s_ask']);
+    expect(requests[0]!.system).toContain('These are per-field reading budgets');
+  });
+
+  it('rejects a long prologue before creating the draft and lets the author retry creation', async () => {
+    const bad = structuredClone(SETUP_CALLS[0]!);
+    (bad.input as Record<string, unknown>).prologue = 'Long '.repeat(46);
+    const { agent, requests } = scriptedAgent([
+      { kind: 'calls', calls: [bad] },
+      ...FULL_BUILD,
+    ]);
+    expect((await build(agent)).definition.id).toBe('q_kettle');
+    expect(toolResults(requests[1]!.transcript).join(' ')).toContain('prologue has 46 words; use at most 45');
+  });
+
+  it('keeps the previous step when an overlong replacement is refused', async () => {
+    const bad = structuredClone(STEP_CALLS[0]!);
+    (bad.input as { narrative: { stake: string } }).narrative.stake = 'One. Two.';
+    const { agent } = scriptedAgent([{ kind: 'calls', calls: [...SETUP_CALLS, ...STEP_CALLS, bad, FINAL_STEP, FINISH] }]);
+    const built = await build(agent);
+    expect(built.definition.steps.find((step) => step.stepId === 's_ask')!.narrative.stake).toBe("If the ledger surfaces, the cafe is Sable's by spring.");
+  });
+});

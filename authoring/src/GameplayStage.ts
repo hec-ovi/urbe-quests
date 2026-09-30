@@ -1,3 +1,4 @@
+import { questTextProblems } from '../../text/QuestText.js';
 import { Boundary } from './Boundary.js';
 import { AuthoringError } from './AuthoringError.js';
 import { CauseEffectAudit } from './CauseEffectAudit.js';
@@ -70,6 +71,8 @@ export class GameplayStage {
     const stamped = new StepStamp(request.world).adaptation(adapted);
     const output = this.boundary.output<AdaptationOutput>('adaptation-output', stamped);
 
+    const textProblems = questTextProblems(output.definition);
+    if (textProblems.length > 0) throw new AuthoringError('E_AUTHORING_OUTPUT', 'quest text needs revision', textProblems);
     this.graphAudit.validate(output.definition);
     this.worldAudit.validate(output.definition, request);
     this.causeEffectAudit.validate(output, request.story, mechanics);

@@ -420,7 +420,7 @@
           "additionalProperties": false,
           "required": ["description", "playerHint", "stake"],
           "properties": {
-            "description": { "$ref": "#/$defs/text" },
+            "description": { "type": "string" },
             "playerHint": { "$ref": "#/$defs/text" },
             "stake": { "$ref": "#/$defs/text" }
           }

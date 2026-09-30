@@ -53,3 +53,21 @@ Translate the completed story into a playable questline while preserving why eve
 - Every story decision outcome reaches an ending.
 - The deterministic flow validator accepts the graph.
 - No step introduces random violence, unrelated theft, vehicle mayhem, or an inferred hostile target. `assassinate` is available only for a death explicitly authored by the story and traced through its consequences.
+
+## Player reading budget
+
+Write an imperative objective with person/object and real place, aiming for 8 words
+(maximum 10 words / 90 characters / one sentence). Scene and stake each take at
+most 24 words / 180 characters / one sentence; the scene may be empty. Openings
+and NPC replies take at most 45 words / 300 characters / 3 sentences. Choices take
+at most 12 words / 100 characters / 2 sentences. These fields fit one line.
+Titles take at most 6 words / 60 characters. A prologue takes at most 45 words /
+300 characters / 3 sentences. Speech cues are excluded from visible counts.
+
+Explain unfamiliar names by relationship or job. Introduce one lead at a time,
+with one entry step and a simple go, talk, choose chain before branching. The
+opening greets the player and explains the immediate problem. Put longer context
+in the journal premise and act summaries or optional question replies. Keep
+choices explicit about their consequences. Authoring rejects oversized text with
+field-specific E_AUTHORING_OUTPUT details; revise it without clipping. These are
+field budgets, with no model token cap or saved-definition migration.

@@ -148,6 +148,20 @@ describe('story stage', () => {
 });
 
 describe('gameplay stage', () => {
+  it('refuses oversized visible text with a repair path while leaving the submitted text intact', async () => {
+    const long = clone(adaptation);
+    long.definition.steps[0]!.narrative.playerHint = 'Talk '.repeat(11).trim();
+    const before = JSON.stringify(long);
+    await expect(new AuthoringHarness().adaptGameplay(adaptationRequest, {
+      selectMechanics: async () => ({ mechanics: ['talk', 'pickup', 'deliver'] }),
+      adapt: async () => long,
+    })).rejects.toMatchObject({
+      code: 'E_AUTHORING_OUTPUT',
+      details: expect.arrayContaining(['steps.s_request.narrative.playerHint has 11 words; use at most 10']),
+    });
+    expect(JSON.stringify(long)).toBe(before);
+  });
+
   it('selects mechanics from the cheap index, then loads only the selected fat skills', async () => {
     const selectMechanics = vi.fn(async (_request: MechanicSelectionAgentRequest): Promise<unknown> => ({ mechanics: ['talk', 'pickup', 'deliver'] }));
     const adapt = vi.fn(async (_request: GameplayAgentRequest): Promise<unknown> => clone(adaptation));

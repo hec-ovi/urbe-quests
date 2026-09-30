@@ -4,11 +4,11 @@ Start the questline. Write the premise first: what this story is about and why i
 
 ## premise
 
-The story of this questline in prose, written before any structure.
+The longer story for the journal, written before any structure. Explain the initial problem without spoiling later discoveries or endings.
 
 ## prologue
 
-The main story only; a side situation leaves it out. What the player reads once, before play begins, in the second person: who they are, where they stand and what they owe, and the job that opens the story, with the person and the place to go to first. A few short paragraphs, told no further than that first step and in the story's voice. The player arrives knowing nothing else.
+The main story only; a side situation leaves it out. What the player reads once, before play begins, in the second person: who they are, where they stand and what they owe, and the job that opens the story, with the person and the place to go to first. At most 3 sentences, 45 words and 300 visible characters, told no further than that first step. The player arrives knowing nothing else.
 
 ## offeredAfter
 

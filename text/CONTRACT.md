@@ -19,7 +19,7 @@ whitespace-separated visible words. `QUEST_TEXT_LIMITS` publishes the limits.
 
 Visible text excludes the six supported speech cues. Sentences use the runtime's
 English `Intl.Segmenter`, with Dr/Mr/Mrs/Ms/Prof/St titles before a name protected; words split on whitespace. Non-prologue fields reject
-line breaks. Scenes may be empty; other checked fields must contain visible text.
+line breaks. Scenes may be empty and a blank optional prologue is omitted; other checked fields must contain visible text.
 Premises, act summaries, epilogues, personas and facts keep the longer story.
 They are not subject to these glance limits. No text is clipped or rewritten by code.
 

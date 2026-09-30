@@ -44,7 +44,9 @@ Other `SimulationError`s pass through.
 - A published step and its cast name the same place: the built questline is pinned to the buildings its own people hold posts in, and a role filled off a post moves no step.
 - Flags referenced by drafted steps and facts are auto-declared; the finished definition always satisfies the flow validator.
 - Scenes are staged only where the story has them; every figure, mark and item in one comes from the staging. A quest character stands in a scene only dead, after a step kills them. The agent stages in the host's vocabulary only.
-- Prompts live in [prompts/](prompts/), including tool descriptions under `prompts/tools/` and the staging text for plan and build ([prompts/staging.md](prompts/staging.md)). Step-catalog examples read want, cost, then change. Minimums are floors, story breadth has no upper count, and model output has no token, word or character cap.
+- Prompts live in [prompts/](prompts/), including tool descriptions under `prompts/tools/` and the staging text for plan and build ([prompts/staging.md](prompts/staging.md)). Step-catalog examples read want, cost, then change. Minimums are floors, story breadth has no upper count, and model output has no token cap; player-facing fields meet the quest text reading budgets.
 
 ## Depends on
 - ../flow (schema, validator), ../world (types, SimulationPort), ../story (world brief, repair loop), ../ports (LLMPort, AgentPort), ../handoff (stagings, scenery, investigation and host capability audits)
+
+Player-facing text authored through the builder or gameplay adaptation is checked against [quest text 1.0](../text/CONTRACT.md). Overlong fields are refused with their paths and limits for revision; long journal prose stays available. Existing definitions and saves retain their flow validation. These field reading budgets do not cap model output tokens.

@@ -69,3 +69,5 @@ The shared named world envelope is [schema/world-context.schema.json](schema/wor
 - Every story beat reaches at least one quest step. Every story decision outcome reaches a distinct quest ending.
 - Every quest step has exactly one matching mechanic record and an ordered trace of all outgoing edges.
 - Agent responses are constrained by the same JSON Schemas used for boundary validation. No output length cap is added.
+
+Player-facing text authored through the builder or gameplay adaptation is checked against [quest text 1.0](../text/CONTRACT.md). Overlong fields are refused with their paths and limits for revision; long journal prose stays available. Existing definitions and saves retain their flow validation. These field reading budgets do not cap model output tokens.

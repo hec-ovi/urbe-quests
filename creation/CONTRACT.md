@@ -85,3 +85,5 @@ The sample transport follows the [Chat Completions delta format](https://develop
 
 ## Depends on
 - ../story, ../builder, ../world, ../ports, ../handoff
+
+Player-facing text authored through the builder or gameplay adaptation is checked against [quest text 1.0](../text/CONTRACT.md). Overlong fields are refused with their paths and limits for revision; long journal prose stays available. Existing definitions and saves retain their flow validation. These field reading budgets do not cap model output tokens.
