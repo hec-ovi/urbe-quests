@@ -3,18 +3,61 @@
   "model": "claude-sonnet-4.6 (sub-agent standing in for the local model)",
   "bindings": {
     "parcels": {
-      "p12": { "parcelTypes": ["commerce"], "ordinal": 2 },
-      "p13": { "parcelTypes": ["commerce"] },
-      "p32": { "parcelTypes": ["clinic"] },
-      "p40": { "parcelTypes": ["corpo"] },
-      "p4": { "parcelTypes": ["police"] },
-      "p57": { "parcelTypes": ["restaurant"] },
-      "p2": { "parcelTypes": ["offices"], "ordinal": 1 },
-      "p51": { "parcelTypes": ["offices"] },
-      "p9": { "parcelTypes": ["commerce"], "ordinal": 1 }
+      "p12": {
+        "parcelTypes": [
+          "commerce"
+        ],
+        "ordinal": 2
+      },
+      "p13": {
+        "parcelTypes": [
+          "commerce"
+        ]
+      },
+      "p32": {
+        "parcelTypes": [
+          "clinic"
+        ]
+      },
+      "p40": {
+        "parcelTypes": [
+          "corpo"
+        ]
+      },
+      "p4": {
+        "parcelTypes": [
+          "police"
+        ]
+      },
+      "p57": {
+        "parcelTypes": [
+          "restaurant"
+        ]
+      },
+      "p2": {
+        "parcelTypes": [
+          "offices"
+        ],
+        "ordinal": 1
+      },
+      "p51": {
+        "parcelTypes": [
+          "offices"
+        ]
+      },
+      "p9": {
+        "parcelTypes": [
+          "commerce"
+        ],
+        "ordinal": 1
+      }
     },
     "districts": {
-      "d1": { "kinds": ["downtown"] }
+      "d1": {
+        "kinds": [
+          "downtown"
+        ]
+      }
     },
     "roleTypes": {
       "r_petra": "quest_vendor",
@@ -29,7 +72,19 @@
       "r_yara": "quest_vendor",
       "r_milo": "quest_corporate"
     },
-    "unreservedRoles": ["r_petra", "r_kip", "r_doc", "r_talis", "r_cross", "r_ilona", "r_denna", "r_guard", "r_wick", "r_yara", "r_milo"]
+    "unreservedRoles": [
+      "r_petra",
+      "r_kip",
+      "r_doc",
+      "r_talis",
+      "r_cross",
+      "r_ilona",
+      "r_denna",
+      "r_guard",
+      "r_wick",
+      "r_yara",
+      "r_milo"
+    ]
   },
   "script": "# The Weir Line\n\n## Logline\nWhen crane operator Sable Voss drowns in a gantry \"accident\" timed to a water ration nobody admits to scheduling, his sister won't let the report close, and the thread she pulls runs from the flooded stalls of Sump Row to the boardroom glass of Aurelian Hydro. A clinic nurse who counts the drowned lungs nobody reports, an analyst who wrote the algorithm that timed the cut, and a guard who was told to lose the paperwork follow it with her. What they find is a ration starved on purpose to protect a quarter's numbers, and a choice about who gets to know why the harbour drowns on schedule.\n\n## Characters\n\n### Sable Voss\nRole: a harbour crane operator on the Sump Row gantries\nBackground: Fifteen years on the cranes, long enough to know every freighter by the sound of its hull against the pilings. Raised his sister Petra alone after their mother's lungs gave out. The week the water ration dropped to its lowest tier in a decade, his gantry lost power mid-lift during a low tide nobody had scheduled, and he went into the sump with it.\nWant: Wanted his sister clear of the docks before the rot took her too. Feared dying the way their mother did, slow and unlisted. Would never have called that lift a coincidence, which is why the record says he did.\nVoice: Even-keeled, counted things aloud before he lifted them. \"Four containers, one gantry, no surprises.\" He is not alive to speak in this script; his voice survives only in what the others remember of it.\n\n### Petra Moss\nRole: a renter in a Sump Row tenement block, Sable's sister\nBackground: Works the counter at a mall stall by day and files nothing by night, because filing means believing the report. Has kept every one of Sable's shift logs since their mother died, out of a habit that became evidence.\nWant: A name on the accident, not a weather pattern. Fears that grief with no name attached just becomes weather too. Would never take a payout that reads like a price on him.\nVoice: Blunt, runs out of patience before she runs out of words. \"He counted the lifts. The city didn't count him.\"\n\n### Kip Thorn\nRole: a street kid working the stalls and gutters of Sump Row\nBackground: Slept two nights in the flooded stairwell under Dredge Feed before he found what the tide left behind: a company drive, waterlogged but readable, tangled in the same debris that took Sable Voss. Has traded worse things for less.\nWant: The drive out of his hands before whoever wants it back finds out he has it. Fears being the kind of story the Sump forgets by winter. Would never hand it over for free, until someone asks him right.\nVoice: Fast, transactional, softens when nobody's buying. \"Everything's got a price till it's got a name on it. Then it's got a cost.\"\n\n### Doc Mira Chen\nRole: a clinic nurse at the Vitalis Spire Clinic in the Glass Apex\nBackground: Treats the burnouts and overworked execs by day for a wage; treats Sump Row's dock workers off the books after hours, in the storage room, for nothing. Has kept a private list of every dock worker who came in with drowned-sounding lungs since the last ration cut, because the clinic's official chart has no room for them.\nWant: The list to matter to someone with the power to act on it. Fears it disappearing with her, unread. Would never turn away a patient who can't pay, which is the whole reason she is poor enough to still mean it.\nVoice: Tired, exact, no wasted words. \"I don't chart what I treat after hours. Doesn't mean I don't count it.\"\n\n### Talis Rook\nRole: a corporate analyst at Aurelian Hydro in the Glass Apex\nBackground: Wrote the model that schedules Sump Row's water allocation against Aurelian Hydro's quarterly hydro-power draw, and has spent two years telling herself the model is just math. The week Sable Voss died, the model recommended a cut it had never recommended before, and she signed off on it without reading past the summary line.\nWant: To find out the cut was a coincidence. Fears finding out it was not, more than she fears losing the job that pays for that fear. Would never admit out loud that she already knows which it is.\nVoice: Precise, then suddenly plain when the precision runs out. \"The model doesn't lie. I'm less sure about the people reading it.\"\n\n### Cross Ivanov\nRole: a security guard at Apex Oversight in the Glass Apex\nBackground: Filed the maintenance report on Sable Voss's gantry the night it happened, power log and all. By morning his captain told him the file had never existed, and suggested he agree. He kept a copy anyway, in a locker he is not supposed to still have a key to.\nWant: The report on record with his name on it, not just his conscience. Fears losing the pension that keeps his mother housed in Sump Row. Would never destroy the copy, which is the only rule he has not broken yet.\nVoice: Flat and procedural until it isn't. \"That's not an accident report. That's a form somebody wanted filled out fast.\"\n\n### Ilona Vale\nRole: a resident of the Glass Apex, married onto the Aurelian Hydro board\nBackground: Grew up in Sump Row before she married her way to the top floor, and has spent every year since deciding that counts as having earned the view. Signed the memo that let Aurelian Hydro cut the ration early to protect the quarter, and told herself the harbour has always flooded, memo or not.\nWant: To be right about the memo. Fears her own signature more than she fears the drowned. Would never go back to Sump Row to check, which is why the story sends her there in every way but the one that matters.\nVoice: Measured, ends her sentences like questions so the room agrees for her. \"The ration protects the whole grid. You understand that, don't you?\"\n\n## Presentation\n\n### The Lift That Wasn't Scheduled\nRain on the gantry line at low tide, the kind that comes early enough nobody's braced for it. Sable Voss takes the morning lift the way he takes every lift, counting the containers aloud into his radio, and the power drops mid-count. What the report will call a routine outage, the men on the next crane over call something else, quietly, once the ambulance stops being useful. By the time Petra Moss hears about it from a neighbor instead of the precinct, the file has already been marked weather-related, and she has already decided that it isn't.\n\n### The Counter and the List\nSump Exchange mall, Petra's shift not over yet, her hands moving on autopilot while her head is somewhere in a filing office that won't take her calls. A regular she half-knows, a clinic nurse named Doc Mira Chen who comes in for cheap synth-tea between double shifts, sets a folded page on the counter without a word: a list of names, dock workers, all with the same drowned cough Sable had the week before he died. Petra doesn't recognize most of the names. She recognizes the pattern.\n\n### What the Tide Kept\nDredge Feed after the sump has drained back to ankle height, market stalls reopening around the wreckage like nothing happened. Kip Thorn digs a company drive out of the same debris pile that took Sable Voss, the casing cracked but the core intact, and spends a full day deciding who's worth more to sell it to before deciding that's the wrong question. He finds Petra instead, because everyone in Sump Row already knows whose brother that debris belongs to. \"Everything's got a price till it's got a name on it,\" he tells her. \"Yours has a name on it.\"\n\n## Development\n\n### The Cup That Doesn't Cool\nAurelian Hydro's lobby floor, Talis Rook running the ration model again for the fourth time that week, checking a number that keeps coming back the same. She orders her coffee the way she always does, black, too hot to drink, and lets it go cold on her desk while she rereads the memo authorizing the cut, looking for the line that makes it someone else's decision. She doesn't find it. The signature at the bottom is Ilona Vale's, and Talis has met her exactly twice.\n\n### The Copy in the Locker\nApex Oversight after shift change, the lockers lit by one working tube. Cross Ivanov has heard through the precinct grapevine that a Sump Row renter is asking questions the file was built to stop, and he has not been able to put the folder back in the drawer where it belongs since the morning his captain told him it didn't exist. He reads the maintenance log to himself one more time, the line between what he knows and what he is willing to lose finally thin enough to see through, and photographs the signature page before he can talk himself out of it.\n\n### The View From the Top Floor\nIlona Vale's residence above the smog line, a dinner she is not eating because the call from Aurelian Hydro's legal desk started before the appetizer arrived. Someone is asking about the ration model's flagged anomaly on the week of the Sump Row drowning, and legal wants to know if that someone has a name yet. Ilona tells them no, which is true, and hangs up telling herself the harbour floods every year regardless of her signature, which she no longer entirely believes.\n\n## Conflict\n\n### What the Model Actually Said\nOxide Filter, the one coffee counter Talis trusts enough to think out loud near, though she never says anything out loud. A stranger she doesn't recognize sits close enough to hear the district's maintenance drones running an unscheduled pattern outside the window, six of them, redirecting power away from the Sump Row storm pumps at an hour nothing should be flying. Talis watches the same pattern on her own model's dashboard a floor up, in real time, and finally reads past the summary line. The cut wasn't a recommendation. It was a redirection, timed to protect the grid's numbers on the one night the harbour needed every watt it had.\n\n### Dinner at Zenith Dining\nThe good booths by the window, executive hour. Ilona Vale is here because Aurelian Hydro's board eats where it can be seen eating, and today she needs an audience for a decision she has already made. In the next booth, unseen, someone hears her tell a fellow board member exactly what the redirection was for and exactly whose numbers it protected. \"The ration protects the whole grid,\" she says, and then, quieter, not for the room: \"I signed it knowing what it would do to the low tide. I didn't sign it knowing whose brother would be on the gantry.\" It is the closest she will ever come to confessing on the record, and someone finally has it on something better than memory.\n\n## Resolution\n\n### On the Record\nApex Oversight, late enough that the desk sergeant has stopped asking questions. Cross Ivanov lays out the maintenance log, the signature page, the model readout and Doc Mira's list on the counter in an order that makes itself into a case whether the precinct wants one or not, and reads it aloud until someone starts writing it down. He loses the pension inside the week. Petra Moss gets a name on the file at last, not weather, and Talis Rook gets called before an inquiry she does not try to avoid. Ilona Vale goes back to Sump Row exactly once, in a car that does not wait for her, and the ration schedule changes before the next low tide, not because anyone forgave her, but because now everyone is watching.\n\n### The Payout\nThe Sump Row end of the block, closing time. Ilona Vale comes down from the Glass Apex herself, coat still dry because she took the covered walk, and offers Petra Moss a number that would move her whole block above the flood line, no admission attached, no name on any form. \"That's a lot of money for a weather event,\" Petra says. Ilona's answer is the first sentence she has spoken all year that doesn't end like a question: \"I know exactly what it was.\" If Petra takes it, the block gets rebuilt three floors higher and Sable Voss stays filed as an accident forever, and nobody who watches her sign the papers thinks she made the wrong choice.\n",
   "situations": "## Last Call at Oxide Filter\n\n### Characters\n- Talis Rook: from the script\n- Denna Cho: the barista behind the counter at Oxide Filter in the Glass Apex, a corpo coffee barista who says more with how she steams milk than with what she says\n\n### Presentation\nDenna has made Talis Rook's order the same way for two years: black, too hot to drink, gone before it cools. The week the gantry accident report closes without a name attached, Talis starts ordering it doubled and leaving both cups on the counter, full.\n\n### Development\nDenna starts saving the cups instead of tossing them, because Talis writes on them when she thinks nobody's looking, numbers and dates in a hand too small to read upside down. She can't make out the model, but she can count how many cups pile up in her apron pocket by the end of a week, and it keeps going up.\n\n### Conflict\nA building security sweep flags the cups from the lobby cameras as unauthorized documents leaving the premises before Denna can decide who should have them, and a floor guard bags the cups and carries them away with the other confiscated paper. Denna needs them back before the sweep report goes upstairs with her name on it.\n\n### Resolution\nThe cups come back to her by a route she doesn't ask about, and she puts every one of them, still stained, into the hands of the next stranger who orders Talis's exact usual. Talis never learns where they went. She orders it the same way the next morning, black, too hot to drink, and this time it goes cold on the counter for a different reason.\n\n## Signal Under Sump Row\n\n### Characters\n- Kip Thorn: from the script\n- Wick Talbot: a subway systems tech who keeps the Sump Row line from seizing up, a maintenance tech who talks like he's still reading a schematic\n\n### Presentation\nKip found more than a drive in the flood debris under Dredge Feed: a junction box still humming under six inches of water, feeding a line that isn't on any map he's ever traded for. He needs someone who can read the wiring before he decides what it's worth, and the only person in Sump Row who won't sell that answer to the highest bidder is Wick Talbot.\n\n### Development\nWick has walked past that junction a hundred times on his rounds and never once been cleared to open it. Getting close enough to read it means a shift he isn't rostered for, on a crew that doesn't ask why a maintenance tech wants the overnight hatch. Kip has a spare access key he's not saying how he got.\n\n### Conflict\nInside the hatch, the box is routing power meant for the Sump Row storm pumps somewhere else entirely, on a schedule that lines up with every low-tide cut the district has taken this year. Wick reads the routing twice to be sure, hands shaking less from the cold than from what the numbers mean for the six blocks over his own mother's flat.\n\n### Resolution\nWick doesn't report it up his own chain, because his chain is the one that stops asking questions at the tower's front door. He writes the routing down for Kip instead, plainly, the way he'd write a repair order, and Kip finally has something worth more than a sale: a fact with a name on it, and someone else who already believes him.\n\n## The Exchange Rate\n\n### Characters\n- Yara Fenn: runs a stall at the Sump Exchange mall, a mall vendor who can price anything in under a second and never asks what it's for\n- Milo Draeger: works the transit booth in Sump Row, a transit agent who checks every serial number twice out of habit, not suspicion\n\n### Presentation\nYara Fenn sells ration top-up chits nobody asks too hard about, and Milo Draeger buys one for his mother without asking either, until the serial on the casing matches a batch his booth logged as destroyed three weeks ago, not distributed.\n\n### Development\nMilo brings the chit back to her stall demanding a name. Yara won't give him one, only a route: the batch moves through the transit tunnels faster than any inspector walks them, chit by chit, and whoever's moving it knows the schedule better than the transit authority does.\n\n### Conflict\nThe dock worker who first sold Yara the tip on the batch collapses in her queue, the chit still in his fist, lungs gone the way half of Sump Row's lungs have started going this season. Yara has to decide whether calling it in gets him arrested for hoarding contraband or gets him a doctor before either of them finds out which.\n\n### Resolution\nShe and Milo get him to the Vitalis Spire Clinic after hours, where a nurse who doesn't ask for a chart or a name treats him anyway and adds him to a list she keeps for exactly this. Yara never finds out where the batch really came from. Milo starts checking serial numbers on everything he buys for his mother, not just the one that already burned him.\n",
@@ -46,8 +101,9 @@
           "tool": "create_questline",
           "input": {
             "id": "q_weir_line",
-            "title": "The Weir Line",
-            "premise": "A crane operator's death gets filed as a weather accident. His sister won't sign off on that, and pulling the thread means dragging a street kid's salvage, a nurse's off-book list, an analyst's own model, and a guard's buried report up out of Sump Row and into the boardroom that scheduled the cut that killed him."
+            "title": "A Brother’s Death",
+            "premise": "Petra’s brother Sable died when his crane lost power. The official report blamed the storm, but she kept his shift logs and wants someone to check the evidence. You agreed to hear her out.",
+            "prologue": "You’ve agreed to help Petra learn why her brother died. Find her at the marked building and ask about his records."
           }
         },
         {
@@ -127,8 +183,8 @@
           "input": {
             "itemId": "i_drive",
             "kind": "device",
-            "name": "Sable's drive",
-            "description": "Kip's find, but really Sable's: a company data drive, cracked but readable, pulled from the same debris pile that took him. Whoever holds it holds the last thing he saw.",
+            "name": "Sable’s drive",
+            "description": "A cracked company drive found in the wreckage of Sable’s crane.",
             "atParcelId": "p13"
           }
         },
@@ -137,8 +193,8 @@
           "input": {
             "itemId": "i_medical_log",
             "kind": "information",
-            "name": "Doc Mira's list",
-            "description": "Doc Mira Chen's off-book ledger of dock workers treated for the same drowned-sounding cough, kept because the clinic's real chart has no room for them. To her it means the pattern predates Sable by months."
+            "name": "Mira’s medical records",
+            "description": "Dates and symptoms of dock workers treated during the power cuts."
           }
         },
         {
@@ -146,8 +202,8 @@
           "input": {
             "itemId": "i_schedule",
             "kind": "information",
-            "name": "the redirection schedule",
-            "description": "The pattern read off Aurelian Hydro's own maintenance drones: power pulled from the Sump Row storm pumps on a fixed schedule that lines up with every low-tide cut. To Talis it means the model wasn't wrong, it was obeyed."
+            "name": "Power-cut schedule",
+            "description": "Observed routes showing when power is diverted from the flood pumps."
           }
         },
         {
@@ -155,8 +211,8 @@
           "input": {
             "itemId": "i_report",
             "kind": "document",
-            "name": "Cross's copy",
-            "description": "The maintenance report Cross Ivanov filed the night Sable Voss died, power log and signature included, kept in a locker he isn't supposed to still have a key to. To him it means somebody besides the family already knew."
+            "name": "Cross’s power report",
+            "description": "The crane’s power log, signed by Cross on the night Sable died."
           }
         },
         {
@@ -164,40 +220,40 @@
           "input": {
             "itemId": "i_confession",
             "kind": "information",
-            "name": "Ilona's own words",
-            "description": "What Ilona Vale said over dinner at Zenith Dining when she thought the booth beside her was empty: that she signed the redirection knowing what it would cost the low tide. To her it is the one sentence she can never unsay."
+            "name": "Ilona’s admission",
+            "description": "Ilona admitted signing the power-cut order despite knowing the danger."
           }
         },
         {
           "tool": "add_act",
           "input": {
             "actId": "a1_grief",
-            "title": "The Weir Line Breaks",
-            "summary": "An accident becomes a question the family won't let close."
+            "title": "A Brother’s Death",
+            "summary": "Petra asks you to check what happened to her brother."
           }
         },
         {
           "tool": "add_act",
           "input": {
             "actId": "a2_glass",
-            "title": "Behind the Glass",
-            "summary": "The question climbs into the company that authored the answer."
+            "title": "Follow the Evidence",
+            "summary": "The records lead to the company that ordered the power cuts."
           }
         },
         {
           "tool": "add_act",
           "input": {
             "actId": "a3_board",
-            "title": "The Ledger and the Board",
-            "summary": "The abstraction gets a voice, overheard and undeniable."
+            "title": "Hear It Firsthand",
+            "summary": "Ilona’s own words reveal what she knew."
           }
         },
         {
           "tool": "add_act",
           "input": {
             "actId": "a4_choice",
-            "title": "The Choice",
-            "summary": "The case is complete; what's left is who gets to hold it."
+            "title": "Make Your Choice",
+            "summary": "Choose a public inquiry or a settlement for Petra’s block."
           }
         },
         {
@@ -205,7 +261,7 @@
           "input": {
             "endingId": "e_on_record",
             "title": "On the Record",
-            "epilogue": "Cross Ivanov reads the whole case into the precinct log until someone writes it down, and loses his pension inside the week for it. Petra Moss gets a name on the file at last, not weather. Talis Rook is called before an inquiry she does not try to avoid. Ilona Vale goes back to Sump Row exactly once, in a car that does not wait for her, and the ration schedule changes before the next low tide, not because anyone forgave her, but because now everyone is watching."
+            "epilogue": "Cross files the evidence and loses his pension. Petra gets responsibility written into Sable’s record, Talis testifies, and Ilona faces a public inquiry. The company’s power cuts are now watched."
           }
         },
         {
@@ -213,7 +269,7 @@
           "input": {
             "endingId": "e_payout",
             "title": "The Payout",
-            "epilogue": "Ilona Vale comes down from the Glass Apex herself and offers Petra Moss a number that would move her whole block above the flood line, no admission attached, no name on any form. \"That's a lot of money for a weather event,\" Petra says. \"I know exactly what it was,\" Ilona answers, the first sentence she has spoken all year that doesn't end like a question. The block gets rebuilt three floors higher. Sable Voss stays filed as an accident forever, and nobody who watches Petra sign the papers thinks she made the wrong choice."
+            "epilogue": "Ilona funds the rebuilding of Petra’s block above the flood line. There is no admission or public inquiry. Sable’s death remains recorded as an accident, even as his neighbors move to safer homes."
           }
         },
         {
@@ -271,18 +327,18 @@
           "input": {
             "stepId": "s_grief",
             "dialogue": {
-              "opening": "Before you ask: Sable knew those cranes. Fifteen years, and the power goes out in the middle of his lift. They had 'weather' on the form before I got through the door.",
+              "opening": "You came to help? I’m Petra; my brother Sable died when his crane lost power. They blamed the storm, but his records don’t add up.",
               "choices": [
                 {
                   "id": "ask_about_sable",
-                  "text": "What makes you sure it wasn't the storm?",
-                  "reply": "His shift logs. He counted every lift, every fault. The ration dropped, the gantry died, and nobody will show me the power record. Rain doesn't decide which page goes missing.",
+                  "text": "Why do you doubt the report?",
+                  "reply": "Sable logged every fault, but the power record is missing. Rain doesn’t make a page disappear.",
                   "completesStep": false
                 },
                 {
                   "id": "follow_kips_lead",
-                  "text": "I'll follow the evidence. Tell me where to start.",
-                  "reply": "Find Kip Thorn at the stalls. He found something in the wreckage and wouldn't leave it with me. Tell him you're asking for Sable, not buying salvage. Make him tell you where it is.",
+                  "text": "I’ll help find out what happened.",
+                  "reply": "Find Kip Thorn at the marked shop. He found a drive in the wreckage; ask him where it is.",
                   "completesStep": true
                 }
               ]
@@ -291,9 +347,9 @@
             "entry": true,
             "wantedByRoleId": "r_petra",
             "narrative": {
-              "description": "Petra Moss corners you before you've even finished asking about her brother, a folder of shift logs already in her hand, like she's been waiting for someone new enough to the district to still ask questions.",
-              "playerHint": "Hear Petra out about her brother.",
-              "stake": "It's not weather, and if she says that to one more precinct wall she's going to put her fist through it. If nobody outside the Sump believes her, Sable goes in the ground as a footnote."
+              "playerHint": "Talk to Petra at the marked building",
+              "description": "Petra holds out her brother’s shift logs.",
+              "stake": "Petra wants to know why her brother died."
             },
             "target": {
               "kind": "talk",
@@ -315,18 +371,18 @@
           "input": {
             "stepId": "s_kip",
             "dialogue": {
-              "opening": "Petra sent you? Right. Then this isn't a sale. There's a company drive in that wreckage, and I don't fancy meeting the company while I'm holding it.",
+              "opening": "Petra sent you? I’m Kip; I found a company drive in the wreckage. I hid it nearby before anyone came looking.",
               "choices": [
                 {
                   "id": "ask_about_drive",
-                  "text": "Why leave the drive in the debris?",
-                  "reply": "A pocket gets searched. A flooded stall gets ignored. The casing's split, but the core looks whole. I put it back somewhere I could find it. Wasn't sure who else should.",
+                  "text": "Why hide the drive?",
+                  "reply": "A pocket gets searched; wreckage gets ignored. The case is cracked, but the data may still be readable.",
                   "completesStep": false
                 },
                 {
                   "id": "recover_sables_drive",
-                  "text": "I'll recover it for Petra. Point it out.",
-                  "reply": "Loose board under the stall, right here. Lift it and take the drive out of the debris. That's the one. Don't leave without it; Petra's had enough people come back empty-handed.",
+                  "text": "I’ll take the drive for Petra.",
+                  "reply": "Take the marked drive nearby. Then find Mira, the nurse at the clinic; she has records that might help.",
                   "completesStep": true
                 }
               ]
@@ -334,9 +390,9 @@
             "actId": "a1_grief",
             "wantedByRoleId": "r_kip",
             "narrative": {
-              "description": "Kip Thorn works the stalls at Dredge Feed like he owns the block, but he goes quiet and pulls you aside the second Petra's name comes up, describing exactly where the flood left something worth more than he wants to be caught holding.",
-              "playerHint": "Talk to Kip about what the tide left behind.",
-              "stake": "He's not selling this one, but he's not holding it either. Whoever the drive belongs to at Aurelian Hydro will come looking for it, and Kip would rather it be gone from his hands than in them when they do."
+              "playerHint": "Talk to Kip at the marked shop",
+              "description": "Kip lowers his voice when you mention Petra.",
+              "stake": "Kip fears the company will come looking for the drive."
             },
             "target": {
               "kind": "talk",
@@ -360,9 +416,9 @@
             "actId": "a1_grief",
             "wantedByRoleId": "r_kip",
             "narrative": {
-              "description": "Right where Kip said, wedged under a loose stall board at Dredge Feed, the drive is still tangled in the same debris the tide never fully gave back.",
-              "playerHint": "Pick up the drive Kip pointed you to.",
-              "stake": "It's the only piece of Sable that survived the water. Leaving it there means leaving him a rumor instead of a record."
+              "playerHint": "Pick up the drive at the marked shop",
+              "description": "The cracked drive lies where Kip left it.",
+              "stake": "The drive may show why Sable’s crane lost power."
             },
             "target": {
               "kind": "pickup",
@@ -385,18 +441,18 @@
           "input": {
             "stepId": "s_doc",
             "dialogue": {
-              "opening": "Close the storage-room door. These are treatment dates, not rumors. Dock workers, the same cough, the same weeks the ration fell. Sable wasn't the first person I counted.",
+              "opening": "Hello, I’m Mira, the nurse. I kept records of dock workers getting sick during the power cuts. Sable wasn’t the first.",
               "choices": [
                 {
                   "id": "ask_about_pattern",
-                  "text": "Does your list prove what caused it?",
-                  "reply": "It proves who came in and what I treated. The dates line up with the cuts. That's a pattern worth investigating, not permission to invent the rest. Keep the distinction when you use it.",
+                  "text": "Do the records prove what caused it?",
+                  "reply": "They show who I treated and when. The dates match the cuts, but we still need to find the cause.",
                   "completesStep": false
                 },
                 {
                   "id": "carry_medical_evidence",
-                  "text": "Let me take the list and check who scheduled those cuts.",
-                  "reply": "Take it. Find Talis Rook, the analyst who wrote the ration model, and show her Sable's drive. Ask her to explain the dates. I've spent a year counting; she can spend a minute looking.",
+                  "text": "I’ll take the records and investigate.",
+                  "reply": "Take the list to Talis Rook, the company analyst, at the marked office. Show her Sable’s drive and ask about the dates.",
                   "completesStep": true
                 }
               ]
@@ -404,9 +460,9 @@
             "actId": "a1_grief",
             "wantedByRoleId": "r_doc",
             "narrative": {
-              "description": "Doc Mira Chen meets you in the storage room behind the Vitalis Spire Clinic, off the clock and off the chart, and lays out a list of names that all drowned the same way Sable did, just slower.",
-              "playerHint": "Talk to Doc Mira at the clinic.",
-              "stake": "She's kept this list for a year with nowhere to put it. If it dies with her it was never anything but a private grief; if it reaches someone who can act, it's evidence."
+              "playerHint": "Talk to Mira at the clinic",
+              "description": "Mira sets a list of patients on the counter.",
+              "stake": "Mira’s records may connect the power cuts to sick workers."
             },
             "target": {
               "kind": "talk",
@@ -430,18 +486,18 @@
           "input": {
             "stepId": "s_confront_talis1",
             "dialogue": {
-              "opening": "That drive is from the gantry? Leave it there. I recognize the allocation table. I approved the summary that week. The table underneath it is... considerably less reassuring.",
+              "opening": "I’m Talis, the company analyst. That drive shows a power cut I approved. I read the summary, but missed where the power was going.",
               "choices": [
                 {
                   "id": "ask_about_signoff",
                   "text": "What did you approve?",
-                  "reply": "A cut described as necessary for grid stability. I read the totals. I didn't follow the redirection down to the storm pumps. That's an explanation of what I did, not a defense of it.",
+                  "reply": "A cut described as necessary to keep the grid stable. I didn’t check what it would do to the flood pumps.",
                   "completesStep": false
                 },
                 {
                   "id": "verify_drone_pattern",
-                  "text": "I'll check the drone pattern against your model.",
-                  "reply": "Observe the district from street level. Watch the six maintenance drones and record their redirection pattern while I check the feed. If the routes agree, take that schedule to Cross Ivanov; he filed the gantry's power log.",
+                  "text": "I’ll check the district’s power routes.",
+                  "reply": "Observe the marked district to check the power routes. Then take the schedule to Cross Ivanov at the police station; he kept the crane’s power log.",
                   "completesStep": true
                 }
               ]
@@ -449,9 +505,9 @@
             "actId": "a2_glass",
             "wantedByRoleId": "r_talis",
             "narrative": {
-              "description": "You find Talis Rook at Oxide Filter, the one counter close enough to Aurelian Hydro that she trusts it, and set the cracked drive on the table between the two full cups she never finished.",
-              "playerHint": "Show Talis the drive.",
-              "stake": "She wrote the model. If the drive is what it looks like, she signed something she never actually read, and she has to decide whether that's still just math."
+              "playerHint": "Show Talis the drive at the marked office",
+              "description": "Talis recognizes the figures on Sable’s drive.",
+              "stake": "Talis may have approved the cut that killed Sable."
             },
             "target": {
               "kind": "talk",
@@ -483,9 +539,9 @@
             "actId": "a2_glass",
             "wantedByRoleId": "r_talis",
             "narrative": {
-              "description": "Talis asks you to watch the Glass Apex skyline from street level while she watches the same feed from her desk, so neither of them is trusting the dashboard alone.",
-              "playerHint": "Observe the Glass Apex district for the drone pattern.",
-              "stake": "Six drones over the district at an hour nothing should be flying, redirecting power away from the storm pumps. She needs it confirmed by a second pair of eyes before she'll believe her own model."
+              "playerHint": "Observe power routes in the marked district",
+              "description": "The maintenance routes reveal when power leaves the flood pumps.",
+              "stake": "Talis needs an independent check before accusing her employer."
             },
             "target": {
               "kind": "observe",
@@ -508,18 +564,18 @@
           "input": {
             "stepId": "s_cross",
             "dialogue": {
-              "opening": "You have the redirection schedule. Good. This folder is the report I filed that night. By morning I was told there was no report. Apparently somebody forgot to tell my locker.",
+              "opening": "I’m Cross; I filed the report the night Sable died. The company said it never existed. I kept a copy.",
               "choices": [
                 {
                   "id": "ask_about_missing_report",
-                  "text": "What did they want removed from the record?",
-                  "reply": "The power log. The time of the failure. My signature saying I'd checked both. Keep those together and weather stops being an adequate answer. Separate them and you've got three pieces of paper nobody remembers seeing.",
+                  "text": "What did the report show?",
+                  "reply": "The power failed during Sable’s lift. My signature confirms I checked the log; keep it with the report.",
                   "completesStep": false
                 },
                 {
                   "id": "take_report_to_lunch_lead",
-                  "text": "I'll keep your report intact and follow the authorization.",
-                  "reply": "Then take my copy, signature included. Ilona Vale will be at the board lunch with Talis Rook. Find their meeting and listen from nearby. Use the schedule to be there at the right hour; we need to hear what Ilona knew.",
+                  "text": "I’ll take the report and follow the evidence.",
+                  "reply": "Take my copy. Listen near Ilona Vale and Talis at their marked meeting during lunch; Ilona signed the order, and we need to hear what she knew.",
                   "completesStep": true
                 }
               ]
@@ -527,9 +583,9 @@
             "actId": "a2_glass",
             "wantedByRoleId": "r_cross",
             "narrative": {
-              "description": "Cross Ivanov meets you at Apex Oversight after shift change, the lockers lit by one working tube, and pulls a folder out of a locker his badge shouldn't still open.",
-              "playerHint": "Talk to Cross at Apex Oversight.",
-              "stake": "He's kept this report for months without a place to put it. Handing it over costs him the pension that keeps his mother housed, but keeping it costs him the one rule he hasn't broken yet."
+              "playerHint": "Talk to Cross at the police station",
+              "description": "Cross takes his copy of the power report from a folder.",
+              "stake": "Cross risks his pension by sharing the report."
             },
             "target": {
               "kind": "talk",
@@ -556,9 +612,9 @@
             "wantedByRoleId": "r_talis",
             "branching": "parallel",
             "narrative": {
-              "description": "Knowing the redirection schedule, you're in the next booth at Zenith Dining at exactly the hour Ilona Vale takes her board lunch, close enough to hear her explain the numbers to a colleague who never has to ask twice.",
-              "playerHint": "Listen to Ilona Vale and Talis Rook at Zenith Dining.",
-              "stake": "Talis needs to hear Ilona say it herself before she'll turn the model's evidence against the company paying her. What Ilona says over lunch is the difference between a coincidence and a confession."
+              "playerHint": "Listen to Ilona and Talis at their meeting",
+              "description": "Ilona explains the power cuts to Talis over lunch.",
+              "stake": "Hearing Ilona admit what she knew would complete the case."
             },
             "target": {
               "kind": "listen",
@@ -597,24 +653,24 @@
           "input": {
             "stepId": "s_expose",
             "dialogue": {
-              "opening": "The drive, the medical list, the schedule, my report, Ilona's own words. That's a case. Before I read it into the log: are you asking me to put all of it on record?",
+              "opening": "The drive, medical records and Ilona’s words make a case. Filing it starts a public inquiry and ends the payout offer. Do you want me to put it on record?",
               "choices": [
                 {
                   "id": "ask_cost_of_exposure",
-                  "text": "What happens if we expose the company?",
-                  "reply": "The evidence starts an inquiry, with my name attached. My pension won't survive it. Petra gets responsibility written into Sable's file, and the ration schedule gets scrutiny. Ilona's quiet payout goes away. Know which bargain you're making.",
+                  "text": "What will an inquiry cost?",
+                  "reply": "I’ll lose my pension, but Petra gets responsibility written into Sable’s file. The company’s power cuts will face public scrutiny.",
                   "completesStep": false
                 },
                 {
                   "id": "consider_ilona_offer",
-                  "text": "Hold the filing. I need to hear Ilona's offer first.",
-                  "reply": "Nothing is filed yet. Speak to Ilona Vale if you need to hear her terms. You can come back with the evidence. Once we put it on record, I won't pretend I never saw it.",
+                  "text": "Wait; I want to hear Ilona’s offer.",
+                  "reply": "Nothing is filed yet. Speak to Ilona at the marked office, then come back if you want an inquiry.",
                   "completesStep": false
                 },
                 {
                   "id": "expose_company_on_record",
-                  "text": "Expose the redirection. File the evidence and start the inquiry.",
-                  "reply": "On the record, then. I'll read every page into the log, with my signature on the report. No quiet settlement. Petra gets a name behind the order that killed Sable, and they'll have to answer for the next ration schedule in public.",
+                  "text": "File the evidence; start a public inquiry.",
+                  "reply": "I’ll put every page on record with my signature. Petra gets an answer, and the company will have to defend its next power cut in public.",
                   "completesStep": true
                 }
               ]
@@ -622,9 +678,9 @@
             "actId": "a4_choice",
             "wantedByRoleId": "r_cross",
             "narrative": {
-              "description": "You lay the drive, the list, the schedule, the report and the overheard confession across the counter at Apex Oversight, and Cross Ivanov reads every page aloud until the desk sergeant has no choice but to write it down.",
-              "playerHint": "Give everything to Cross and put the case on record.",
-              "stake": "This is the report Cross wanted to file the night it happened. It ends his pension and starts the inquiry Petra has been asking for since the funeral."
+              "playerHint": "Ask Cross to file the evidence at the station",
+              "description": "Cross waits for your decision before filing the evidence.",
+              "stake": "A public inquiry could clear Sable’s name but cost Cross his pension."
             },
             "target": {
               "kind": "talk",
@@ -648,24 +704,24 @@
           "input": {
             "stepId": "s_sellout",
             "dialogue": {
-              "opening": "You have enough to make this very public. I can also offer enough to rebuild Petra's whole block above the flood line. A settlement, without an admission. You see what that would buy, don't you?",
+              "opening": "I can pay to rebuild Petra’s block above the flood line. Accept, and Sable’s case closes as an accident with no public inquiry. Is that what you want?",
               "choices": [
                 {
                   "id": "ask_settlement_terms",
-                  "text": "What does accepting the payout do to Sable's case?",
-                  "reply": "It closes quietly. The block is rebuilt three floors higher; the death remains recorded as an accident. There is no public inquiry into my signature. The money is real, and so is that condition.",
+                  "text": "Will anyone be held responsible?",
+                  "reply": "No. The money is real, but there will be no admission and no inquiry into my signature.",
                   "completesStep": false
                 },
                 {
                   "id": "reconsider_with_cross",
-                  "text": "I won't agree yet. Cross should hear the evidence too.",
-                  "reply": "Then go to Cross Ivanov before you decide. I haven't bought your agreement by describing an offer. But if you put this on record, you understand that a quiet settlement is no longer possible, don't you?",
+                  "text": "Wait; I want to speak to Cross.",
+                  "reply": "Speak to Cross before you decide. If he files the evidence, this settlement is off the table.",
                   "completesStep": false
                 },
                 {
                   "id": "accept_payout_close_case",
-                  "text": "Accept the payout for the block and close Sable's case as an accident.",
-                  "reply": "Then those are the terms. I'll bring the settlement to Petra: the block rebuilt above the flood line, no admission, no inquiry. Sable stays recorded as an accident. I know exactly what it was. That won't be on the form.",
+                  "text": "Accept the payout; close the case as an accident.",
+                  "reply": "I’ll fund the rebuilding, with no admission and no inquiry. Sable stays recorded as an accident. Those are the terms.",
                   "completesStep": true
                 }
               ]
@@ -673,9 +729,9 @@
             "actId": "a4_choice",
             "wantedByRoleId": "r_ilona",
             "narrative": {
-              "description": "You bring everything to Ilona Vale at Aurelian Hydro instead, and she doesn't deny a word of it, just names a figure that would lift Petra's whole block above the flood line if the file closes quietly.",
-              "playerHint": "Bring everything to Ilona and hear her offer.",
-              "stake": "Ilona wants this to disappear at a price that looks enough like justice that nobody has to call it a bribe. It buys Sump Row real relief and buries Sable's name at the same time."
+              "playerHint": "Hear Ilona’s settlement offer at the marked office",
+              "description": "Ilona offers a settlement in exchange for closing the case.",
+              "stake": "The payout rebuilds Petra’s block but leaves Sable’s death recorded as an accident."
             },
             "target": {
               "kind": "talk",
@@ -800,9 +856,9 @@
             "entry": true,
             "wantedByRoleId": "r_denna",
             "narrative": {
-              "description": "Denna waves you toward a corner table at Oxide Filter during the one slow hour of her shift, when the lobby traffic thins out enough that nobody is counting who talks to who.",
-              "playerHint": "Go to Oxide Filter during the slow hour.",
-              "stake": "She is not saying a word about this over a full counter. If you show up at the wrong hour she loses her nerve and the cups stay wherever they've ended up."
+              "playerHint": "Go to the marked café during the slow hour",
+              "description": "Denna waves you toward a quiet table.",
+              "stake": "Denna needs a quiet moment to explain what happened."
             },
             "target": {
               "kind": "goto",
@@ -825,18 +881,18 @@
           "input": {
             "stepId": "s1_ask",
             "dialogue": {
-              "opening": "Keep your voice under the steamer. Talis writes figures on her cups and leaves them full. I saved the cups. The floor guard bagged my savings and took them with him.",
+              "opening": "I’m Denna, the barista. Talis, the analyst, writes calculations on coffee cups; I saved them. A guard took them during a sweep.",
               "choices": [
                 {
                   "id": "ask_why_keep_cups",
-                  "text": "What made those cups worth keeping?",
-                  "reply": "Same dates, different sums. Two cups some mornings, neither touched. You learn what an ordinary bad day looks like behind a counter. This kept happening. The sweep called them unauthorized documents; apparently I wasn't imagining it.",
+                  "text": "Why save the cups?",
+                  "reply": "The same dates kept appearing with different sums. Talis seemed to be checking something she couldn’t accept.",
                   "completesStep": false
                 },
                 {
                   "id": "recover_cup_notes",
-                  "text": "I'll get the notes back before the sweep report is filed.",
-                  "reply": "Start by observing the district. Work out which guard took the cups and learn his route. Follow the marked guard, get close, and recover the bagged notes he carries. Don't make a guess with my name on it.",
+                  "text": "I’ll recover the notes.",
+                  "reply": "Observe the marked district to identify the guard and learn his route. Then follow his marker and steal the bagged notes.",
                   "completesStep": true
                 }
               ]
@@ -844,9 +900,9 @@
             "actId": "b1_counter",
             "wantedByRoleId": "r_denna",
             "narrative": {
-              "description": "Denna tells you about the cups while she steams milk for someone else, never looking up, describing how the floor guard bagged her saved cups during the sweep and carried them away with the lobby's other unclaimed paper.",
-              "playerHint": "Hear Denna out about the cups.",
-              "stake": "She has been saving evidence of somebody else's doubt for weeks with no plan for it. Saying it out loud to you is the first risk she has taken since she started saving them."
+              "playerHint": "Talk to Denna at the café",
+              "description": "Denna speaks over the hiss of the milk steamer.",
+              "stake": "The confiscated notes could get Denna disciplined."
             },
             "target": {
               "kind": "talk",
@@ -870,9 +926,9 @@
             "actId": "b2_recovery",
             "wantedByRoleId": "r_denna",
             "narrative": {
-              "description": "You watch the district long enough to pick out the floor guard who took Denna's cups and learn his route. The bag stays with him; now you know who to follow.",
-              "playerHint": "Observe the Glass Apex district to identify the guard and learn his route.",
-              "stake": "Following the wrong guard gets Denna nothing. She needs to know who carries the cups before her name goes into the sweep report."
+              "playerHint": "Observe the marked district to identify the guard",
+              "description": "The guard carries Denna’s bagged cups on his rounds.",
+              "stake": "Identifying the right guard keeps Denna out of trouble."
             },
             "target": {
               "kind": "observe",
@@ -897,9 +953,9 @@
             "actId": "b2_recovery",
             "wantedByRoleId": "r_denna",
             "narrative": {
-              "description": "You catch up with the floor guard along his route and lift the bagged cups he carries. Denna's saved scraps are back in your hands before his report can turn them into a case against her.",
-              "playerHint": "Follow the marked guard and steal the bagged cup notes he carries.",
-              "stake": "Once the sweep report is filed with Denna's name on it, the cups become a disciplinary case instead of a coffee order. Getting them back is her chance to keep her name out of it."
+              "playerHint": "Steal the cup notes from the marked guard",
+              "description": "The marked guard carries the bag of cups.",
+              "stake": "Recovering the notes keeps them out of Denna’s disciplinary report."
             },
             "target": {
               "kind": "steal",
@@ -925,18 +981,18 @@
           "input": {
             "stepId": "s1_final",
             "dialogue": {
-              "opening": "Those are mine. The handwriting, I mean. I thought I'd thrown them away. Seeing the dates together is rather different from leaving one cup on a counter each morning.",
+              "opening": "Those are my calculations. I thought I’d thrown them away. Seeing the dates together makes them harder to ignore.",
               "choices": [
                 {
                   "id": "ask_about_cup_figures",
-                  "text": "What were you trying to calculate?",
-                  "reply": "Whether the cut still looked reasonable when I used the numbers underneath the summary. It didn't. I kept trying a different morning, as if the date was the mistake. I didn't have to write any of it on a cup.",
+                  "text": "What were you calculating?",
+                  "reply": "Whether the power cuts still looked reasonable using the figures behind the summary. They didn’t; I kept checking another date.",
                   "completesStep": false
                 },
                 {
                   "id": "return_notes_to_talis",
-                  "text": "Take the notes back. Someone thought they mattered.",
-                  "reply": "All right. Leave them with me. I won't ask where they went. Someone read them, and now I have to admit I wrote them. You did what you came to do; the next cup can wait.",
+                  "text": "Take the notes; someone thought they mattered.",
+                  "reply": "Leave them with me. Someone read them, and now I have to admit I wrote them. You’ve done what you came to do.",
                   "completesStep": true
                 }
               ]
@@ -944,9 +1000,9 @@
             "actId": "b2_recovery",
             "wantedByRoleId": "r_talis",
             "narrative": {
-              "description": "You set the recovered cups on the counter in front of Talis Rook, who recognizes her own handwriting before she recognizes what it means that someone else read it first.",
-              "playerHint": "Give the cup notes back to Talis.",
-              "stake": "Nobody has ever shown Talis proof of her own doubt before. What she does with it now is hers, but she can't pretend she never wrote it."
+              "playerHint": "Return the cup notes to Talis",
+              "description": "Talis recognizes her handwriting on the cups.",
+              "stake": "Talis must face the doubts she wrote down."
             },
             "target": {
               "kind": "talk",
@@ -1039,7 +1095,7 @@
           "tool": "add_ending",
           "input": {
             "endingId": "e2_confirmed",
-            "title": "A Fact With a Name On It",
+            "title": "The Hidden Power Line",
             "epilogue": "Wick writes the routing down for Kip plainly, the way he'd write a repair order, and doesn't take it up his own chain, because his chain is the reason it's down there unreported. Kip finally has something worth more than a sale: a fact with a name on it, and someone who already believes him."
           }
         },
@@ -1059,9 +1115,9 @@
             "entry": true,
             "wantedByRoleId": "r_kip",
             "narrative": {
-              "description": "Kip waves you down at Dredge Feed before you've even cleared the flooded stairwell, too excited to haggle for once.",
-              "playerHint": "Go find Kip at Dredge Feed.",
-              "stake": "He has found something he cannot price on his own, and he would rather show it to a witness than describe it to a buyer who might not believe him."
+              "playerHint": "Go to Kip at the marked shop",
+              "description": "Kip waves you over, too excited to haggle.",
+              "stake": "Kip needs someone to check a discovery he cannot explain."
             },
             "target": {
               "kind": "goto",
@@ -1084,18 +1140,18 @@
           "input": {
             "stepId": "s2_ask",
             "dialogue": {
-              "opening": "Listen under the water. That hum? Junction box, still live, feeding a line none of my maps admit is there. I've got a key. What I haven't got is someone who reads wiring.",
+              "opening": "Hear that hum? I found a live junction box feeding a power line that isn’t on my maps. Wick, a maintenance worker, may know what it does.",
               "choices": [
                 {
                   "id": "ask_about_wick",
-                  "text": "Why trust Wick with it?",
-                  "reply": "His mother's block floods too. He'll want an answer before he wants a buyer. He knows the line, but nobody's rostered him to open that hatch. A spare key only solves half the problem.",
+                  "text": "Why trust Wick?",
+                  "reply": "His mother’s block floods too. He’ll want an answer before he wants a buyer.",
                   "completesStep": false
                 },
                 {
                   "id": "take_hatch_key",
-                  "text": "Give me the key. I'll get near the hatch and find Wick.",
-                  "reply": "Here. Work a maintenance shift at the junction office; that'll give you a reason to be near the overnight hatch. Then talk to Wick Talbot about the routing. Bring me what it means, not what somebody would pay for it.",
+                  "text": "I’ll take the key and find Wick.",
+                  "reply": "Work a maintenance shift at the marked office to get access. Then talk to Wick Talbot about the wiring.",
                   "completesStep": true
                 }
               ]
@@ -1103,9 +1159,9 @@
             "actId": "c1_tip",
             "wantedByRoleId": "r_kip",
             "narrative": {
-              "description": "Kip describes a junction box still humming under the drained floodwater, feeding a line that isn't on any map he's ever traded for, and presses a spare hatch key into your hand before he can talk himself out of it.",
-              "playerHint": "Hear Kip out and take the spare key.",
-              "stake": "He needs the box read by someone who understands wiring, not sold to someone who understands buyers. The key is the only way in that doesn't announce itself."
+              "playerHint": "Ask Kip about the hidden power line",
+              "description": "Kip holds out a spare maintenance key.",
+              "stake": "Kip needs someone who understands the wiring."
             },
             "target": {
               "kind": "talk",
@@ -1131,9 +1187,9 @@
             "actId": "c2_tunnel",
             "wantedByRoleId": "r_wick",
             "narrative": {
-              "description": "You use the spare key to pick up an unrostered maintenance shift out of the Harbor Junction office, the easiest way to be standing near the overnight hatch without anyone asking why.",
-              "playerHint": "Work a maintenance shift to get near the hatch.",
-              "stake": "Wick cannot get near that junction without an official reason, and neither can you. A shift nobody questions is the only access that doesn't get reported before you've even opened the panel."
+              "playerHint": "Work a maintenance shift at the marked office",
+              "description": "The maintenance shift provides access to the junction.",
+              "stake": "An official shift lets you inspect the wiring without raising suspicion."
             },
             "target": {
               "kind": "work",
@@ -1157,18 +1213,18 @@
           "input": {
             "stepId": "s2_talk_wick",
             "dialogue": {
-              "opening": "Input: storm-pump supply. Output: somewhere the storm pumps aren't. I've traced it twice. The switch times match the low-tide cuts. Give me a moment. My mother's under six blocks of this.",
+              "opening": "I’m Wick, the maintenance worker. This line takes power away from the flood pumps on a fixed schedule. My mother lives in the area those pumps protect.",
               "choices": [
                 {
                   "id": "ask_routing_meaning",
-                  "text": "Could the box just be malfunctioning?",
-                  "reply": "A fault doesn't keep a calendar. This switches the same supply along the same route at the scheduled times. The box is doing its job. The question is who decided that was its job.",
+                  "text": "Could the box be broken?",
+                  "reply": "A fault doesn’t keep a calendar. The box switches the same supply at scheduled times; someone told it to do this.",
                   "completesStep": false
                 },
                 {
                   "id": "carry_routing_to_kip",
-                  "text": "Write down the routing. I'll take your reading back to Kip.",
-                  "reply": "Supply, destination, switch times. Plain enough to read without a schematic. Take this back to Kip Thorn at the stalls and tell him the storm-pump power is being redirected on purpose. He was right to get another pair of eyes.",
+                  "text": "Write it down; I’ll take the reading to Kip.",
+                  "reply": "Here are the supply, destination and switch times. Take them to Kip at the marked shop; the power is being redirected on purpose.",
                   "completesStep": true
                 }
               ]
@@ -1176,9 +1232,9 @@
             "actId": "c2_tunnel",
             "wantedByRoleId": "r_wick",
             "narrative": {
-              "description": "Inside the hatch, Wick reads the junction's routing twice before he'll say it out loud, his hands shaking less from the cold than from what the numbers mean for the six blocks over his own mother's flat.",
-              "playerHint": "Talk to Wick about what the junction is doing.",
-              "stake": "He is the only one who can make this reading mean something instead of just look strange. Saying it to you out loud is the first time he has said it to anyone."
+              "playerHint": "Talk to Wick at the marked office",
+              "description": "Wick checks the junction’s power routes twice.",
+              "stake": "Wick’s reading could show why his mother’s block keeps flooding."
             },
             "target": {
               "kind": "talk",
@@ -1202,18 +1258,18 @@
           "input": {
             "stepId": "s2_final",
             "dialogue": {
-              "opening": "You've got Wick's writing. I can tell; even his letters look like they're wired together. Tell me straight. Is that box taking power out from under us?",
+              "opening": "You’ve got Wick’s reading. Is that box taking power away from our flood pumps?",
               "choices": [
                 {
                   "id": "ask_kip_intentions",
-                  "text": "What will you do with the reading?",
-                  "reply": "Keep it where a buyer can't make it disappear. I thought finding the line was the clever part. Wick putting his name to what it does? That's somebody else's skin beside mine. I'm not pricing that.",
+                  "text": "What will you do with it?",
+                  "reply": "Keep it where a buyer can’t make it disappear. Wick put his name on this; I’m not selling his trust.",
                   "completesStep": false
                 },
                 {
                   "id": "confirm_deliberate_routing",
-                  "text": "Yes. Take Wick's reading: the storm-pump power is redirected on schedule.",
-                  "reply": "Right. Not a bad wire, not me hearing things. I'll keep the reading with Wick's name on it. You got the answer back here. For once, that's enough without anyone counting out money.",
+                  "text": "Yes; keep the reading as evidence.",
+                  "reply": "I’ll keep it with Wick’s name on it. You brought back an answer, and that matters more than a sale.",
                   "completesStep": true
                 }
               ]
@@ -1221,9 +1277,9 @@
             "actId": "c2_tunnel",
             "wantedByRoleId": "r_kip",
             "narrative": {
-              "description": "You bring the reading back to Kip at Dredge Feed, and for once he doesn't ask what it's worth before he asks what it means.",
-              "playerHint": "Bring the routing reading back to Kip.",
-              "stake": "This is the first fact he has ever held that has a name attached instead of a price. He finally has something worth more than a sale."
+              "playerHint": "Take the power reading back to Kip",
+              "description": "Kip studies Wick’s written reading.",
+              "stake": "Kip finally has evidence that the power cuts are deliberate."
             },
             "target": {
               "kind": "talk",
@@ -1345,9 +1401,9 @@
             "entry": true,
             "wantedByRoleId": "r_yara",
             "narrative": {
-              "description": "Yara Fenn waves you over to her stall at the Sump Exchange mall between customers, sizing you up for a sale before you've said a word.",
-              "playerHint": "Go to Yara Fenn's stall at Sump Exchange.",
-              "stake": "She has got a queue and no patience for browsers. If you don't come to her, she is not chasing you down to explain what's wrong with the chit she just sold."
+              "playerHint": "Go to Yara at the marked shop",
+              "description": "Yara waves you over between customers.",
+              "stake": "Yara needs help checking a suspicious batch of ration vouchers."
             },
             "target": {
               "kind": "goto",
@@ -1370,18 +1426,18 @@
           "input": {
             "stepId": "s3_ask",
             "dialogue": {
-              "opening": "If you're here about the ration chit, so is everyone suddenly. Milo says its serial belongs to a destroyed batch. Looks solid enough on my counter. I'd like that contradiction somewhere useful.",
+              "opening": "I’m Yara; I sell ration vouchers. Milo, the transit clerk, says this one belongs to a destroyed batch. I need him to check the record.",
               "choices": [
                 {
                   "id": "ask_chit_supplier",
-                  "text": "Who brought you the batch?",
-                  "reply": "A dock worker brought me the tip. The chits move through the transit tunnels; that's the route I know. Don't turn that into a supplier's name I never gave you. Milo can read the serial better than either of us.",
+                  "text": "Who supplied the batch?",
+                  "reply": "A dock worker tipped me off, but I don’t know the supplier. The vouchers pass through the transit tunnels; Milo can check the serial.",
                   "completesStep": false
                 },
                 {
                   "id": "take_chit_to_milo",
-                  "text": "I'll take the chit to Milo and have him check the record.",
-                  "reply": "Take the chit, and this stim kit from under the counter. Keep the kit with you; the people buying these haven't looked well. Find Milo Draeger at the junction booth and show him the serial. He checks everything twice. Make him earn the habit.",
+                  "text": "I’ll take the voucher to Milo.",
+                  "reply": "Take it, and this medical kit. Find Milo at the marked office and ask him to check the serial; the people buying these haven’t looked well.",
                   "completesStep": true
                 }
               ]
@@ -1389,9 +1445,9 @@
             "actId": "d1_stall",
             "wantedByRoleId": "r_yara",
             "narrative": {
-              "description": "Yara slides a ration chit and a battered stim kit across the counter in the same motion, already talking about the next customer before you've finished asking where the chit came from.",
-              "playerHint": "Talk to Yara about the chit.",
-              "stake": "She needs this batch moved before anyone traces the serials back to her stall, and she'd rather you be the one holding both the chit and the means to fix what it might cost someone."
+              "playerHint": "Ask Yara about the ration voucher",
+              "description": "Yara lays a ration voucher on the counter.",
+              "stake": "A false voucher could leave someone without supplies."
             },
             "target": {
               "kind": "talk",
@@ -1416,18 +1472,18 @@
           "input": {
             "stepId": "s3_confront",
             "dialogue": {
-              "opening": "Let me see that serial. Same batch. I'll check it again... yes. Logged as destroyed three weeks ago. I bought my mother one of these. Didn't think to check what I carried home.",
+              "opening": "I’m Milo, the transit clerk. This batch was logged as destroyed three weeks ago. I bought my mother one of these without checking.",
               "choices": [
                 {
                   "id": "ask_batch_record",
-                  "text": "Does the log tell us who put the chits back in circulation?",
-                  "reply": "It tells us they shouldn't be circulating. It doesn't name whoever moved them through the tunnels. A destroyed-batch entry and a chit in your hand prove a contradiction, not a culprit. That's all the batch reading can establish.",
+                  "text": "Does the log name the supplier?",
+                  "reply": "No; it only shows the vouchers should have been destroyed. A false entry proves something is wrong, but doesn’t name the culprit.",
                   "completesStep": false
                 },
                 {
                   "id": "take_reading_prioritize_worker",
-                  "text": "Give me the batch reading. What needs doing now?",
-                  "reply": "Take it. Word just came from Yara: the dock worker who tipped her off has collapsed in her queue. Deliver her stim kit to the clinic's after-hours intake. Get that done, then come back to me with the batch reading. The serials can wait for someone to breathe.",
+                  "text": "Give me the record; what needs doing now?",
+                  "reply": "Yara’s dock-worker contact has collapsed. Deliver the medical kit to the clinic, then bring the batch record back to me. The serials can wait until he gets help.",
                   "completesStep": true
                 }
               ]
@@ -1435,9 +1491,9 @@
             "actId": "d2_reckoning",
             "wantedByRoleId": "r_milo",
             "narrative": {
-              "description": "Milo Draeger takes one look at the chit's serial at his Harbor Junction booth and pulls up the transit log without a word, checking it twice the way he checks everything.",
-              "playerHint": "Show the chit to Milo at the Harbor Junction booth.",
-              "stake": "He bought one of these for his own mother without checking. Now he needs to know exactly what he paid for before he decides what to do about it."
+              "playerHint": "Show Milo the voucher at the marked office",
+              "description": "Milo checks the voucher’s serial against the transit log.",
+              "stake": "Milo bought his mother a voucher from the same batch."
             },
             "target": {
               "kind": "talk",
@@ -1465,9 +1521,9 @@
             "actId": "d2_reckoning",
             "wantedByRoleId": "r_yara",
             "narrative": {
-              "description": "Word reaches you that the dock worker who tipped Yara off to the batch has collapsed in her queue, chit still in his fist, and you get the stim kit to the Vitalis Spire Clinic's after-hours intake before anyone has to call it an emergency.",
-              "playerHint": "Deliver the stim kit to the Vitalis Spire Clinic.",
-              "stake": "Yara would rather explain a delivery than an ambulance report. Getting the kit there fast is the difference between a patient and a case number."
+              "playerHint": "Deliver the medical kit to the clinic",
+              "description": "The dock worker needs the clinic’s help.",
+              "stake": "The medical kit could save the worker’s life."
             },
             "target": {
               "kind": "deliver",
@@ -1493,18 +1549,18 @@
           "input": {
             "stepId": "s3_wrap",
             "dialogue": {
-              "opening": "The kit reached the clinic? Good. The nurse is treating him. I've opened a notebook. Turns out checking a number twice isn't much use if I stop caring after the second look.",
+              "opening": "The nurse is treating the worker. I’ve opened a notebook for these serials. Checking twice means nothing if I stop caring afterward.",
               "choices": [
                 {
                   "id": "ask_unanswered_origin",
-                  "text": "Do we know where the batch really came from?",
-                  "reply": "No. Yara knows the route, I know the entry is wrong, and a man needed treatment before either of us found a name. I won't fill that gap with a guess. I will keep the serials where they can't be quietly corrected.",
+                  "text": "Do we know where the batch came from?",
+                  "reply": "No; Yara knows the route, and I know the log is wrong. I’ll keep the serials safe while we wait for a name.",
                   "completesStep": false
                 },
                 {
                   "id": "record_batch_and_close",
-                  "text": "Keep the batch reading in your notebook. The worker got help.",
-                  "reply": "I'll copy the batch and the dates, exactly as we found them. He's getting treated, and this record stays with me. That's what we could finish today. Next time I buy something for my mother, I'll know what I checked and why.",
+                  "text": "Keep the record; the worker got help.",
+                  "reply": "I’ll copy the batch and dates exactly as we found them. The worker is being treated, and this record stays with me.",
                   "completesStep": true
                 }
               ]
@@ -1512,9 +1568,9 @@
             "actId": "d2_reckoning",
             "wantedByRoleId": "r_milo",
             "narrative": {
-              "description": "Back at his booth, Milo looks at the batch reading you brought him and starts logging serials into a personal notebook instead of just the transit system.",
-              "playerHint": "Talk to Milo about the batch reading.",
-              "stake": "He nearly funded the exact circulation he is supposed to catch. Whatever he does with the reading now decides whether that habit means anything."
+              "playerHint": "Return to Milo with the batch record",
+              "description": "Milo opens a notebook for the voucher serials.",
+              "stake": "Keeping a separate record makes the false entries harder to hide."
             },
             "target": {
               "kind": "talk",
@@ -1576,10 +1632,24 @@
         "description": "The dock worker who tipped Yara off lies on the intake floor of the Vitalis Spire Clinic, the ration chit still in his fist, a nurse on her knees beside him.",
         "stagedBy": "s3_deliver",
         "stagedWhen": "active",
-        "place": { "kind": "parcel-entry", "atStepId": "s3_deliver" },
+        "place": {
+          "kind": "parcel-entry",
+          "atStepId": "s3_deliver"
+        },
         "actors": [
-          { "actorId": "worker", "role": "victim", "pose": "wounded-crawl", "gender": "male" },
-          { "actorId": "nurse", "role": "bystander", "pose": "kneel-examine", "gender": "female", "nearActorId": "worker" }
+          {
+            "actorId": "worker",
+            "role": "victim",
+            "pose": "wounded-crawl",
+            "gender": "male"
+          },
+          {
+            "actorId": "nurse",
+            "role": "bystander",
+            "pose": "kneel-examine",
+            "gender": "female",
+            "nearActorId": "worker"
+          }
         ],
         "props": [],
         "clearedBy": "s3_deliver"
