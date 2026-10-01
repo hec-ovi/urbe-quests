@@ -230,6 +230,10 @@ You are taking the player to {{place}}, because they asked and you agreed.
 
 You are taking the player somewhere they asked to go.
 
+## task-brought-to
+
+You have brought the player to {{place}}, as they asked; you are there together now.
+
 ## task-walking-to
 
 The player asked you to go to {{place}}, and you are on your way there or there now.

@@ -474,6 +474,7 @@ describe('DialogContextService', () => {
     expect(turns({ task: { kind: 'following' } })).toContain('You are walking with the player, following them');
     expect(turns({ task: { kind: 'sitting' } })).toContain('You are sitting here for a while, because the player asked you to.');
     expect(turns({ task: { kind: 'walking', place: 'the lift' } })).toContain('The player asked you to go to the lift');
+    expect(turns({ task: { kind: 'brought', place: 'Static Cafe' } })).toContain('You have brought the player to Static Cafe, as they asked; you are there together now.');
     expect(turns({})).not.toContain('because they asked');
   });
 });

@@ -101,8 +101,8 @@ export interface ContextOptions {
 
 /** Something a person is doing for the player now: following them, leading them somewhere, or on an errand they asked for. */
 export interface DialogTask {
-  kind: 'following' | 'leading' | 'walking' | 'waiting' | 'sitting' | 'home' | 'work';
-  /** Where to, as the player knows the place: a leader's or a walker's place. */
+  kind: 'following' | 'leading' | 'brought' | 'walking' | 'waiting' | 'sitting' | 'home' | 'work';
+  /** Where to, as the player knows the place: a leader's (or where they brought the player) or a walker's place. */
   place?: string;
 }
 

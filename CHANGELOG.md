@@ -1,5 +1,7 @@
 # Changelog
 
+0.24.0: A leader who has arrived with the player knows it: `task` kind `brought`, with the place, says they are there together instead of still on the way.
+
 0.23.0: A person knows what they are doing for the player. `contextFor` takes `task`, as the host runs it: following the player, leading them to a place, or an errand they asked for (walking somewhere, waiting, sitting, going home or to work), and the turns segment says it beside the hour and what their day has them doing.
 
 0.22.0: An NPC's tools are a set of actions it may take for the player, each offered only when the host allows it: `follow_player`, `lead_player_to` and `walk_to` a place, a street, a person or a spot inside a building, `stop`, `go_home`, `go_to_work`, `wait_here` and `sit`. The offers prompt tells the NPC to decide each by its disposition, the talk so far and the request, to call the one tool that does what was asked, and to say in its own words that it does it once the talk is done; each call is an offer event of its kind.
