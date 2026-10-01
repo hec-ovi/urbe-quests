@@ -318,4 +318,31 @@ describe('Converse', () => {
       { type: 'offer', kind: 'home' },
     ]);
   });
+
+  it('offers the player the number and, on a call, a meeting where the player is', async () => {
+    const { port, requests } = streamingPort([
+      { content: 'Sure, here is my number. I will come over.' },
+      { tool_calls: [{ index: 0, id: 'a', function: { name: 'give_number', arguments: '{}' } }] },
+      { tool_calls: [{ index: 1, id: 'b', function: { name: 'meet_player', arguments: '{}' } }] },
+    ]);
+    const seen = await events(new Converse(port).replyStream({ ...input, offers: { contact: true, meet: { name: 'Static Cafe' } } }));
+    const tools = requests[0]!.tools ?? [];
+    expect(tools.map((tool) => tool.function.name)).toEqual(['give_number', 'meet_player']);
+    expect(tools[1]!.function.description).toContain('Static Cafe');
+    expect(requests[0]!.messages[1]!.content).toContain('give them your number');
+    expect(seen.filter((event) => event.type === 'offer')).toEqual([
+      { type: 'offer', kind: 'contact' },
+      { type: 'offer', kind: 'meet', name: 'Static Cafe' },
+    ]);
+  });
+
+  it('turns no number or meeting into an offer the host did not allow', async () => {
+    const { port } = streamingPort([
+      { content: 'Sure.' },
+      { tool_calls: [{ index: 0, id: 'a', function: { name: 'give_number', arguments: '{}' } }] },
+      { tool_calls: [{ index: 1, id: 'b', function: { name: 'meet_player', arguments: '{}' } }] },
+    ]);
+    const seen = await events(new Converse(port).replyStream({ ...input, offers: { wait: true } }));
+    expect(seen.filter((event) => event.type === 'offer')).toEqual([]);
+  });
 });

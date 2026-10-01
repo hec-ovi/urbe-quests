@@ -19,6 +19,7 @@ import type {
   DialogEvent,
   DialogExchange,
   DialogBuilding,
+  DialogCall,
   DialogGuide,
   DialogHere,
   DialogLine,
@@ -89,7 +90,7 @@ export class DialogContextService {
     if (options.events?.length) segments.push({ id: 'events', text: this.renderEvents(options.events, timeMin), shared: false });
     if (options.people) segments.push({ id: 'people', text: this.renderPeople(options.people), shared: false });
     const turns = [...memory.turns, ...said(options.prior ?? [], timeMin)];
-    segments.push({ id: 'turns', text: this.renderNow(npc, timeMin, turns, options.here, options.task), shared: false });
+    segments.push({ id: 'turns', text: this.renderNow(npc, timeMin, turns, options.here, options.task, options.call), shared: false });
     return { npcId, ...(characterName ? { characterName: { ...characterName } } : {}), segments };
   }
 
@@ -273,10 +274,11 @@ export class DialogContextService {
     return prompt('context.md#events', { events: bullets(lines) });
   }
 
-  private renderNow(npc: NPCInstance, timeMin: number, turns: DialogTurn[], here: DialogHere | undefined, task?: DialogTask): string {
+  private renderNow(npc: NPCInstance, timeMin: number, turns: DialogTurn[], here: DialogHere | undefined, task?: DialogTask, call?: DialogCall): string {
     const behavior = this.sim.behaviorAt(npc.npcId, timeMin);
     const day = dayName(Math.floor(timeMin / 1440) % 7);
     const lines = [prompt('context.md#now', { day, time: clock(timeMin % 1440), activity: prompt(`context.md#activity-${behavior.activity}`) })];
+    if (call) lines.push(prompt('context.md#call'));
     if (task) lines.push(prompt(`context.md#task-${task.kind}${task.place === undefined ? '' : '-to'}`, { place: task.place ?? '' }));
     const around = here && this.places.surroundings(here);
     if (around) {

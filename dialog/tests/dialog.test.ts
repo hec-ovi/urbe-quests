@@ -477,4 +477,12 @@ describe('DialogContextService', () => {
     expect(turns({ task: { kind: 'brought', place: 'Static Cafe' } })).toContain('You have brought the player to Static Cafe, as they asked; you are there together now.');
     expect(turns({})).not.toContain('because they asked');
   });
+
+  it('tells a person the player called them, after the hour and what they are doing', () => {
+    const { service, informerId } = setup();
+    const turns = segment(service.contextFor(informerId, TUE_10, { call: { caller: 'player' } }), 'turns');
+    expect(turns).toContain('they called you, and you are talking to them on the phone');
+    expect(turns.indexOf('on the phone')).toBeGreaterThan(turns.indexOf('right now you are'));
+    expect(segment(service.contextFor(informerId, TUE_10), 'turns')).not.toContain('on the phone');
+  });
 });

@@ -1,5 +1,7 @@
 # Changelog
 
+0.25.0: A person can give the player their number and talk on the phone. `replyStream` offers take `contact`, the `give_number` tool (an offer of kind `contact`), which the offers prompt holds as private as the person's home: a friendly person gives it, anyone else only once they have come to trust the player; and `meet` with the place's name, the `meet_player` tool (an offer of kind `meet` with that name), to come to where the player is on a call. `contextFor` takes `call` (`DialogCall`, `{ caller: 'player' }`), and the turns segment says the player called them and is not with them, so they talk as people do on the phone and say where they are when it matters.
+
 0.24.0: A leader who has arrived with the player knows it: `task` kind `brought`, with the place, says they are there together instead of still on the way.
 
 0.23.0: A person knows what they are doing for the player. `contextFor` takes `task`, as the host runs it: following the player, leading them to a place, or an errand they asked for (walking somewhere, waiting, sitting, going home or to work), and the turns segment says it beside the hour and what their day has them doing.

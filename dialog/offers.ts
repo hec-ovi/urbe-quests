@@ -1,7 +1,8 @@
 /**
  * The actions an NPC may take while it replies, offered to the model as
  * OpenAI tools: come along with the player, lead them somewhere or walk
- * somewhere alone, stop, go home or to work, wait where it stands, sit down.
+ * somewhere alone, stop, go home or to work, wait where it stands, sit down,
+ * give the player its number, or, on a call, come to where the player is.
  * The model calls one when it agrees to what the player asked; the host
  * decides whether it happens and moves the body.
  */
@@ -14,6 +15,7 @@ const prompt = promptLoader(new URL('./prompts/', import.meta.url));
 const FOLLOW = 'follow_player';
 const LEAD = 'lead_player_to';
 const WALK = 'walk_to';
+const MEET = 'meet_player';
 /** The actions that take no argument, by tool name, with the option that allows each and the offer kind it makes. */
 const PLAIN = [
   { tool: 'stop', option: 'stop', kind: 'stop' },
@@ -21,6 +23,7 @@ const PLAIN = [
   { tool: 'go_to_work', option: 'work', kind: 'work' },
   { tool: 'wait_here', option: 'wait', kind: 'wait' },
   { tool: 'sit', option: 'sit', kind: 'sit' },
+  { tool: 'give_number', option: 'contact', kind: 'contact' },
 ] as const;
 
 export interface OfferPlace {
@@ -45,6 +48,10 @@ export interface OfferOptions {
   /** The NPC may stay where it stands for the player, or sit down nearby. */
   wait?: boolean;
   sit?: boolean;
+  /** The NPC may give the player its number, so the player can call it. */
+  contact?: boolean;
+  /** On a call, the NPC may come to where the player is now: `name` is that place as the player knows it. */
+  meet?: { name: string };
 }
 
 export type CompanionOffer =
@@ -55,7 +62,9 @@ export type CompanionOffer =
   | { kind: 'home' }
   | { kind: 'work' }
   | { kind: 'wait' }
-  | { kind: 'sit' };
+  | { kind: 'sit' }
+  | { kind: 'contact' }
+  | { kind: 'meet'; name: string };
 
 /** The tools these options allow; empty when the NPC may agree to nothing. */
 export function offerTools(options: OfferOptions = {}): ChatTool[] {
@@ -77,6 +86,7 @@ export function offerTools(options: OfferOptions = {}): ChatTool[] {
     if (options.walk) tools.push(tool(WALK, prompt('offers.md#walk_to', { places: listing }), parameters));
   }
   for (const action of PLAIN) if (options[action.option]) tools.push(tool(action.tool, prompt(`offers.md#${action.tool}`), none));
+  if (options.meet) tools.push(tool(MEET, prompt('offers.md#meet_player', { place: options.meet.name }), none));
   return tools;
 }
 
@@ -90,6 +100,7 @@ export function offerOf(call: ChatToolCall, options: OfferOptions = {}): Compani
     const place = options.places?.find((candidate) => candidate.placeId === placeId);
     return place && { kind: name === LEAD ? 'lead' : 'walk', placeId: place.placeId, name: place.name };
   }
+  if (name === MEET) return options.meet ? { kind: 'meet', name: options.meet.name } : undefined;
   const action = PLAIN.find((candidate) => candidate.tool === name);
   return action && options[action.option] ? { kind: action.kind } : undefined;
 }

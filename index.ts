@@ -70,6 +70,7 @@ export type {
   DialogLine,
   DialogLook,
   DialogTask,
+  DialogCall,
   DialogTurn,
   DialogWorld,
   MemorySnapshot,

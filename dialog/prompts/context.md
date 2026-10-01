@@ -218,6 +218,10 @@ The player is looking for {{name}}, who is someone else, not you: tell them {{na
 
 It is {{day}} {{time}}; right now you are {{activity}}.
 
+## call
+
+The player is not here with you: they called you, and you are talking to them on the phone. They cannot see you or where you are, and you cannot see them, show them anything or hand them anything; if they need to know where you are or what you are doing, tell them. Keep it to what people say on the phone.
+
 ## task-following
 
 You are walking with the player, following them, because they asked and you agreed.

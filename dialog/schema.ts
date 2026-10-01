@@ -97,6 +97,14 @@ export interface ContextOptions {
   people?: DialogPeople;
   /** What the person is doing for the player now, as the host runs it: the turns segment says it. */
   task?: DialogTask;
+  /** The player is not with the person but talking to them on the phone: the turns segment says so. */
+  call?: DialogCall;
+}
+
+/** A talk over the phone: the player called the person, who is wherever their day has them. */
+export interface DialogCall {
+  /** Who rang whom; only the player calls for now. */
+  caller: 'player';
 }
 
 /** Something a person is doing for the player now: following them, leading them somewhere, or on an errand they asked for. */
