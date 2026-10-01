@@ -3,7 +3,7 @@ import { CUE_LIST, stripCues } from '../flow/cues.js';
 import { promptLoader } from '../prompts.js';
 import { ChatToolCalls, type ChatMessage, type ChatRequest, type ChatToolCall } from '../ports/chat.js';
 import type { LLMPort, StreamingLLMPort } from '../ports/llm.js';
-import { offerOf, offerTools, type CompanionOffer, type OfferOptions } from './offers.js';
+import { offerKey, offerOf, offerTools, type CompanionOffer, type OfferOptions } from './offers.js';
 import { cleanReply, ReplyCleaner } from './ReplyCleaner.js';
 import type { DialogContext } from './schema.js';
 
@@ -88,7 +88,7 @@ export class Converse {
     const offers = new Map<string, CompanionOffer>();
     for (const call of made) {
       const offer = offerOf(call, input.offers);
-      if (offer) offers.set(offer.kind === 'lead' ? `lead:${offer.placeId}` : offer.kind, offer);
+      if (offer) offers.set(offerKey(offer), offer);
     }
     for (const offer of offers.values()) yield { type: 'offer', ...offer };
     yield { type: 'done', reply, offers: [...offers.values()] };

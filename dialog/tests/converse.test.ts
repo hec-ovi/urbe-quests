@@ -208,7 +208,7 @@ describe('Converse', () => {
     expect(signals).toEqual([signal]);
     const [sent] = requests;
     expect(sent!.messages[0]).toEqual({ role: 'system', content: 'WORLD LAYER\n\nTYPE LAYER\n\nNPC LAYER\n\nTURNS LAYER' });
-    expect(sent!.messages[1]!.content).toContain('Their asking is their consent, and your call means you set off with them as soon as the two of you are done talking');
+    expect(sent!.messages[1]!.content).toContain('Their asking is their consent, and your call means you do it as soon as the two of you are done talking');
     expect(sent!.messages[1]!.content).toContain('decline in character, in words only, and call nothing');
     expect(sent!.tools?.map((tool) => tool.function.name)).toEqual(['lead_player_to']);
     const lead = sent!.tools![0]!.function;
@@ -239,7 +239,7 @@ describe('Converse', () => {
         { id: 'call_0', type: 'function', function: { name: 'follow_player', arguments: '{}' } },
         { id: 'c2', type: 'function', function: { name: 'lead_player_to', arguments: '{}' } },
       ] },
-      { role: 'tool', tool_call_id: 'call_0', content: expect.stringContaining('you set off with the player as soon as the two of you are done talking') },
+      { role: 'tool', tool_call_id: 'call_0', content: expect.stringContaining('you do it as soon as the two of you are done talking') },
       { role: 'tool', tool_call_id: 'c2', content: expect.stringContaining('not something you can do') },
     ]);
   });
@@ -293,6 +293,29 @@ describe('Converse', () => {
     expect(await events(new Converse({ complete: async () => 'Hm.' }).replyStream({ ...input, offers: { follow: true } }))).toEqual([
       { type: 'delta', text: 'Hm.' },
       { type: 'done', reply: 'Hm.', offers: [] },
+    ]);
+  });
+
+  it('offers the whole action set the host allows, and turns each call into its action', async () => {
+    const { port, requests } = streamingPort([
+      { content: 'Fine. I will sit and wait for you here.' },
+      { tool_calls: [{ index: 0, id: 'a', function: { name: 'sit', arguments: '{}' } }] },
+      { tool_calls: [{ index: 1, id: 'b', function: { name: 'wait_here', arguments: '{}' } }] },
+      { tool_calls: [{ index: 2, id: 'c', function: { name: 'walk_to', arguments: '{"placeId":"lift:elev-0"}' } }] },
+      { tool_calls: [{ index: 3, id: 'd', function: { name: 'go_home', arguments: '{}' } }] },
+      { tool_calls: [{ index: 4, id: 'e', function: { name: 'stop', arguments: '{}' } }] },
+    ]);
+    const offers = {
+      follow: true, places: [{ placeId: 'lift:elev-0', name: 'the lift on this floor' }, { placeId: 'person:a103', name: 'Mira Chen' }],
+      walk: true, stop: false, home: true, work: true, wait: true, sit: true,
+    };
+    const seen = await events(new Converse(port).replyStream({ ...input, offers }));
+    expect(requests[0]!.tools?.map((tool) => tool.function.name)).toEqual(['follow_player', 'lead_player_to', 'walk_to', 'go_home', 'go_to_work', 'wait_here', 'sit']);
+    expect(seen.filter((event) => event.type === 'offer')).toEqual([
+      { type: 'offer', kind: 'sit' },
+      { type: 'offer', kind: 'wait' },
+      { type: 'offer', kind: 'walk', placeId: 'lift:elev-0', name: 'the lift on this floor' },
+      { type: 'offer', kind: 'home' },
     ]);
   });
 });
