@@ -95,6 +95,15 @@ export interface ContextOptions {
   here?: DialogHere;
   /** Who the person knows and where they are, and the names the player asked about that they do not know (`peopleKnown`): adds the `people` segment. */
   people?: DialogPeople;
+  /** What the person is doing for the player now, as the host runs it: the turns segment says it. */
+  task?: DialogTask;
+}
+
+/** Something a person is doing for the player now: following them, leading them somewhere, or on an errand they asked for. */
+export interface DialogTask {
+  kind: 'following' | 'leading' | 'walking' | 'waiting' | 'sitting' | 'home' | 'work';
+  /** Where to, as the player knows the place: a leader's or a walker's place. */
+  place?: string;
 }
 
 /** What a person looks like, in plain words the host takes from the look it draws them in. */

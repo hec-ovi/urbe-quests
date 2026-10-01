@@ -1,5 +1,7 @@
 # Changelog
 
+0.23.0: A person knows what they are doing for the player. `contextFor` takes `task`, as the host runs it: following the player, leading them to a place, or an errand they asked for (walking somewhere, waiting, sitting, going home or to work), and the turns segment says it beside the hour and what their day has them doing.
+
 0.22.0: An NPC's tools are a set of actions it may take for the player, each offered only when the host allows it: `follow_player`, `lead_player_to` and `walk_to` a place, a street, a person or a spot inside a building, `stop`, `go_home`, `go_to_work`, `wait_here` and `sit`. The offers prompt tells the NPC to decide each by its disposition, the talk so far and the request, to call the one tool that does what was asked, and to say in its own words that it does it once the talk is done; each call is an offer event of its kind.
 
 0.21.0: A person inside a building knows the building. `here.building` carries what the host's interior data says: the room the person is in, each floor's shared rooms and apartment numbers, the lifts and staircases, and who is inside now with their floor and room; the turns segment tells it, floors alike together. A guide may be a person the NPC walked the player to or a spot inside a building (a lift, the stairs, a room, a floor), told by name, and a leader at its own home reads its apartment's number and floor while the host's notes say where exactly it stands. The companion tools name people and such spots among what a player may ask to be taken to.

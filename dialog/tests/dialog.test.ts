@@ -466,4 +466,14 @@ describe('DialogContextService', () => {
     expect(segment(service.contextFor(informerId, TUE_10, { guide: { placeId: 'lift', kind: 'spot', name: 'the lift on the ground floor' } }), 'place'))
       .toBe('You have walked the player to the lift on the ground floor, and you are both standing there now.');
   });
+
+  it('tells a person what they are doing for the player now: following, leading, an errand', () => {
+    const { service, informerId } = setup();
+    const turns = (task: Parameters<typeof service.contextFor>[2]) => segment(service.contextFor(informerId, TUE_10, task), 'turns');
+    expect(turns({ task: { kind: 'leading', place: 'Static Cafe' } })).toContain('You are taking the player to Static Cafe, because they asked and you agreed.');
+    expect(turns({ task: { kind: 'following' } })).toContain('You are walking with the player, following them');
+    expect(turns({ task: { kind: 'sitting' } })).toContain('You are sitting here for a while, because the player asked you to.');
+    expect(turns({ task: { kind: 'walking', place: 'the lift' } })).toContain('The player asked you to go to the lift');
+    expect(turns({})).not.toContain('because they asked');
+  });
 });

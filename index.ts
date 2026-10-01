@@ -69,6 +69,7 @@ export type {
   DialogHere,
   DialogLine,
   DialogLook,
+  DialogTask,
   DialogTurn,
   DialogWorld,
   MemorySnapshot,

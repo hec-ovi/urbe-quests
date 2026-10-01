@@ -218,6 +218,38 @@ The player is looking for {{name}}, who is someone else, not you: tell them {{na
 
 It is {{day}} {{time}}; right now you are {{activity}}.
 
+## task-following
+
+You are walking with the player, following them, because they asked and you agreed.
+
+## task-leading-to
+
+You are taking the player to {{place}}, because they asked and you agreed.
+
+## task-leading
+
+You are taking the player somewhere they asked to go.
+
+## task-walking-to
+
+The player asked you to go to {{place}}, and you are on your way there or there now.
+
+## task-waiting
+
+You are waiting here for the player, because they asked you to.
+
+## task-sitting
+
+You are sitting here for a while, because the player asked you to.
+
+## task-home
+
+The player asked you to go home, and you are on your way home or home now.
+
+## task-work
+
+The player asked you to go to work, and you are on your way there or there now.
+
 ## here
 
 You are standing {{where}}.
