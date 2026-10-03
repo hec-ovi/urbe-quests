@@ -55,7 +55,7 @@ export { QuestlineCreation } from './creation/QuestlineCreation.js';
 
 export { DialogContextService, type DialogContextServiceInput } from './dialog/DialogContextService.js';
 export { Converse, type ConverseInput, type ConverseStreamInput, type ReplyEvent } from './dialog/Converse.js';
-export type { CompanionOffer, OfferOptions, OfferPlace } from './dialog/offers.js';
+export type { CompanionOffer, OfferItem, OfferOptions, OfferPlace } from './dialog/offers.js';
 export { peopleKnown, type DialogPeople, type DialogPerson, type DialogWhereabouts, type PeopleInput } from './dialog/people.js';
 export { cleanReply, ReplyCleaner } from './dialog/ReplyCleaner.js';
 export type {
@@ -71,6 +71,9 @@ export type {
   DialogLook,
   DialogTask,
   DialogCall,
+  DialogAddress,
+  DialogAddresses,
+  DialogAccess,
   DialogTurn,
   DialogWorld,
   MemorySnapshot,

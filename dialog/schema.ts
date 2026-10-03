@@ -4,7 +4,7 @@ import type { NamedDistrict, NamedWorld } from '../world/types/named-world.js';
 import type { StreetGeometry } from '../world/streets.js';
 import type { DialogPeople } from './people.js';
 
-export type SegmentId = 'world' | 'type' | 'npc' | 'quest' | 'memory' | 'place' | 'events' | 'people' | 'turns';
+export type SegmentId = 'world' | 'type' | 'npc' | 'address' | 'quest' | 'memory' | 'place' | 'events' | 'people' | 'turns';
 
 /**
  * One layer of an NPC's dialog context. Segments come in a fixed order so
@@ -99,6 +99,40 @@ export interface ContextOptions {
   task?: DialogTask;
   /** The player is not with the person but talking to them on the phone: the turns segment says so. */
   call?: DialogCall;
+  /** Where the person lives and works by address, where they stand now indoors, and the doors they hold cards for: adds the `address` segment, and the turns segment says where they stand. */
+  addresses?: DialogAddresses;
+}
+
+/**
+ * A private place by its address, as the host numbers the furnished
+ * buildings: the building, the floor as its numbers count it (0 the ground
+ * floor, below it basements), and on it the dwelling or private room
+ * (`apartment 1407`, `office 305`) and the kind of room in words.
+ */
+export interface DialogAddress {
+  parcelId: string;
+  floor?: number;
+  unit?: string;
+  room?: string;
+}
+
+/** One access card a person holds: what it opens in words (`apartment 1407`, `the staff rooms`) in which building, and whether it is their home's or their work's. */
+export interface DialogAccess {
+  parcelId: string;
+  opens: string;
+  tie?: 'home' | 'work';
+}
+
+/** Where a person belongs, by address, and the cards they carry. */
+export interface DialogAddresses {
+  home?: DialogAddress;
+  work?: DialogAddress;
+  /** Where they stand now, inside a furnished building. */
+  here?: DialogAddress;
+  /** The doors they hold cards for; they can hand the player a copy of any. */
+  access?: DialogAccess[];
+  /** How many times they caught the player lifting a card off them. */
+  caught?: number;
 }
 
 /** A talk over the phone: the player called the person, who is wherever their day has them. */

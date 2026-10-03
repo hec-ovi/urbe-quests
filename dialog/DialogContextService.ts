@@ -14,6 +14,8 @@ import { listed, ordinal, PlaceWords, withArticle } from './places.js';
 import type { DialogPeople } from './people.js';
 import type {
   ContextOptions,
+  DialogAddress,
+  DialogAddresses,
   ContextSegment,
   DialogContext,
   DialogEvent,
@@ -80,6 +82,8 @@ export class DialogContextService {
       { id: 'type', text: this.renderType(npc.type), shared: true },
       { id: 'npc', text: this.renderNpc(npc, characterName, timeMin, options.look), shared: false },
     ];
+    const address = options.addresses && this.renderAddresses(options.addresses);
+    if (address) segments.push({ id: 'address', text: address, shared: false });
     const quest = this.renderQuestKnowledge(npcId);
     if (quest.length > 0) segments.push({ id: 'quest', text: quest, shared: false });
     const memory = this.memoryStore.snapshot(npcId);
@@ -90,7 +94,7 @@ export class DialogContextService {
     if (options.events?.length) segments.push({ id: 'events', text: this.renderEvents(options.events, timeMin), shared: false });
     if (options.people) segments.push({ id: 'people', text: this.renderPeople(options.people), shared: false });
     const turns = [...memory.turns, ...said(options.prior ?? [], timeMin)];
-    segments.push({ id: 'turns', text: this.renderNow(npc, timeMin, turns, options.here, options.task, options.call), shared: false });
+    segments.push({ id: 'turns', text: this.renderNow(npc, timeMin, turns, options.here, options.task, options.call, options.addresses?.here), shared: false });
     return { npcId, ...(characterName ? { characterName: { ...characterName } } : {}), segments };
   }
 
@@ -274,7 +278,45 @@ export class DialogContextService {
     return prompt('context.md#events', { events: bullets(lines) });
   }
 
-  private renderNow(npc: NPCInstance, timeMin: number, turns: DialogTurn[], here: DialogHere | undefined, task?: DialogTask, call?: DialogCall): string {
+  /**
+   * Where the person lives and works by address, the doors they carry cards
+   * for, and whether they caught the player lifting one; undefined when the
+   * host knows none of it.
+   */
+  private renderAddresses(addresses: DialogAddresses): string | undefined {
+    const lines: string[] = [];
+    if (addresses.home) lines.push(prompt('context.md#address-home', { address: this.address(addresses.home) }));
+    if (addresses.work) lines.push(prompt('context.md#address-work', { address: this.address(addresses.work) }));
+    const blocks = lines.length > 0 ? [prompt('context.md#address', { addresses: bullets(lines) })] : [];
+    const cards = (addresses.access ?? []).map((card) => {
+      const where = this.places.short({ kind: 'parcel', id: card.parcelId });
+      const tie = card.tie === 'home' ? ' (your home)' : card.tie === 'work' ? ' (your work)' : '';
+      return `${card.opens} at ${where}${tie}`;
+    });
+    if (cards.length > 0) blocks.push(prompt('context.md#address-access', { cards: listed(cards) }));
+    const caught = addresses.caught ?? 0;
+    if (caught > 0) blocks.push(prompt('context.md#address-caught', { times: caught === 1 ? 'once' : caught === 2 ? 'twice' : `${caught} times` }));
+    return blocks.length > 0 ? blocks.join('\n') : undefined;
+  }
+
+  /** "apartment 1407, floor 14, an apartment block on Third Street, in Kanaal Market": a place by its address, the narrowest part first. */
+  private address(address: DialogAddress): string {
+    const building = this.places.addressed({ kind: 'parcel', id: address.parcelId });
+    const unit = address.unit ?? (address.room ? `the ${words(address.room)}` : undefined);
+    return [unit, address.floor === undefined ? undefined : storey(address.floor), building].filter((part) => part !== undefined).join(', ');
+  }
+
+  /** Where inside a building the person stands: "on floor 14, in apartment 1407, in the living room". */
+  private insideWords(inside: DialogAddress): string {
+    const parts = [
+      ...(inside.floor === undefined ? [] : [inside.floor === 0 ? 'on the ground floor' : `on ${storey(inside.floor)}`]),
+      ...(inside.unit ? [`in ${inside.unit}`] : []),
+      ...(inside.room ? [`in the ${words(inside.room)}`] : []),
+    ];
+    return parts.join(', ');
+  }
+
+  private renderNow(npc: NPCInstance, timeMin: number, turns: DialogTurn[], here: DialogHere | undefined, task?: DialogTask, call?: DialogCall, inside?: DialogAddress): string {
     const behavior = this.sim.behaviorAt(npc.npcId, timeMin);
     const day = dayName(Math.floor(timeMin / 1440) % 7);
     const lines = [prompt('context.md#now', { day, time: clock(timeMin % 1440), activity: prompt(`context.md#activity-${behavior.activity}`) })];
@@ -284,9 +326,10 @@ export class DialogContextService {
     if (around) {
       lines.push(prompt('context.md#here', { where: around.where }));
       if (around.at) lines.push(prompt('context.md#here-at', { at: around.at }));
+      if (inside) lines.push(prompt('context.md#here-address', { address: this.insideWords(inside) }));
       if (here.building && here.parcelId !== undefined) lines.push(...this.renderBuilding(here.building, here.floor));
       if (around.around.length > 0) lines.push(prompt('context.md#around', { places: bullets(around.around) }));
-    }
+    } else if (inside) lines.push(prompt('context.md#here-address', { address: this.insideWords(inside) }));
     if (here?.light) lines.push(prompt('context.md#light', { light: here.light }));
     const heading = this.heading(npc, timeMin);
     if (heading) lines.push(heading);
@@ -381,6 +424,9 @@ const words = (kind: string): string => kind.replace(/_/g, ' ');
 
 /** "the ground floor", "the third floor". */
 const floorWords = (index: number): string => `${ordinal(index)} floor`;
+
+/** A floor as an address says it: "ground floor", "floor 14", "basement 2". */
+const storey = (floor: number): string => (floor === 0 ? 'ground floor' : floor < 0 ? `basement ${-floor}` : `floor ${floor}`);
 
 /** How long `minutes` is, in the words context.md gives it: a moment, minutes, an hour, hours, a day, days. */
 function span(minutes: number): string {

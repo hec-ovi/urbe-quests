@@ -266,6 +266,31 @@ You are standing {{where}}.
 
 You are {{at}}.
 
+## here-address
+
+Inside, you are {{address}}.
+
+## address
+
+Your addresses, as the city numbers its buildings; say them as they are when someone asks where you live or work, or how to find you:
+{{addresses}}
+
+## address-home
+
+Home: {{address}}.
+
+## address-work
+
+Work: {{address}}.
+
+## address-access
+
+You carry access cards for {{cards}}. Those doors stay locked to anyone without a card, unless someone lets them in. You can hand the player a copy of one if they ask and you decide to.
+
+## address-caught
+
+You caught the player trying to lift your card {{times}}. You do not trust them, and it shows.
+
 ## building-room
 
 You are in the {{room}}.

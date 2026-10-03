@@ -2,7 +2,8 @@
  * The actions an NPC may take while it replies, offered to the model as
  * OpenAI tools: come along with the player, lead them somewhere or walk
  * somewhere alone, stop, go home or to work, wait where it stands, sit down,
- * give the player its number, or, on a call, come to where the player is.
+ * give the player its number or a copy of one of its access cards, or, on a
+ * call, come to where the player is.
  * The model calls one when it agrees to what the player asked; the host
  * decides whether it happens and moves the body.
  */
@@ -16,6 +17,7 @@ const FOLLOW = 'follow_player';
 const LEAD = 'lead_player_to';
 const WALK = 'walk_to';
 const MEET = 'meet_player';
+const GIVE = 'give_item';
 /** The actions that take no argument, by tool name, with the option that allows each and the offer kind it makes. */
 const PLAIN = [
   { tool: 'stop', option: 'stop', kind: 'stop' },
@@ -52,6 +54,14 @@ export interface OfferOptions {
   contact?: boolean;
   /** On a call, the NPC may come to where the player is now: `name` is that place as the player knows it. */
   meet?: { name: string };
+  /** Items the NPC may hand the player: a copy of each access card it holds, by the id the host knows it by and what the player sees it called. */
+  give?: { items: OfferItem[] };
+}
+
+export interface OfferItem {
+  itemId: string;
+  /** What it is, as the player reads it: "Kessler Block 1407 key card, which opens apartment 1407". */
+  name: string;
 }
 
 export type CompanionOffer =
@@ -64,7 +74,8 @@ export type CompanionOffer =
   | { kind: 'wait' }
   | { kind: 'sit' }
   | { kind: 'contact' }
-  | { kind: 'meet'; name: string };
+  | { kind: 'meet'; name: string }
+  | { kind: 'give'; itemId: string; name: string };
 
 /** The tools these options allow; empty when the NPC may agree to nothing. */
 export function offerTools(options: OfferOptions = {}): ChatTool[] {
@@ -87,6 +98,15 @@ export function offerTools(options: OfferOptions = {}): ChatTool[] {
   }
   for (const action of PLAIN) if (options[action.option]) tools.push(tool(action.tool, prompt(`offers.md#${action.tool}`), none));
   if (options.meet) tools.push(tool(MEET, prompt('offers.md#meet_player', { place: options.meet.name }), none));
+  const items = options.give?.items ?? [];
+  if (items.length > 0) {
+    tools.push(tool(GIVE, prompt('offers.md#give_item', { items: items.map((item) => `- ${item.itemId}: ${item.name}`).join('\n') }), {
+      type: 'object',
+      properties: { itemId: { type: 'string', enum: items.map((item) => item.itemId), description: prompt('offers.md#item-id') } },
+      required: ['itemId'],
+      additionalProperties: false,
+    }));
+  }
   return tools;
 }
 
@@ -101,12 +121,18 @@ export function offerOf(call: ChatToolCall, options: OfferOptions = {}): Compani
     return place && { kind: name === LEAD ? 'lead' : 'walk', placeId: place.placeId, name: place.name };
   }
   if (name === MEET) return options.meet ? { kind: 'meet', name: options.meet.name } : undefined;
+  if (name === GIVE) {
+    const itemId = argumentOf(call.function.arguments, 'itemId');
+    const item = options.give?.items.find((candidate) => candidate.itemId === itemId);
+    return item && { kind: 'give', itemId: item.itemId, name: item.name };
+  }
   const action = PLAIN.find((candidate) => candidate.tool === name);
   return action && options[action.option] ? { kind: action.kind } : undefined;
 }
 
 /** The key one offer keeps among the offers of a reply: a lead or walk per place, any other action once. */
 export function offerKey(offer: CompanionOffer): string {
+  if (offer.kind === 'give') return `give:${offer.itemId}`;
   return offer.kind === 'lead' || offer.kind === 'walk' ? `${offer.kind}:${offer.placeId}` : offer.kind;
 }
 
@@ -115,8 +141,12 @@ function tool(name: string, description: string, parameters: Record<string, unkn
 }
 
 function placeIdOf(json: string): unknown {
+  return argumentOf(json, 'placeId');
+}
+
+function argumentOf(json: string, key: string): unknown {
   try {
-    return (JSON.parse(json) as { placeId?: unknown } | null)?.placeId;
+    return (JSON.parse(json) as Record<string, unknown> | null)?.[key];
   } catch {
     return undefined;
   }

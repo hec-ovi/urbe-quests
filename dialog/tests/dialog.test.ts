@@ -478,6 +478,26 @@ describe('DialogContextService', () => {
     expect(turns({})).not.toContain('because they asked');
   });
 
+  it('tells a person their home and work by address, where they stand inside, the cards they carry and a theft they caught', () => {
+    const { service, informerId } = setup({ world: withStreets });
+    const addresses = {
+      home: { parcelId: 'p9', floor: 2, unit: 'apartment 201' },
+      work: { parcelId: 'p4', floor: 0, room: 'counter_area' },
+      here: { parcelId: 'p9', floor: 2, unit: 'apartment 201', room: 'living room' },
+      access: [{ parcelId: 'p9', opens: 'apartment 201', tie: 'home' as const }, { parcelId: 'p4', opens: 'the staff rooms', tie: 'work' as const }],
+      caught: 1,
+    };
+    const context = service.contextFor(informerId, TUE_10, { addresses, here: { x: 25, z: 20, parcelId: 'p9', floor: 2 } });
+    expect(context.segments.map((entry) => entry.id).slice(0, 4)).toEqual(['world', 'type', 'npc', 'address']);
+    const address = segment(context, 'address');
+    expect(address).toContain('- Home: apartment 201, floor 2, Blockhouse Elin, an apartment block on Second Street near the corner of First Avenue, in The Sump.');
+    expect(address).toContain('- Work: the counter area, ground floor, Static Cafe, a coffee shop on First Street near the corner of First Avenue, in Kanaal Market.');
+    expect(address).toContain('You carry access cards for apartment 201 at Blockhouse Elin (your home) and the staff rooms at Static Cafe (your work).');
+    expect(address).toContain('You caught the player trying to lift your card once.');
+    expect(segment(context, 'turns')).toContain('Inside, you are on floor 2, in apartment 201, in the living room.');
+    expect(service.contextFor(informerId, TUE_10, { addresses: {} }).segments.some((entry) => entry.id === 'address')).toBe(false);
+  });
+
   it('tells a person the player called them, after the hour and what they are doing', () => {
     const { service, informerId } = setup();
     const turns = segment(service.contextFor(informerId, TUE_10, { call: { caller: 'player' } }), 'turns');

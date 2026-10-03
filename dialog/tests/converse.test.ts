@@ -345,4 +345,25 @@ describe('Converse', () => {
     const seen = await events(new Converse(port).replyStream({ ...input, offers: { wait: true } }));
     expect(seen.filter((event) => event.type === 'offer')).toEqual([]);
   });
+
+  it('hands the player a copy of one of the cards it holds, and only one the host listed', async () => {
+    const { port, requests } = streamingPort([
+      { content: 'Here, take a copy. Do not lose it.' },
+      { tool_calls: [{ index: 0, id: 'a', function: { name: 'give_item', arguments: '{"itemId":"card:home:p404/floor:14/f14-home-7"}' } }] },
+      { tool_calls: [{ index: 1, id: 'b', function: { name: 'give_item', arguments: '{"itemId":"card:security:p404"}' } }] },
+    ]);
+    const give = { items: [
+      { itemId: 'card:home:p404/floor:14/f14-home-7', name: 'Kessler Block 1407 key card, which opens apartment 1407' },
+      { itemId: 'card:staff:p9', name: 'Static Cafe staff card, which opens the staff rooms of Static Cafe' },
+    ] };
+    const seen = await events(new Converse(port).replyStream({ ...input, offers: { give } }));
+    const tools = requests[0]!.tools ?? [];
+    expect(tools.map((tool) => tool.function.name)).toEqual(['give_item']);
+    expect(tools[0]!.function.description).toContain('card:staff:p9: Static Cafe staff card');
+    expect(tools[0]!.function.parameters).toMatchObject({ properties: { itemId: { enum: give.items.map((item) => item.itemId) } } });
+    expect(requests[0]!.messages[1]!.content).toContain('copy of one of your access cards');
+    expect(seen.filter((event) => event.type === 'offer')).toEqual([
+      { type: 'offer', kind: 'give', itemId: 'card:home:p404/floor:14/f14-home-7', name: 'Kessler Block 1407 key card, which opens apartment 1407' },
+    ]);
+  });
 });
