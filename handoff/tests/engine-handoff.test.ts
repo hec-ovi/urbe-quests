@@ -262,6 +262,18 @@ describe('EngineHandoff', () => {
     expect(manifest.counts.mechanicTargetBindings).toBe(4);
   });
 
+  it('plays an access step at a locked door by its address with the host lock, binding no mission asset to it', () => {
+    const handoff = new EngineHandoff();
+    const atDoor = structuredClone(fixedQuest);
+    const access = atDoor.steps.find((step) => step.target.kind === 'access')!;
+    if (access.target.kind !== 'access') throw new Error('fixture access step changed');
+    access.target.door = 'archive 302';
+    const unbound = structuredClone(fixedHandoffInput);
+    unbound.mechanicTargetBindings = unbound.mechanicTargetBindings?.filter((binding) => !('accessPointId' in binding));
+    expect(() => handoff.assemble([atDoor], unbound)).not.toThrow();
+    expect(() => handoff.assemble([atDoor], fixedHandoffInput)).toThrowError(/names unsupported step/);
+  });
+
   it('fails closed on missing or inconsistent investigation bindings', () => {
     const handoff = new EngineHandoff();
     expect(() => handoff.assemble([investigationQuest()])).toThrowError(expect.objectContaining({ code: 'E_HANDOFF' }));

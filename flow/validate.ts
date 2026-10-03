@@ -17,6 +17,7 @@ export class FlowValidator {
     this.checkUnique(def.acts.map((a) => a.actId), 'act', fail);
     this.checkUnique(def.endings.map((e) => e.endingId), 'ending', fail);
     this.checkUnique(def.facts.map((f) => f.factId), 'fact', fail);
+    for (const item of def.items) this.checkOpens(item, fail);
 
     const stepIds = new Set(def.steps.map((s) => s.stepId));
     const roleIds = new Set(def.roles.map((r) => r.roleId));
@@ -205,6 +206,14 @@ export class FlowValidator {
           fail(`step ${step.stepId}: access credential ${t.credentialItemId} has ineligible kind ${credential.kind}`);
         }
         if (!step.needs.includes(t.credentialItemId)) fail(`step ${step.stepId}: access does not need credential item ${t.credentialItemId}`);
+        if (t.door !== undefined) {
+          if (typeof t.door !== 'string' || t.door.trim().length === 0) fail(`step ${step.stepId}: access door has no address`);
+          if (!('parcelId' in t.place)) fail(`step ${step.stepId}: access door ${t.door} is not in a building`);
+          const opens = credential?.opens;
+          if (opens !== undefined && 'parcelId' in t.place && (opens.parcelId !== t.place.parcelId || !sameDoor(opens.door, t.door))) {
+            fail(`step ${step.stepId}: credential ${t.credentialItemId} opens ${opens.door} at ${opens.parcelId}, not ${t.door}`);
+          }
+        }
         this.requireCompletionEffect(step, t.completionFlag, fail);
         return;
       }
@@ -253,6 +262,15 @@ export class FlowValidator {
     if (!Number.isInteger(window.startMin) || !Number.isInteger(window.endMin) || window.startMin < 0 || window.endMin > 1440 || window.startMin >= window.endMin) {
       fail(`step ${step.stepId}: window ${window.startMin}-${window.endMin} is not a slice of one day`);
     }
+  }
+
+  /** An item that opens a door is a key or a device naming a building and a door's address in it. */
+  private checkOpens(item: QuestItem, fail: (m: string) => never): void {
+    const opens = item.opens;
+    if (opens === undefined) return;
+    if (item.kind !== 'key' && item.kind !== 'device') fail(`item ${item.itemId}: only a key or a device opens a door, not ${item.kind}`);
+    if (typeof opens.parcelId !== 'string' || opens.parcelId.length === 0) fail(`item ${item.itemId}: opens a door in no building`);
+    if (typeof opens.door !== 'string' || opens.door.trim().length === 0) fail(`item ${item.itemId}: opens a door with no address`);
   }
 
   private requireCompletionEffect(step: QuestStep, completionFlag: string, fail: (m: string) => never): void {
@@ -321,6 +339,12 @@ export class FlowValidator {
       if (!state.has(step.stepId)) fail(`step ${step.stepId} unreachable from entry`);
     }
   }
+}
+
+/** Two door addresses name one door: the same words, case and spacing aside. */
+export function sameDoor(left: string, right: string): boolean {
+  const norm = (text: string) => text.trim().toLowerCase().replace(/\s+/g, ' ');
+  return norm(left) === norm(right);
 }
 
 function samePlace(left: import('./schema.js').PlaceIdentity, right: import('./schema.js').PlaceIdentity): boolean {

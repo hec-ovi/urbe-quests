@@ -78,8 +78,10 @@ export class MechanicTargetAudit {
   }
 }
 
+/** A fixed mechanic played at a mission asset; an access step at a locked door is played by the host's lock instead. */
 function isBindableTarget(target: StepTarget): target is BindableTarget {
-  return target.kind === 'rescue' || target.kind === 'access' || target.kind === 'hacking' || target.kind === 'sabotage';
+  if (target.kind === 'access') return target.door === undefined;
+  return target.kind === 'rescue' || target.kind === 'hacking' || target.kind === 'sabotage';
 }
 
 const bindingKey = (questId: string, stepId: string): string => `${questId}\u0000${stepId}`;

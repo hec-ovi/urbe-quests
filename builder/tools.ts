@@ -84,6 +84,7 @@ const TARGET_PROPERTIES: Record<string, object> = {
   passengerRoleIds: ids,
   cargoItemIds: ids,
   completionFlag: id,
+  door: { type: 'string' },
 };
 
 /** A tool section whose `- <id>:` lines keep only the ids offered. */
@@ -237,6 +238,12 @@ export function builderTools(kinds: readonly StepKind[] = STEP_KINDS, scenery?: 
           itemId: { type: 'string' },
           kind: { enum: ['device', 'weapon', 'document', 'key', 'substance', 'valuable', 'information'] },
           atParcelId: { type: 'string', description: prompt('tools/add_item.md#atParcelId').trim() },
+          opens: {
+            type: 'object',
+            description: prompt('tools/add_item.md#opens').trim(),
+            properties: { parcelId: { type: 'string' }, door: { type: 'string' } },
+            required: ['parcelId', 'door'],
+          },
         },
         required: ['name', 'description', 'itemId', 'kind'],
       },

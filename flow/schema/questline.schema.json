@@ -54,7 +54,14 @@
         "name": { "$ref": "#/$defs/text" },
         "description": { "$ref": "#/$defs/text" },
         "kind": { "enum": ["device", "weapon", "document", "key", "substance", "valuable", "information"] },
-        "atParcelId": { "$ref": "#/$defs/id" }
+        "atParcelId": { "$ref": "#/$defs/id" },
+        "opens": {
+          "description": "A key or device that opens one locked door: the building and the door by its address there, as the host numbers it (apartment 1407, archive 302).",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["parcelId", "door"],
+          "properties": { "parcelId": { "$ref": "#/$defs/id" }, "door": { "$ref": "#/$defs/text" } }
+        }
       }
     },
     "fact": {
@@ -262,6 +269,10 @@
             "kind": { "const": "access" },
             "accessPointId": { "$ref": "#/$defs/id" },
             "credentialItemId": { "$ref": "#/$defs/id" },
+            "door": {
+              "description": "The access point is this locked door of the place's building, by its address there (apartment 1407): the host's lock plays it, with no mission asset.",
+              "$ref": "#/$defs/text"
+            },
             "place": { "$ref": "#/$defs/place" },
             "completionFlag": { "$ref": "#/$defs/id" }
           }

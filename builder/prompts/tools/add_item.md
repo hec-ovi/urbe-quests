@@ -9,3 +9,7 @@ Whose it is, what it means to them, what it is.
 ## atParcelId
 
 Where a physical item starts when it starts placed; required for pickup targets.
+
+## opens
+
+For a key or device that is an access card: the locked door it opens, parcelId and the door by its address in that building (apartment 1407, archive 302). Picked up, stolen or handed over, it lets the player through that door.

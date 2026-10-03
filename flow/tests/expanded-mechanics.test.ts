@@ -168,4 +168,41 @@ describe('expanded authored mechanics', () => {
     ride.target.passengerRoleIds = ['missing_role'];
     expect(() => new QuestlineRuntime(unknownCast, cast, sim)).toThrowError(/unknown role missing_role/);
   });
+
+  it('gets into a locked door by its address with the card a step hands over, and refuses a card for another door', () => {
+    const { sim, cast } = setup();
+    /** The witness hands over her home's key card in a talk, then the player gets into apartment 1407 with it. */
+    const doorDefinition = (): QuestlineDefinition => ({
+      ...expandedDefinition(),
+      items: [{ itemId: 'kessler_card', name: 'Kessler 1407 key card', description: 'Her spare card to her own flat.', kind: 'key', opens: { parcelId: 'p4', door: 'apartment 1407' } }],
+      steps: [
+        step({ stepId: 's_card', actId: 'a_scene', target: { kind: 'talk', roleId: 'witness' }, gives: ['kessler_card'], next: [{ toStepId: 's_door', when: [] }] }),
+        step({ stepId: 's_door', actId: 'a_release', endingId: 'e_reported',
+          target: { kind: 'access', accessPointId: 'kessler_1407', credentialItemId: 'kessler_card', door: 'Apartment 1407', place: P4, completionFlag: 'door_open' },
+          ...flagged('door_open', [], { needs: ['kessler_card'] }) }),
+      ],
+      endings: [{ endingId: 'e_reported', title: 'Inside', epilogue: 'The flat is quiet.' }],
+      flags: ['door_open'],
+      entryStepIds: ['s_card'],
+    });
+    const runtime = new QuestlineRuntime(doorDefinition(), cast, sim);
+    runtime.advance({ kind: 'talkedTo', npcId: cast.witness! }, TUE_10);
+    expect(runtime.inventory()).toEqual(new Set(['kessler_card']));
+    const result = runtime.advance({ kind: 'accessed', accessPointId: 'kessler_1407', credentialItemId: 'kessler_card', place: P4 }, TUE_10);
+    expect(result.endingId).toBe('e_reported');
+
+    const document = doorDefinition();
+    document.items[0]!.kind = 'document';
+    expect(() => new QuestlineRuntime(document, cast, sim)).toThrowError(/only a key or a device opens a door, not document/);
+
+    const elsewhere = doorDefinition();
+    elsewhere.items[0]!.opens = { parcelId: 'p4', door: 'apartment 1408' };
+    expect(() => new QuestlineRuntime(elsewhere, cast, sim)).toThrowError(/opens apartment 1408 at p4, not Apartment 1407/);
+
+    const district = doorDefinition();
+    const door = district.steps[1]!.target;
+    if (door.kind !== 'access') throw new Error('fixture target changed');
+    door.place = { districtId: 'd1', name: 'The Sump' };
+    expect(() => new QuestlineRuntime(district, cast, sim)).toThrowError(/access door Apartment 1407 is not in a building/);
+  });
 });

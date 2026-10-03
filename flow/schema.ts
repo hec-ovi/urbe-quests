@@ -68,6 +68,20 @@ export interface QuestItem {
   kind: ItemKind;
   /** Where a physical item sits on the 2D plane when it starts placed; required for pickup targets. */
   atParcelId?: string;
+  /**
+   * A key or device that is an access card: it opens one locked door, the
+   * building and the door by its address there as the host numbers it
+   * (`apartment 1407`, `archive 302`). The host lets the player through that
+   * door while they hold the item. Picked up, stolen or handed over, it is
+   * how a story says "obtain the archive card".
+   */
+  opens?: ItemOpens;
+}
+
+/** The locked door an item opens: a building and the door's address in it. */
+export interface ItemOpens {
+  parcelId: string;
+  door: string;
 }
 
 /**
@@ -139,8 +153,13 @@ export type StepTarget =
       to: PlaceTarget;
       completionFlag: string;
     }
-  /** Use a declared credential at one authored access point. */
-  | { kind: 'access'; accessPointId: string; credentialItemId: string; place: PlaceTarget; completionFlag: string }
+  /**
+   * Use a declared credential at one authored access point. With `door` the
+   * access point is that locked door of the place's building, by its address
+   * there (`apartment 1407`): the host's lock plays it, and the step is "get
+   * into apartment 1407" with the credential the story gives.
+   */
+  | { kind: 'access'; accessPointId: string; credentialItemId: string; door?: string; place: PlaceTarget; completionFlag: string }
   /** Complete one authored intrusion against a target at a known place. */
   | { kind: 'hacking'; targetId: string; place: PlaceTarget; completionFlag: string }
   /** Complete one authored state change against a target at a known place. */

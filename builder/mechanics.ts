@@ -22,7 +22,7 @@ export const TARGET_FIELDS: Record<StepKind, { needs: readonly string[]; may?: r
   investigation: { needs: ['sceneId', 'evidenceId', 'evidenceItemId', 'subjectRoleIds', 'place', 'completionFlag'] },
   rescue: { needs: ['roleId', 'releaseTargetId', 'place', 'completionFlag'] },
   escort: { needs: ['roleId', 'routeId', 'mode', 'from', 'to', 'completionFlag'] },
-  access: { needs: ['accessPointId', 'credentialItemId', 'place', 'completionFlag'] },
+  access: { needs: ['accessPointId', 'credentialItemId', 'place', 'completionFlag'], may: ['door'] },
   hacking: { needs: ['targetId', 'place', 'completionFlag'] },
   sabotage: { needs: ['targetId', 'place', 'completionFlag'] },
   transportation: { needs: ['journeyId', 'mode', 'from', 'to', 'passengerRoleIds', 'cargoItemIds', 'completionFlag'] },

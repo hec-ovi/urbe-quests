@@ -37,7 +37,7 @@ The typed objective: kind plus the fields that kind takes. Every place (place, f
 - investigation: sceneId, evidenceId, evidenceItemId (an information item this step gives), subjectRoleIds (the roles the clue implicates; an empty list when none), place, completionFlag.
 - rescue: roleId, releaseTargetId, place, completionFlag.
 - escort: roleId, routeId, mode (follow-player: the character follows the player; lead-player: the character walks the player there, so to is a building, station or stop), from and to (two different places), completionFlag.
-- access: accessPointId, credentialItemId (a key, information or device item this step needs), place, completionFlag.
+- access: accessPointId, credentialItemId (a key, information or device item this step needs), place, completionFlag; optional door, a locked door of the place's building by its address there (apartment 1407, archive 302), when getting through that door is the step: the credential is then the key or card that opens it.
 - hacking: targetId, place, completionFlag.
 - sabotage: targetId, place, completionFlag.
 - transportation: journeyId, mode (ride-hail, public-transit, vehicle, animal or aircraft), from and to (two different places), passengerRoleIds (roles travelling with the player; an empty list when the player travels alone), cargoItemIds (physical items this step needs; an empty list when none), completionFlag.
