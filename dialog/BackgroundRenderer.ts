@@ -15,6 +15,31 @@ import { clock, dayName } from './time.js';
 
 const prompt = promptLoader(new URL('./prompts/', import.meta.url));
 
+/** A household member's tie as the person says it: "your partner Ada Vance". */
+const TIES: Record<NPCInstance['family'][number]['relation'], string> = {
+  partner: 'your partner',
+  child: 'your child',
+  parent: 'your parent',
+  sibling: 'your brother or sister',
+  roommate: 'your roommate',
+};
+
+/**
+ * Who the person lives with, from the simulation's household and nothing
+ * else: alone, or with each member by tie and name, and what they do not
+ * have (a partner, children) said outright, so none is made up.
+ */
+function household(npc: NPCInstance): string {
+  if (npc.family.length === 0) return prompt('background.md#household-alone');
+  const members = listed(npc.family.map((member) => `${TIES[member.relation]} ${member.name.given} ${member.name.family}`));
+  const adult = !npc.family.some((member) => member.relation === 'parent');
+  const lacks = [
+    ...(adult && !npc.family.some((member) => member.relation === 'partner') ? ['no partner'] : []),
+    ...(adult && !npc.family.some((member) => member.relation === 'child') ? ['no children'] : []),
+  ];
+  return prompt('background.md#household', { members, lacks: lacks.length > 0 ? ` You have ${listed(lacks)}.` : '' });
+}
+
 /** What people call someone of this gender: a child, a teenager, an adult. */
 const NOUNS = { male: ['boy', 'teenage boy', 'man'], female: ['girl', 'teenage girl', 'woman'] } as const;
 /** How a day's stretch reads: "asleep at home", "at work at Static Cafe". */
@@ -44,9 +69,7 @@ export class BackgroundRenderer {
     if (options.look) lines.push(look(options.look));
     lines.push(this.home(npc));
     lines.push(this.work(npc));
-    for (const member of npc.family) {
-      lines.push(prompt('background.md#family', { ...member.name, relation: member.relation }));
-    }
+    lines.push(household(npc));
     const leisure = new Set(
       npc.routine
         .filter((e) => (e.activity === 'leisure' || e.activity === 'shopping') && e.place.kind === 'parcel')

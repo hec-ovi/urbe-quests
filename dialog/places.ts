@@ -104,9 +104,11 @@ export class PlaceWords {
     const floor = here.floor === undefined ? '' : here.floor === 0 ? ', on the ground floor' : `, on the ${ordinal(here.floor)} floor`;
     const at = inside ? `inside ${this.label(inside)}${floor}` : beside ? `outside ${this.label(beside)}` : undefined;
     const skip = new Set([inside?.id, beside?.id]);
+    const closed = new Set(this.world.closed ?? []);
     const near: Array<{ words: string; metres: number }> = [];
     for (const parcel of this.world.parcels) {
-      if (skip.has(parcel.id) || !parcel.lot) continue;
+      // A building nobody can go into is no place to mention going to.
+      if (skip.has(parcel.id) || !parcel.lot || closed.has(parcel.id)) continue;
       if (parcel.type === 'residential' && parcel.name === undefined) continue;
       const metres = toLot(parcel.lot, [here.x, here.z]);
       if (metres > AROUND) continue;
