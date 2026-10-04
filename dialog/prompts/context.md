@@ -357,3 +357,16 @@ waiting for your ride at a stop
 
 The conversation so far:
 {{turns}}
+
+## ways
+
+How far the places that matter lie from where you stand now; say it this way when asked how far, and never guess other distances:
+{{ways}}
+
+## way
+
+{{place}}: about {{metres}} metres to the {{point}}, {{minutes}} on foot{{lift}}
+
+## way-here
+
+{{place}}: right here{{lift}}

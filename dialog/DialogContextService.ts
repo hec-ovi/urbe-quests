@@ -28,6 +28,7 @@ import type {
   DialogLook,
   DialogTask,
   DialogTurn,
+  DialogWay,
   DialogWorld,
   MemorySnapshot,
 } from './schema.js';
@@ -90,11 +91,19 @@ export class DialogContextService {
     if (memory.digest.length > 0) {
       segments.push({ id: 'memory', text: prompt('context.md#memory', { notes: bullets(memory.digest) }), shared: false });
     }
+    // The talk so far only grows, so it goes ahead of what changes every turn and the prompt cache keeps it.
+    const turns = [...memory.turns, ...said(options.prior ?? [], timeMin)];
+    if (turns.length > 0) {
+      segments.push({
+        id: 'conversation',
+        text: prompt('context.md#conversation', { turns: turns.map((turn) => `${turn.speaker === 'player' ? 'Player' : 'You'}: ${turn.text}`).join('\n') }),
+        shared: false,
+      });
+    }
     if (options.guide) segments.push({ id: 'place', text: this.renderPlace(npc, options.guide), shared: false });
     if (options.events?.length) segments.push({ id: 'events', text: this.renderEvents(options.events, timeMin), shared: false });
     if (options.people) segments.push({ id: 'people', text: this.renderPeople(options.people), shared: false });
-    const turns = [...memory.turns, ...said(options.prior ?? [], timeMin)];
-    segments.push({ id: 'turns', text: this.renderNow(npc, timeMin, turns, options.here, options.task, options.call, options.addresses?.here), shared: false });
+    segments.push({ id: 'turns', text: this.renderNow(npc, timeMin, options.here, options.task, options.call, options.addresses), shared: false });
     return { npcId, ...(characterName ? { characterName: { ...characterName } } : {}), segments };
   }
 
@@ -306,6 +315,15 @@ export class DialogContextService {
     return [unit, address.floor === undefined ? undefined : storey(address.floor), building].filter((part) => part !== undefined).join(', ');
   }
 
+  /** "your home: about 350 metres to the north-east, 5 minutes on foot, then the lift up". */
+  private way(way: DialogWay): string {
+    const what = way.what === 'home' ? 'your home' : way.what === 'work' ? 'your work' : way.name ?? 'that place';
+    const told = way.what === 'quest' ? `${what}, where the player's business takes them` : what;
+    if (way.metres < 20) return prompt('context.md#way-here', { place: told, lift: way.lift ? `, the lift ${way.lift}` : '' }).trim();
+    const minutes = way.minutes <= 1 ? 'a minute' : `${way.minutes} minutes`;
+    return prompt('context.md#way', { place: told, metres: way.metres, point: way.point, minutes, lift: way.lift ? `, then the lift ${way.lift}` : '' }).trim();
+  }
+
   /** Where inside a building the person stands: "on floor 14, in apartment 1407, in the living room". */
   private insideWords(inside: DialogAddress): string {
     const parts = [
@@ -316,7 +334,8 @@ export class DialogContextService {
     return parts.join(', ');
   }
 
-  private renderNow(npc: NPCInstance, timeMin: number, turns: DialogTurn[], here: DialogHere | undefined, task?: DialogTask, call?: DialogCall, inside?: DialogAddress): string {
+  private renderNow(npc: NPCInstance, timeMin: number, here: DialogHere | undefined, task?: DialogTask, call?: DialogCall, addresses?: DialogAddresses): string {
+    const inside = addresses?.here;
     const behavior = this.sim.behaviorAt(npc.npcId, timeMin);
     const day = dayName(Math.floor(timeMin / 1440) % 7);
     const lines = [prompt('context.md#now', { day, time: clock(timeMin % 1440), activity: prompt(`context.md#activity-${behavior.activity}`) })];
@@ -333,11 +352,8 @@ export class DialogContextService {
     if (here?.light) lines.push(prompt('context.md#light', { light: here.light }));
     const heading = this.heading(npc, timeMin);
     if (heading) lines.push(heading);
-    if (turns.length > 0) {
-      lines.push(prompt('context.md#conversation', {
-        turns: turns.map(turn => `${turn.speaker === 'player' ? 'Player' : 'You'}: ${turn.text}`).join('\n'),
-      }));
-    }
+    const ways = (addresses?.ways ?? []).map((way) => this.way(way));
+    if (ways.length > 0) lines.push(prompt('context.md#ways', { ways: bullets(ways) }));
     return lines.join('\n');
   }
 

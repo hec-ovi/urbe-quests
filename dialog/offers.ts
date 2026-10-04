@@ -79,37 +79,67 @@ export type CompanionOffer =
   | { kind: 'meet'; name: string }
   | { kind: 'give'; itemId: string; name: string };
 
-/** The tools these options allow; empty when the NPC may agree to nothing. */
+/** Whether these options let the NPC agree to anything at all. */
+export function offersAnything(options: OfferOptions = {}): boolean {
+  return Boolean(
+    options.follow || (options.places?.length ?? 0) > 0 || options.meet || (options.give?.items.length ?? 0) > 0 ||
+      PLAIN.some((action) => options[action.option]),
+  );
+}
+
+let everyTool: ChatTool[] | undefined;
+
+/**
+ * Every action tool, the same for every person and every turn whenever the
+ * person may agree to anything, empty when they may agree to nothing. Model
+ * servers render tools at the very start of the prompt, so tools that never
+ * change keep that start, and the prompt cache behind it, the same from one
+ * call to the next; what this person may do now, with its places and cards,
+ * goes in the turn's message (`offerListing`), and a call outside it is refused.
+ */
 export function offerTools(options: OfferOptions = {}): ChatTool[] {
-  const none = { type: 'object', properties: {}, additionalProperties: false };
-  const tools: ChatTool[] = [];
-  if (options.follow) tools.push(tool(FOLLOW, prompt('offers.md#follow_player'), none));
+  if (!offersAnything(options)) return [];
+  if (everyTool === undefined) {
+    const none = { type: 'object', properties: {}, additionalProperties: false };
+    const one = (key: string, description: string) => ({
+      type: 'object',
+      properties: { [key]: { type: 'string', description } },
+      required: [key],
+      additionalProperties: false,
+    });
+    const placeId = one('placeId', prompt('offers.md#place-id'));
+    everyTool = [
+      tool(FOLLOW, prompt('offers.md#follow_player'), none),
+      tool(LEAD, prompt('offers.md#lead_player_to'), placeId),
+      tool(WALK, prompt('offers.md#walk_to'), placeId),
+      ...PLAIN.map((action) => tool(action.tool, prompt(`offers.md#${action.tool}`), none)),
+      tool(MEET, prompt('offers.md#meet_player'), none),
+      tool(GIVE, prompt('offers.md#give_item'), one('itemId', prompt('offers.md#item-id'))),
+    ];
+  }
+  return everyTool;
+}
+
+/**
+ * What the person may do for the player right now, for the turn's message:
+ * the tools they may call, the places lead_player_to and walk_to take by id,
+ * the cards give_item takes by id and, on a call, where meet_player goes.
+ */
+export function offerListing(options: OfferOptions = {}): string {
+  const allowed = [
+    ...(options.follow ? [FOLLOW] : []),
+    ...((options.places?.length ?? 0) > 0 ? [LEAD, ...(options.walk ? [WALK] : [])] : []),
+    ...PLAIN.filter((action) => options[action.option]).map((action) => action.tool),
+    ...(options.meet ? [MEET] : []),
+    ...((options.give?.items.length ?? 0) > 0 ? [GIVE] : []),
+  ];
+  const parts = [prompt('offers.md#available', { tools: allowed.join(', ') })];
   const places = options.places ?? [];
-  if (places.length > 0) {
-    const listing = places.map((place) => `- ${place.placeId}: ${place.name}`).join('\n');
-    const parameters = {
-      type: 'object',
-      properties: {
-        placeId: { type: 'string', enum: places.map((place) => place.placeId), description: prompt('offers.md#place-id') },
-      },
-      required: ['placeId'],
-      additionalProperties: false,
-    };
-    tools.push(tool(LEAD, prompt('offers.md#lead_player_to', { places: listing }), parameters));
-    if (options.walk) tools.push(tool(WALK, prompt('offers.md#walk_to', { places: listing }), parameters));
-  }
-  for (const action of PLAIN) if (options[action.option]) tools.push(tool(action.tool, prompt(`offers.md#${action.tool}`), none));
-  if (options.meet) tools.push(tool(MEET, prompt('offers.md#meet_player', { place: options.meet.name }), none));
+  if (places.length > 0) parts.push(prompt('offers.md#available-places', { places: places.map((place) => `- ${place.placeId}: ${place.name}`).join('\n') }));
   const items = options.give?.items ?? [];
-  if (items.length > 0) {
-    tools.push(tool(GIVE, prompt('offers.md#give_item', { items: items.map((item) => `- ${item.itemId}: ${item.name}`).join('\n') }), {
-      type: 'object',
-      properties: { itemId: { type: 'string', enum: items.map((item) => item.itemId), description: prompt('offers.md#item-id') } },
-      required: ['itemId'],
-      additionalProperties: false,
-    }));
-  }
-  return tools;
+  if (items.length > 0) parts.push(prompt('offers.md#available-items', { items: items.map((item) => `- ${item.itemId}: ${item.name}`).join('\n') }));
+  if (options.meet) parts.push(prompt('offers.md#available-meet', { place: options.meet.name }));
+  return parts.join('\n\n');
 }
 
 /** The offer a tool call makes, or undefined when the options allow no such tool or place. */

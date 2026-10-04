@@ -4,7 +4,7 @@ import type { NamedDistrict, NamedWorld } from '../world/types/named-world.js';
 import type { StreetGeometry } from '../world/streets.js';
 import type { DialogPeople } from './people.js';
 
-export type SegmentId = 'world' | 'type' | 'npc' | 'address' | 'quest' | 'memory' | 'place' | 'events' | 'people' | 'turns';
+export type SegmentId = 'world' | 'type' | 'npc' | 'address' | 'quest' | 'memory' | 'conversation' | 'place' | 'events' | 'people' | 'turns';
 
 /**
  * One layer of an NPC's dialog context. Segments come in a fixed order so
@@ -36,6 +36,12 @@ export interface DialogWorld {
   transit?: NamedWorld['transit'];
   /** Atlas `streets`: with it, places carry their street and a person knows where they stand. */
   streets?: StreetGeometry;
+  /**
+   * The parcels whose buildings nobody can go into (no interior was built
+   * for them): a person does not name them as places around them to go to.
+   * Absent, every building is open.
+   */
+  closed?: string[];
 }
 
 /** A place the NPC has led the player to, as the host describes it. */
@@ -133,6 +139,23 @@ export interface DialogAddresses {
   access?: DialogAccess[];
   /** How many times they caught the player lifting a card off them. */
   caught?: number;
+  /** How far the places that matter in this talk lie from where they stand now: their home, their work, the place a story sends the player to, an address the talk named. */
+  ways?: DialogWay[];
+}
+
+/** One place and the way to it from where the person stands, as the host measures it. */
+export interface DialogWay {
+  /** `home` and `work` are the person's own; `quest` the place the player's story points to; `named` an address or place the talk named. */
+  what: 'home' | 'work' | 'quest' | 'named';
+  /** The place as the player knows it, for `quest` and `named`. */
+  name?: string;
+  /** The walk there, in metres, and the compass point it lies toward ("north-east"). */
+  metres: number;
+  point: string;
+  /** Minutes on foot. */
+  minutes: number;
+  /** A lift ride up or down at the end of it. */
+  lift?: 'up' | 'down';
 }
 
 /** A talk over the phone: the player called the person, who is wherever their day has them. */

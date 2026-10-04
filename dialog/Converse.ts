@@ -4,7 +4,7 @@ import { promptLoader } from '../prompts.js';
 import { ChatToolCalls, type ChatMessage, type ChatRequest, type ChatToolCall } from '../ports/chat.js';
 import type { LLMPort, StreamingLLMPort } from '../ports/llm.js';
 import { inferOffers, pendingOf, pendingPrompt } from './agreement.js';
-import { offerKey, offerOf, offerTools, type CompanionOffer, type OfferOptions } from './offers.js';
+import { offerKey, offerListing, offerOf, offerTools, type CompanionOffer, type OfferOptions } from './offers.js';
 import { cleanReply, ReplyCleaner } from './ReplyCleaner.js';
 import type { DialogContext, DialogLine } from './schema.js';
 
@@ -68,7 +68,7 @@ export class Converse {
     // What the last exchange left on the table, said last, where it changes.
     const pending = tools.length > 0 ? pendingPrompt(pendingOf(input.turns, input.offers)) : undefined;
     const asked = tools.length > 0
-      ? [prompt, prompts('offers.md#instructions'), ...(pending ? [prompts(`offers.md#${pending.key}`, pending.values)] : [])].join('\n\n')
+      ? [prompt, prompts('offers.md#instructions'), offerListing(input.offers), ...(pending ? [prompts(`offers.md#${pending.key}`, pending.values)] : [])].join('\n\n')
       : prompt;
     const messages: ChatMessage[] = [
       { role: 'system', content: system },
@@ -90,7 +90,8 @@ export class Converse {
       ];
       // A cue the first answer made stays in front of the words, a space apart.
       let gap = reply.length > 0 ? ' ' : '';
-      for await (const text of said(llm, { messages: answered }, names, new ChatToolCalls(), input.signal)) {
+      // The same tools again, so the cached start of the first request serves this one; calls it makes are not taken.
+      for await (const text of said(llm, { messages: answered, tools }, names, new ChatToolCalls(), input.signal)) {
         reply += gap + text;
         yield { type: 'delta', text: gap + text };
         gap = '';

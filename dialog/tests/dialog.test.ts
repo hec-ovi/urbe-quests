@@ -113,6 +113,11 @@ describe('DialogContextService', () => {
     expect(quest!.text).toContain('The Arcade cameras have been dark');
     expect(turns!.text).toContain('It is Tuesday 10:00; right now you are at work.');
 
+    // The person's household as the simulation has it, and nothing invented.
+    expect(npc!.text).toMatch(person.family.length === 0
+      ? /You live alone: you have no partner and no children, and nobody else lives with you\./
+      : /You live with your [a-z ]+ [A-Z]/);
+
     const all = context.segments.map((s) => s.text).join('\n');
     expect(all).not.toContain('Helix pays someone at Precinct 9');
     expect(all).not.toContain('I bought the precinct list');
@@ -244,10 +249,10 @@ describe('DialogContextService', () => {
       { speaker: 'player' as const, text: 'Since when?' },
       { speaker: 'npc' as const, text: 'A week.' },
     ];
-    expect(segment(service.contextFor(informerId, TUE_10 + 5, { prior }), 'turns')).toContain(
+    expect(segment(service.contextFor(informerId, TUE_10 + 5, { prior }), 'conversation')).toContain(
       'The conversation so far:\nPlayer: Hi.\nYou: Hm.\nYou: The cameras are dark.\nPlayer: Since when?\nYou: A week.',
     );
-    expect(segment(service.contextFor(informerId, TUE_10 + 5), 'turns')).not.toContain('cameras');
+    expect(segment(service.contextFor(informerId, TUE_10 + 5), 'conversation')).not.toContain('cameras');
 
     const shown = [{ ...prior[0]!, atMin: TUE_10 + 1 }, { ...prior[1]!, atMin: TUE_10 + 2 }, prior[2]!];
     await service.recordExchange(informerId, { line: 'What do you mean?', reply: '[whisper] Nobody is watching.', atMin: TUE_10 + 5, prior: shown });
@@ -350,19 +355,19 @@ describe('DialogContextService', () => {
     const folding = service.recordExchange(informerId, { line: 'line 3', reply: 'reply 3', atMin: TUE_10 + 2 });
 
     const during = service.contextFor(informerId, TUE_10);
-    expect(segment(during, 'turns')).toContain('Player: line 1\nYou: reply 1');
-    expect(segment(during, 'turns')).toContain('Player: line 3\nYou: reply 3');
+    expect(segment(during, 'conversation')).toContain('Player: line 1\nYou: reply 1');
+    expect(segment(during, 'conversation')).toContain('Player: line 3\nYou: reply 3');
     expect(folds).toEqual(['player: line 1\nnpc: reply 1']);
 
     notes[0]!('<think>short</think> The player asked about the lift.');
     await folding;
     const after = service.contextFor(informerId, TUE_10);
     expect(segment(after, 'memory')).toBe('You remember:\n- The player asked about the lift.');
-    expect(segment(after, 'turns')).not.toContain('line 1');
+    expect(segment(after, 'conversation')).not.toContain('line 1');
 
     const restored = setup({ memory: { tailSize: 4, foldSize: 2 } });
     restored.service.restoreMemory(service.serializeMemory());
-    expect(segment(restored.service.contextFor(restored.informerId, TUE_10), 'turns')).toContain('Player: line 3');
+    expect(segment(restored.service.contextFor(restored.informerId, TUE_10), 'conversation')).toContain('Player: line 3');
   });
 
   it('keeps the turns when a fold fails and folds them with the next exchange', async () => {
@@ -371,13 +376,13 @@ describe('DialogContextService', () => {
     const { service, informerId } = setup({ memory: { tailSize: 2, foldSize: 2 }, llm });
     await service.recordExchange(informerId, { line: 'a', reply: 'b', atMin: TUE_10 });
     await expect(service.recordExchange(informerId, { line: 'c', reply: 'd', atMin: TUE_10 })).rejects.toThrow('model down');
-    expect(segment(service.contextFor(informerId, TUE_10), 'turns')).toContain('Player: a\nYou: b\nPlayer: c');
+    expect(segment(service.contextFor(informerId, TUE_10), 'conversation')).toContain('Player: a\nYou: b\nPlayer: c');
 
     down = false;
     await service.recordExchange(informerId, { line: 'e', reply: 'f', atMin: TUE_10 });
     const context = service.contextFor(informerId, TUE_10);
     expect(segment(context, 'memory')).toBe('You remember:\n- Folded.\n- Folded.');
-    expect(segment(context, 'turns')).toContain('The conversation so far:\nPlayer: e\nYou: f');
+    expect(segment(context, 'conversation')).toContain('The conversation so far:\nPlayer: e\nYou: f');
   });
 
   it('remembers replies without cues, keeps a note shaped like a transcript and treats an empty note as a failed fold', async () => {
@@ -429,6 +434,9 @@ describe('DialogContextService', () => {
     expect(turns).toContain('You are outside Static Cafe, a coffee shop.');
     expect(turns).toContain('Around you:\n- Noodle Saint, a restaurant, about 20 metres to the south-east');
     expect(turns).toContain('The light: night, under street lamps and neon.');
+    // A restaurant nobody can go into is no place around to go to.
+    const shut = setup({ world: (world) => ({ ...withStreets(world), closed: ['p5'] }) });
+    expect(segment(shut.service.contextFor(shut.informerId, TUE_10, { here: { x: 30, z: -3 } }), 'turns')).not.toContain('Noodle Saint');
 
     const inside = segment(service.contextFor(informerId, TUE_10, { here: { x: 25, z: 20, parcelId: 'p4', floor: 0 } }), 'turns');
     expect(inside).toContain('You are inside Static Cafe, a coffee shop, on the ground floor.');
@@ -452,6 +460,42 @@ describe('DialogContextService', () => {
 
     const guided = segment(service.contextFor(informerId, TUE_10, { guide: { placeId: 'street:2', kind: 'street' } }), 'place');
     expect(guided).toContain('You have led the player to Second Street');
+  });
+
+  it('says who a person lives with from their household alone, and what they do not have', () => {
+    const { service, sim, informerId } = setup();
+    const npc = sim.getNPC(informerId);
+    npc.family = [];
+    expect(segment(service.contextFor(informerId, TUE_10), 'npc')).toContain('You live alone: you have no partner and no children, and nobody else lives with you.');
+    npc.family = [{ npcId: 'a1', relation: 'partner', name: { given: 'Ada', family: 'Vance' }, instantiated: false }];
+    expect(segment(service.contextFor(informerId, TUE_10), 'npc')).toContain('You live with your partner Ada Vance, and nobody else. You have no children.');
+    npc.family = [
+      { npcId: 'a1', relation: 'partner', name: { given: 'Ada', family: 'Vance' }, instantiated: false },
+      { npcId: 'k1', relation: 'child', name: { given: 'Rian', family: 'Vance' }, instantiated: false },
+    ];
+    expect(segment(service.contextFor(informerId, TUE_10), 'npc')).toContain('You live with your partner Ada Vance and your child Rian Vance, and nobody else. That is your whole household');
+  });
+
+  it('keeps the talk so far ahead of what changes every turn, and says how far home, work, the story\'s place and a named address lie', async () => {
+    const { service, informerId } = setup({ world: withStreets });
+    await service.recordExchange(informerId, { line: 'Where do you live?', reply: 'Up the road.', atMin: TUE_10 });
+    const ways = [
+      { what: 'home' as const, metres: 350, point: 'north-east', minutes: 5, lift: 'up' as const },
+      { what: 'work' as const, metres: 10, point: 'south', minutes: 1 },
+      { what: 'quest' as const, name: 'Static Cafe', metres: 120, point: 'west', minutes: 2 },
+      { what: 'named' as const, name: 'apartment 301, floor 3, Kessler Block', metres: 40, point: 'north', minutes: 1, lift: 'down' as const },
+    ];
+    const context = service.contextFor(informerId, TUE_10, { here: { x: 30, z: -3 }, addresses: { home: { parcelId: 'p9', floor: 2, unit: 'apartment 201' }, ways } });
+    const ids = context.segments.map((s) => s.id);
+    expect(ids.indexOf('conversation')).toBeLessThan(ids.indexOf('turns'));
+    expect(ids.at(-1)).toBe('turns');
+    const now = segment(context, 'turns');
+    expect(now).not.toContain('Where do you live?');
+    expect(now).toContain('- your home: about 350 metres to the north-east, 5 minutes on foot, then the lift up');
+    expect(now).toContain('- your work: right here');
+    expect(now).toContain("- Static Cafe, where the player's business takes them: about 120 metres to the west, 2 minutes on foot");
+    expect(now).toContain('- apartment 301, floor 3, Kessler Block: about 40 metres to the north, a minute on foot, then the lift down');
+    expect(segment(context, 'address')).not.toContain('metres');
   });
 
   it('knows the apartment it has led the player to as its own home', () => {
