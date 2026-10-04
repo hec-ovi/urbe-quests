@@ -10,6 +10,15 @@ import { cleanMarkup } from '../ports/markup.js';
 import { promptLoader } from '../prompts.js';
 import type { DialogTurn, MemorySnapshot } from './schema.js';
 
+/** An overheard note keeps this many of the newest lines of one talk, each cut to OVERHEARD_CHARS. */
+const OVERHEARD_LINES = 4;
+const OVERHEARD_CHARS = 160;
+/** One line of an overheard note: `The player said: "…"` or `Mira Chen said: "…"`. */
+export interface HeardLine {
+  who: string;
+  text: string;
+}
+
 export interface MemoryStoreOptions {
   /** Verbatim turns kept before folding kicks in. */
   tailSize?: number;
@@ -56,7 +65,25 @@ export class MemoryStore {
 
   snapshot(npcId: string): MemorySnapshot {
     const memory = this.memory(npcId);
-    return { digest: [...memory.digest], turns: [...memory.turns] };
+    return { digest: [...memory.digest], turns: [...memory.turns], ...(memory.heardAtMin === undefined ? {} : { heardAtMin: memory.heardAtMin }) };
+  }
+
+  /**
+   * Notes what this person overheard of the player talking to somebody else,
+   * as one short note of its own: `header` says who talked (marked as other
+   * people's words), then the newest OVERHEARD_LINES lines of that talk, each
+   * cut to OVERHEARD_CHARS. While the same talk goes on, its note stays the
+   * newest and is written again with the new lines instead of a second note.
+   */
+  overhear(npcId: string, header: string, lines: HeardLine[], atMin: number): void {
+    const memory = this.memory(npcId);
+    const last = memory.digest.at(-1);
+    const earlier = last !== undefined && last.startsWith(`${header} `) ? heardLines(last.slice(header.length), lines.map((line) => line.who)) : [];
+    if (earlier.length > 0) memory.digest.pop();
+    const kept = [...earlier, ...lines.map((line) => ({ who: line.who, text: cut(line.text) }))].filter((line) => line.text.length > 0).slice(-OVERHEARD_LINES);
+    if (kept.length === 0) return;
+    memory.digest.push(`${header} ${kept.map((line) => `${line.who} said: "${line.text}"`).join(' ')}`);
+    memory.heardAtMin = Math.max(memory.heardAtMin ?? atMin, atMin);
   }
 
   serialize(): Record<string, MemorySnapshot> {
@@ -66,7 +93,11 @@ export class MemoryStore {
   restore(data: Record<string, MemorySnapshot>): void {
     this.memories.clear();
     for (const [npcId, snapshot] of Object.entries(data)) {
-      this.memories.set(npcId, { digest: [...snapshot.digest], turns: [...snapshot.turns] });
+      this.memories.set(npcId, {
+        digest: [...snapshot.digest],
+        turns: [...snapshot.turns],
+        ...(snapshot.heardAtMin === undefined ? {} : { heardAtMin: snapshot.heardAtMin }),
+      });
     }
   }
 
@@ -89,4 +120,21 @@ export class MemoryStore {
     }
     return memory;
   }
+}
+
+/** A line as an overheard note quotes it: no double quotes inside, cut at a word to OVERHEARD_CHARS. */
+function cut(text: string): string {
+  const plain = text.replace(/["\u201c\u201d]/g, "'").replace(/\s+/g, ' ').trim();
+  if (plain.length <= OVERHEARD_CHARS) return plain;
+  const head = plain.slice(0, OVERHEARD_CHARS - 1);
+  const space = head.lastIndexOf(' ');
+  return `${(space > OVERHEARD_CHARS / 2 ? head.slice(0, space) : head).replace(/[\s,;:.]+$/, '')}\u2026`;
+}
+
+/** The lines an overheard note already holds, read back by the speakers it can name. */
+function heardLines(body: string, speakers: string[]): HeardLine[] {
+  const names = [...new Set(speakers)].map((name) => name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  if (names.length === 0) return [];
+  const pattern = new RegExp(`(${names.join('|')}) said: "([^"]*)"`, 'g');
+  return [...body.matchAll(pattern)].map((match) => ({ who: match[1]!, text: match[2]! }));
 }

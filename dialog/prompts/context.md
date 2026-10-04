@@ -379,3 +379,7 @@ While you were with the player, you overheard them talking to other people. Thes
 ## overheard-exchange
 
 - You overheard the player talking to {{who}}. The player said: "{{player}}" {{name}} answered: "{{reply}}"
+
+## overheard-note
+
+Overheard, not said to you: you were there when the player talked to {{who}}.

@@ -257,8 +257,23 @@ export interface DialogExchange {
 }
 
 export interface MemorySnapshot {
-  /** Older conversation folded into compact notes, oldest first. */
+  /** Older conversation folded into compact notes, oldest first; what the person overheard stands among them as notes of its own. */
   digest: string[];
   /** Recent turns kept verbatim. */
   turns: DialogTurn[];
+  /** The game minute the person last overheard the player talking to somebody else. */
+  heardAtMin?: number;
+}
+
+/**
+ * One exchange a person overheard between the player and somebody else, for
+ * `recordOverheard`: who the player talked to, and what each said (`npc` is
+ * that other person), oldest first.
+ */
+export interface DialogHeard {
+  name: string;
+  /** What they are (`receptionist`), told beside the name. */
+  role?: string;
+  lines: DialogLine[];
+  atMin: number;
 }

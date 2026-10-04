@@ -28,6 +28,7 @@ import type {
   DialogLook,
   DialogTask,
   DialogTurn,
+  DialogHeard,
   DialogOverheard,
   DialogWay,
   DialogWorld,
@@ -121,6 +122,22 @@ export class DialogContextService {
       { speaker: 'player', text: exchange.line },
       { speaker: 'npc', text: exchange.reply },
     ], exchange.atMin));
+  }
+
+  /**
+   * Remembers what this person overheard of the player talking to somebody
+   * else, being there when it was said: one short note in their memory, marked
+   * as other people's words with who spoke, written again with the newest
+   * lines while the same talk goes on. It persists with the rest of their
+   * memory, so they know of the player's business only what they heard.
+   */
+  recordOverheard(npcId: string, heard: DialogHeard): void {
+    const who = heard.role ? `${heard.name}, the ${words(heard.role)}` : heard.name;
+    const header = prompt('context.md#overheard-note', { who }).trim();
+    const lines = heard.lines
+      .map((line) => ({ who: line.speaker === 'player' ? 'The player' : heard.name, text: stripCues(line.text) }))
+      .filter((line) => line.text.length > 0);
+    this.memoryStore.overhear(npcId, header, lines, heard.atMin);
   }
 
   serializeMemory(): Record<string, MemorySnapshot> {
@@ -363,7 +380,9 @@ export class DialogContextService {
     if (here?.light) lines.push(prompt('context.md#light', { light: here.light }));
     const heading = this.heading(npc, timeMin);
     if (heading) lines.push(heading);
-    const ways = (addresses?.ways ?? []).map((way) => this.way(way));
+    // The place a story points to is known only to a person the story casts: anyone else knows of it only what they overheard.
+    const cast = this.questlines.some((runtime) => Object.values(runtime.cast).includes(npc.npcId));
+    const ways = (addresses?.ways ?? []).filter((way) => way.what !== 'quest' || cast).map((way) => this.way(way));
     if (ways.length > 0) lines.push(prompt('context.md#ways', { ways: bullets(ways) }));
     return lines.join('\n');
   }

@@ -76,6 +76,7 @@ export type {
   DialogAddresses,
   DialogAccess,
   DialogOverheard,
+  DialogHeard,
   DialogWay,
   DialogTurn,
   DialogWorld,

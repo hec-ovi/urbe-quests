@@ -509,6 +509,48 @@ describe('DialogContextService', () => {
     expect(segment(service.contextFor(informerId, TUE_10), 'overheard')).toBe('');
   });
 
+  it('remembers what a person overheard of the player talking to somebody else as one short note of that talk, marked as theirs, kept through a restore', async () => {
+    const { service, informerId } = setup();
+    const heard = (player: string, reply: string, atMin: number) => service.recordOverheard(informerId, {
+      name: 'Mira Chen', role: 'front_desk', atMin,
+      lines: [{ speaker: 'player', text: player }, { speaker: 'npc', text: reply }],
+    });
+    heard('Who rents 1407?', '[sigh] Nobody since spring.', TUE_10);
+    expect(segment(service.contextFor(informerId, TUE_10), 'memory')).toBe(
+      'You remember:\n- Overheard, not said to you: you were there when the player talked to Mira Chen, the front desk. The player said: "Who rents 1407?" Mira Chen said: "Nobody since spring."',
+    );
+    // The same talk goes on: one note, the newest four lines, each short.
+    heard('And before that?', `A man who said "never again". ${'He paid in cash every week. '.repeat(10)}`, TUE_10 + 1);
+    heard('Thanks.', 'Sure.', TUE_10 + 2);
+    const memory = service.serializeMemory()[informerId]!;
+    expect(memory.digest).toHaveLength(1);
+    expect(memory.digest[0]).not.toContain('Who rents 1407?');
+    expect(memory.digest[0]).toContain('The player said: "And before that?" Mira Chen said: "A man who said \'never again\'.');
+    expect(memory.digest[0]).toMatch(/\u2026" The player said: "Thanks\." Mira Chen said: "Sure\."$/);
+    expect(memory.digest[0]!.length).toBeLessThan(560);
+    expect(memory.heardAtMin).toBe(TUE_10 + 2);
+
+    // Their own talk with the player comes between: the next talk overheard is a note of its own.
+    await service.recordExchange(informerId, { line: 'Hi.', reply: 'Hm.', atMin: TUE_10 + 3 });
+    service.recordOverheard(informerId, { name: 'Ada Ruiz', lines: [{ speaker: 'player', text: 'Seen Mira?' }, { speaker: 'npc', text: 'Upstairs.' }], atMin: TUE_10 + 4 });
+    const later = service.serializeMemory()[informerId]!;
+    expect(later.digest.at(-1)).toBe('Overheard, not said to you: you were there when the player talked to Ada Ruiz. The player said: "Seen Mira?" Ada Ruiz said: "Upstairs."');
+
+    const restored = setup();
+    restored.service.restoreMemory(service.serializeMemory());
+    expect(restored.service.serializeMemory()[restored.informerId]).toEqual(later);
+  });
+
+  it('tells only a person a story casts how far the place it points to lies', () => {
+    const { service, sim, informerId } = setup();
+    const ways = [{ what: 'quest' as const, name: 'Static Cafe', metres: 120, point: 'west', minutes: 2 }, { what: 'home' as const, metres: 300, point: 'north', minutes: 4 }];
+    expect(segment(service.contextFor(informerId, TUE_10, { addresses: { ways } }), 'turns')).toContain('Static Cafe, where the player\'s business takes them');
+    const bystander = sim.getNPCVendor({ type: 'cafe_barista', timeMin: TUE_10 + 8 * 60 });
+    const told = segment(service.contextFor(bystander.npcId, TUE_10, { addresses: { ways } }), 'turns');
+    expect(told).not.toContain('Static Cafe, where');
+    expect(told).toContain('- your home: about 300 metres to the north');
+  });
+
   it('knows the apartment it has led the player to as its own home', () => {
     const { service, sim, informerId } = setup({ world: withStreets });
     sim.getNPC(informerId).home = { parcelId: 'p9', unit: 3, apartment: { id: 'floor:2/f1-home-1', floor: 2, number: '201' } };
