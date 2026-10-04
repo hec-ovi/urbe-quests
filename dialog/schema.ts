@@ -4,7 +4,7 @@ import type { NamedDistrict, NamedWorld } from '../world/types/named-world.js';
 import type { StreetGeometry } from '../world/streets.js';
 import type { DialogPeople } from './people.js';
 
-export type SegmentId = 'world' | 'type' | 'npc' | 'address' | 'quest' | 'memory' | 'conversation' | 'place' | 'events' | 'people' | 'turns';
+export type SegmentId = 'world' | 'type' | 'npc' | 'address' | 'quest' | 'memory' | 'conversation' | 'overheard' | 'place' | 'events' | 'people' | 'turns';
 
 /**
  * One layer of an NPC's dialog context. Segments come in a fixed order so
@@ -107,6 +107,23 @@ export interface ContextOptions {
   call?: DialogCall;
   /** Where the person lives and works by address, where they stand now indoors, and the doors they hold cards for: adds the `address` segment, and the turns segment says where they stand. */
   addresses?: DialogAddresses;
+  /**
+   * What a person along with the player (following them, leading them) heard
+   * the player say to other people and those people say back, oldest first:
+   * adds the `overheard` segment, marked as other people's words.
+   */
+  overheard?: DialogOverheard[];
+}
+
+/** One exchange the person overheard between the player and somebody else. */
+export interface DialogOverheard {
+  /** Who the player talked to, as this person would know them: a name, else what they are. */
+  name: string;
+  /** What they are (`receptionist`), told beside a name. */
+  role?: string;
+  /** What the player said, and what the other person said back. */
+  player: string;
+  reply: string;
 }
 
 /**

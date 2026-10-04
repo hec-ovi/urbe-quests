@@ -75,6 +75,8 @@ export type {
   DialogAddress,
   DialogAddresses,
   DialogAccess,
+  DialogOverheard,
+  DialogWay,
   DialogTurn,
   DialogWorld,
   MemorySnapshot,

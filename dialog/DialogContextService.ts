@@ -28,6 +28,7 @@ import type {
   DialogLook,
   DialogTask,
   DialogTurn,
+  DialogOverheard,
   DialogWay,
   DialogWorld,
   MemorySnapshot,
@@ -100,6 +101,7 @@ export class DialogContextService {
         shared: false,
       });
     }
+    if (options.overheard?.length) segments.push({ id: 'overheard', text: this.renderOverheard(options.overheard), shared: false });
     if (options.guide) segments.push({ id: 'place', text: this.renderPlace(npc, options.guide), shared: false });
     if (options.events?.length) segments.push({ id: 'events', text: this.renderEvents(options.events, timeMin), shared: false });
     if (options.people) segments.push({ id: 'people', text: this.renderPeople(options.people), shared: false });
@@ -313,6 +315,15 @@ export class DialogContextService {
     const building = this.places.addressed({ kind: 'parcel', id: address.parcelId });
     const unit = address.unit ?? (address.room ? `the ${words(address.room)}` : undefined);
     return [unit, address.floor === undefined ? undefined : storey(address.floor), building].filter((part) => part !== undefined).join(', ');
+  }
+
+  /** The player's talks with other people this person heard, each marked with who said what, none of it this person's own words. */
+  private renderOverheard(overheard: DialogOverheard[]): string {
+    const exchanges = overheard.map((entry) => {
+      const who = entry.role ? `${entry.name}, the ${words(entry.role)}` : entry.name;
+      return prompt('context.md#overheard-exchange', { who, name: entry.name, player: entry.player, reply: entry.reply });
+    });
+    return prompt('context.md#overheard', { exchanges: exchanges.join('\n') });
   }
 
   /** "your home: about 350 metres to the north-east, 5 minutes on foot, then the lift up". */

@@ -370,3 +370,12 @@ How far the places that matter lie from where you stand now; say it this way whe
 ## way-here
 
 {{place}}: right here{{lift}}
+
+## overheard
+
+While you were with the player, you overheard them talking to other people. These are other people's words, not yours and not said to you; you know them only because you were there, and you may tell the player what you heard when they ask:
+{{exchanges}}
+
+## overheard-exchange
+
+- You overheard the player talking to {{who}}. The player said: "{{player}}" {{name}} answered: "{{reply}}"

@@ -498,6 +498,17 @@ describe('DialogContextService', () => {
     expect(segment(context, 'address')).not.toContain('metres');
   });
 
+  it('tells a companion what it overheard the player say to other people, marked as theirs', () => {
+    const { service, informerId } = setup();
+    const overheard = [{ name: 'Mira Chen', role: 'receptionist', player: 'Who rents 1407?', reply: 'Nobody since spring.' }];
+    const context = service.contextFor(informerId, TUE_10, { overheard });
+    const ids = context.segments.map((s) => s.id);
+    expect(ids.indexOf('overheard')).toBeLessThan(ids.indexOf('turns'));
+    expect(segment(context, 'overheard')).toContain("These are other people's words, not yours and not said to you");
+    expect(segment(context, 'overheard')).toContain('- You overheard the player talking to Mira Chen, the receptionist. The player said: "Who rents 1407?" Mira Chen answered: "Nobody since spring."');
+    expect(segment(service.contextFor(informerId, TUE_10), 'overheard')).toBe('');
+  });
+
   it('knows the apartment it has led the player to as its own home', () => {
     const { service, sim, informerId } = setup({ world: withStreets });
     sim.getNPC(informerId).home = { parcelId: 'p9', unit: 3, apartment: { id: 'floor:2/f1-home-1', floor: 2, number: '201' } };
