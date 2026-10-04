@@ -32,6 +32,8 @@ export interface OfferPlace {
   placeId: string;
   /** What the player knows the place as. */
   name: string;
+  /** What the place is to this person, when the host knows: `home`, `work`, a `haunt`, a `venue`, a `street`... */
+  relation?: string;
 }
 
 /** What the host lets this NPC agree to right now. */

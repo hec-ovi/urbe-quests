@@ -3,9 +3,10 @@ import { CUE_LIST, stripCues } from '../flow/cues.js';
 import { promptLoader } from '../prompts.js';
 import { ChatToolCalls, type ChatMessage, type ChatRequest, type ChatToolCall } from '../ports/chat.js';
 import type { LLMPort, StreamingLLMPort } from '../ports/llm.js';
+import { inferOffers, pendingOf, pendingPrompt } from './agreement.js';
 import { offerKey, offerOf, offerTools, type CompanionOffer, type OfferOptions } from './offers.js';
 import { cleanReply, ReplyCleaner } from './ReplyCleaner.js';
-import type { DialogContext } from './schema.js';
+import type { DialogContext, DialogLine } from './schema.js';
 
 const prompts = promptLoader(new URL('./prompts/', import.meta.url));
 
@@ -23,6 +24,13 @@ export interface ConverseStreamInput extends ConverseInput {
   offers?: OfferOptions;
   /** Aborting ends the model request, and the stream rejects. */
   signal?: AbortSignal;
+  /**
+   * The conversation so far, oldest first, up to the line: what the person
+   * offered or was asked a moment ago is read from its last exchange, so an
+   * acceptance goes where it was offered and an agreement in words alone
+   * still does what it says.
+   */
+  turns?: DialogLine[];
 }
 
 /** What a streamed reply yields: text as it is spoken, with its cues, then each offer the NPC made, then the whole reply. */
@@ -57,9 +65,14 @@ export class Converse {
     }
     const { system, prompt, names } = request(input);
     const tools = offerTools(input.offers);
+    // What the last exchange left on the table, said last, where it changes.
+    const pending = tools.length > 0 ? pendingPrompt(pendingOf(input.turns, input.offers)) : undefined;
+    const asked = tools.length > 0
+      ? [prompt, prompts('offers.md#instructions'), ...(pending ? [prompts(`offers.md#${pending.key}`, pending.values)] : [])].join('\n\n')
+      : prompt;
     const messages: ChatMessage[] = [
       { role: 'system', content: system },
-      { role: 'user', content: tools.length > 0 ? `${prompt}\n\n${prompts('offers.md#instructions')}` : prompt },
+      { role: 'user', content: asked },
     ];
     const calls = new ChatToolCalls();
     let reply = '';
@@ -85,11 +98,17 @@ export class Converse {
     }
     spoken(reply);
 
-    const offers = new Map<string, CompanionOffer>();
+    const called = new Map<string, CompanionOffer>();
     for (const call of made) {
       const offer = offerOf(call, input.offers);
-      if (offer) offers.set(offerKey(offer), offer);
+      if (offer) called.set(offerKey(offer), offer);
     }
+    // Words and actions agree: what the reply agrees to in words alone happens too (see agreement.ts).
+    const offers = new Map<string, CompanionOffer>();
+    const inferred = tools.length > 0
+      ? inferOffers({ line: input.line, reply: stripCues(reply), turns: input.turns ?? [], options: input.offers ?? {}, made: [...called.values()] })
+      : [...called.values()];
+    for (const offer of inferred) offers.set(offerKey(offer), offer);
     for (const offer of offers.values()) yield { type: 'offer', ...offer };
     yield { type: 'done', reply, offers: [...offers.values()] };
   }

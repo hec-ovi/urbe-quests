@@ -56,6 +56,7 @@ export { QuestlineCreation } from './creation/QuestlineCreation.js';
 export { DialogContextService, type DialogContextServiceInput } from './dialog/DialogContextService.js';
 export { Converse, type ConverseInput, type ConverseStreamInput, type ReplyEvent } from './dialog/Converse.js';
 export type { CompanionOffer, OfferItem, OfferOptions, OfferPlace } from './dialog/offers.js';
+export { accepts, askedOf, inferOffers, pendingOf, placeIn, stanceOf, type Pending, type Stance } from './dialog/agreement.js';
 export { peopleKnown, type DialogPeople, type DialogPerson, type DialogWhereabouts, type PeopleInput } from './dialog/people.js';
 export { cleanReply, ReplyCleaner } from './dialog/ReplyCleaner.js';
 export type {
