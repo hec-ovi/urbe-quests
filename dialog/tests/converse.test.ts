@@ -158,10 +158,10 @@ describe('Converse', () => {
 
     expect(await new Converse(llm).reply(input)).toBe('Not tonight, friend.');
     expect(seen).toHaveLength(1);
-    expect(seen[0]?.system).toBe('WORLD LAYER\n\nTYPE LAYER\n\nNPC LAYER\n\nTURNS LAYER');
-    expect(seen[0]?.prompt).toContain('"Where is the lift?"');
-    expect(seen[0]?.prompt).toContain('Answer as Mara Voss');
-    expect(seen[0]?.prompt).toContain('[laugh] [sigh] [whisper] [angry] [gasp] [cry]');
+    // How to answer goes ahead of the layers that change each turn; the turn is the line.
+    expect(seen[0]?.system).toMatch(/^WORLD LAYER\n\nTYPE LAYER\n\nNPC LAYER\n\nAnswer as Mara Voss[^]*\n\nTURNS LAYER$/);
+    expect(seen[0]?.system).toContain('[laugh] [sigh] [whisper] [angry] [gasp] [cry]');
+    expect(seen[0]?.prompt).toBe('The player is standing in front of you and says: "Where is the lift?"');
   });
 
   it('rejects a reply with nothing left to say', async () => {
@@ -207,9 +207,13 @@ describe('Converse', () => {
     expect(requests).toHaveLength(1);
     expect(signals).toEqual([signal]);
     const [sent] = requests;
-    expect(sent!.messages[0]).toEqual({ role: 'system', content: 'WORLD LAYER\n\nTYPE LAYER\n\nNPC LAYER\n\nTURNS LAYER' });
-    expect(sent!.messages[1]!.content).toContain('Their asking is their consent, and your call means you do it as soon as the two of you are done talking');
-    expect(sent!.messages[1]!.content).toContain('decline in character, in words only, and call nothing');
+    // How to answer and to agree sits between the layers that stay and the ones that change; the message is the line and what may be done now.
+    const system = sent!.messages[0]!.content as string;
+    expect(system.startsWith('WORLD LAYER\n\nTYPE LAYER\n\nNPC LAYER\n\nAnswer as Mara Voss, in speech only')).toBe(true);
+    expect(system.endsWith('\n\nTURNS LAYER')).toBe(true);
+    expect(system).toContain('Their asking is their consent, and your call means you do it as soon as the two of you are done talking');
+    expect(system).toContain('decline in character, in words only, and call nothing');
+    expect(sent!.messages[1]!.content).toMatch(/^The player is standing in front of you and says: "Where is the lift\?"/);
     // Every tool, the same each turn, so the start of the prompt stays cached; what may be done now is in the message.
     expect(sent!.tools?.map((tool) => tool.function.name)).toEqual(['follow_player', 'lead_player_to', 'walk_to', 'stop', 'go_home', 'go_to_work', 'wait_here', 'sit', 'give_number', 'meet_player', 'give_item']);
     const lead = sent!.tools!.find((tool) => tool.function.name === 'lead_player_to')!.function;
@@ -291,7 +295,7 @@ describe('Converse', () => {
     const { port, requests } = streamingPort([{ content: 'No.' }]);
     expect(spoken(await events(new Converse(port).replyStream(input)))).toBe('No.');
     expect(requests[0]!.tools).toBeUndefined();
-    expect(requests[0]!.messages[1]!.content).not.toContain('Their asking is their consent');
+    expect(requests[0]!.messages[0]!.content).not.toContain('Their asking is their consent');
 
     expect(await events(new Converse({ complete: async () => 'Hm.' }).replyStream({ ...input, offers: { follow: true } }))).toEqual([
       { type: 'delta', text: 'Hm.' },
@@ -333,7 +337,7 @@ describe('Converse', () => {
     const tools = requests[0]!.tools ?? [];
     expect(tools.map((tool) => tool.function.name)).toEqual(['follow_player', 'lead_player_to', 'walk_to', 'stop', 'go_home', 'go_to_work', 'wait_here', 'sit', 'give_number', 'meet_player', 'give_item']);
     expect(requests[0]!.messages[1]!.content).toContain('Where the player is now, for meet_player: Static Cafe.');
-    expect(requests[0]!.messages[1]!.content).toContain('give them your number');
+    expect(requests[0]!.messages[0]!.content).toContain('give them your number');
     expect(seen.filter((event) => event.type === 'offer')).toEqual([
       { type: 'offer', kind: 'contact' },
       { type: 'offer', kind: 'meet', name: 'Static Cafe' },
@@ -365,7 +369,7 @@ describe('Converse', () => {
     expect(tools.map((tool) => tool.function.name)).toEqual(['follow_player', 'lead_player_to', 'walk_to', 'stop', 'go_home', 'go_to_work', 'wait_here', 'sit', 'give_number', 'meet_player', 'give_item']);
     expect(requests[0]!.messages[1]!.content).toContain('- card:staff:p9: Static Cafe staff card');
     expect(tools.at(-1)!.function.parameters).toMatchObject({ properties: { itemId: { type: 'string' } } });
-    expect(requests[0]!.messages[1]!.content).toContain('copy of one of your access cards');
+    expect(requests[0]!.messages[0]!.content).toContain('copy of one of your access cards');
     expect(seen.filter((event) => event.type === 'offer')).toEqual([
       { type: 'offer', kind: 'give', itemId: 'card:home:p404/floor:14/f14-home-7', name: 'Kessler Block 1407 key card, which opens apartment 1407' },
     ]);

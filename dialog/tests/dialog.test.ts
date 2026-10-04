@@ -176,7 +176,7 @@ describe('DialogContextService', () => {
     const calls: { system: string; prompt: string }[] = [];
     await new Converse({ complete: async (request) => { calls.push(request); return 'My name is Petra Moss.'; } })
       .reply({ context, name: `${original.name.given} ${original.name.family}`, line: 'Are you Petra?' });
-    expect(calls[0]!.prompt).toContain('Answer as Petra Moss');
+    expect(calls[0]!.system).toContain('Answer as Petra Moss');
     expect(calls[0]!.system).toContain('Your name is Petra Moss.');
   });
 

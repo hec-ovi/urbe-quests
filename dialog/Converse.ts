@@ -6,7 +6,7 @@ import type { LLMPort, StreamingLLMPort } from '../ports/llm.js';
 import { inferOffers, pendingOf, pendingPrompt } from './agreement.js';
 import { offerKey, offerListing, offerOf, offerTools, type CompanionOffer, type OfferOptions } from './offers.js';
 import { cleanReply, ReplyCleaner } from './ReplyCleaner.js';
-import type { DialogContext, DialogLine } from './schema.js';
+import type { DialogContext, DialogLine, SegmentId } from './schema.js';
 
 const prompts = promptLoader(new URL('./prompts/', import.meta.url));
 
@@ -44,7 +44,7 @@ export class Converse {
   constructor(private readonly llm: LLMPort | StreamingLLMPort) {}
 
   async reply(input: ConverseInput): Promise<string> {
-    const { system, prompt, names } = request(input);
+    const { system, prompt, names } = request(input, false);
     return spoken(cleanReply(await this.llm.complete({ system, prompt }), names));
   }
 
@@ -63,12 +63,12 @@ export class Converse {
       yield { type: 'done', reply, offers: [] };
       return;
     }
-    const { system, prompt, names } = request(input);
     const tools = offerTools(input.offers);
-    // What the last exchange left on the table, said last, where it changes.
+    const { system, prompt, names } = request(input, tools.length > 0);
+    // What the person may do now and what the last exchange left on the table, said last, where it changes.
     const pending = tools.length > 0 ? pendingPrompt(pendingOf(input.turns, input.offers)) : undefined;
     const asked = tools.length > 0
-      ? [prompt, prompts('offers.md#instructions'), offerListing(input.offers), ...(pending ? [prompts(`offers.md#${pending.key}`, pending.values)] : [])].join('\n\n')
+      ? [prompt, offerListing(input.offers), ...(pending ? [prompts(`offers.md#${pending.key}`, pending.values)] : [])].join('\n\n')
       : prompt;
     const messages: ChatMessage[] = [
       { role: 'system', content: system },
@@ -115,11 +115,24 @@ export class Converse {
   }
 }
 
-function request(input: ConverseInput): { system: string; prompt: string; names: string[] } {
-  const system = input.context.segments.map((segment) => segment.text).join('\n\n');
+/** The layers that change from one turn to the next, from the talk so far on; everything before them stays the same. */
+const CHANGING = new Set<SegmentId>(['conversation', 'overheard', 'place', 'events', 'people', 'turns']);
+
+/**
+ * The system text and the turn's message. How to answer, and with `offers`
+ * how to agree to what is asked, go between the layers that stay the same
+ * from turn to turn and the ones that change, so a prompt cache keeps
+ * everything up to the talk so far; the turn's message is the line alone.
+ */
+function request(input: ConverseInput, offers: boolean): { system: string; prompt: string; names: string[] } {
   const character = input.context.characterName;
   const name = character ? `${character.given} ${character.family}` : input.name;
-  const prompt = prompts('reply.md', { name, line: input.line, cues: CUE_LIST }).trim();
+  const segments = input.context.segments;
+  const split = segments.findIndex((segment) => CHANGING.has(segment.id));
+  const at = split < 0 ? segments.length : split;
+  const rules = [prompts('reply.md#rules', { name, cues: CUE_LIST }).trim(), ...(offers ? [prompts('offers.md#instructions').trim()] : [])];
+  const system = [...segments.slice(0, at).map((segment) => segment.text), ...rules, ...segments.slice(at).map((segment) => segment.text)].join('\n\n');
+  const prompt = prompts('reply.md#line', { line: input.line }).trim();
   return { system, prompt, names: [name, name.split(' ')[0]!] };
 }
 
