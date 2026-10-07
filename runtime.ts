@@ -16,6 +16,7 @@ export {
   QuestlineRuntime,
   type AdvanceResult,
   type DialogueChoiceResult,
+  type HandHow,
   type QuestlineState,
   type QuestlineStatus,
 } from './flow/QuestlineRuntime.js';
@@ -27,7 +28,11 @@ export { POST_WINDOWS, VENUES, venueName, type Post, type StaffRole } from './wo
 export { StreetNames, type Street, type StreetGeometry, type StreetSpot } from './world/streets.js';
 export { dispositionOf, willingTo, type Disposition, type RequestPrivacy } from './world/disposition.js';
 export { peopleKnown, type DialogPeople, type DialogPerson, type DialogWhereabouts, type PeopleInput } from './dialog/people.js';
+export { amountIn, heldOut, stanceOf, type Stance } from './dialog/agreement.js';
+export { DIALOG_ABILITIES } from './dialog/abilities.js';
+export type { CompanionOffer, OfferCredits, OfferItem, OfferOptions, OfferPlace, PricedItem } from './dialog/offers.js';
+export type { DialogCarried, DialogCarry, DialogDealing, DialogMeans } from './dialog/schema.js';
 export { guidanceFor, type GuidanceReason, type RouteDestination, type StepGuidance } from './flow/guidance.js';
-export { QuestlineStateValidator } from './flow/state.js';
+export { QuestlineStateValidator, type QuestlineHanded } from './flow/state.js';
 export { CastResolver, type CastBlock, type CastOptions, type CastResult } from './builder/CastResolver.js';
 export { StoryVenues } from './builder/StoryVenues.js';

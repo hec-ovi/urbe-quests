@@ -24,10 +24,11 @@ export {
   QuestlineRuntime,
   type AdvanceResult,
   type DialogueChoiceResult,
+  type HandHow,
   type QuestlineState,
   type QuestlineStatus,
 } from './flow/QuestlineRuntime.js';
-export { QuestlineStateValidator } from './flow/state.js';
+export { QuestlineStateValidator, type QuestlineHanded } from './flow/state.js';
 export type { AvailabilityWindow, StepAvailability, UnavailableReason } from './flow/availability.js';
 export type { QuestPlace } from './flow/places.js';
 export { storyWindow, workplaceOf } from './flow/roles.js';
@@ -55,9 +56,23 @@ export { QuestlineCreation } from './creation/QuestlineCreation.js';
 
 export { DialogContextService, plainWords, type DialogContextServiceInput } from './dialog/DialogContextService.js';
 export { Converse, type ConverseInput, type ConverseStreamInput, type ReplyEvent } from './dialog/Converse.js';
-export type { CompanionOffer, OfferItem, OfferOptions, OfferPlace } from './dialog/offers.js';
-export { accepts, askedOf, inferOffers, pendingOf, placeIn, stanceOf, type Pending, type Stance } from './dialog/agreement.js';
-export { groundingProblems, META_WORDS, STOCK_PHRASES, voiceProblems } from './dialog/grounding.js';
+export type { CompanionOffer, OfferCredits, OfferItem, OfferOptions, OfferPlace, PricedItem } from './dialog/offers.js';
+export {
+  accepts,
+  amountIn,
+  askedOf,
+  heldOut,
+  inferOffers,
+  pendingOf,
+  placeIn,
+  stanceOf,
+  thingIn,
+  withHeldOut,
+  type Pending,
+  type Stance,
+} from './dialog/agreement.js';
+export { DIALOG_ABILITIES } from './dialog/abilities.js';
+export { groundingProblems, META_WORDS, moneyProblems, STOCK_PHRASES, voiceProblems } from './dialog/grounding.js';
 export { lifeHistory, type LifeInput } from './dialog/LifeHistory.js';
 export { peopleKnown, type DialogPeople, type DialogPerson, type DialogWhereabouts, type PeopleInput } from './dialog/people.js';
 export { cleanReply, ReplyCleaner } from './dialog/ReplyCleaner.js';
@@ -74,6 +89,10 @@ export type {
   DialogLook,
   DialogTask,
   DialogCall,
+  DialogCarried,
+  DialogCarry,
+  DialogDealing,
+  DialogMeans,
   DialogAddress,
   DialogAddresses,
   DialogAccess,
