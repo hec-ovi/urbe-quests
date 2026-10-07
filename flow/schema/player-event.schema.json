@@ -40,6 +40,21 @@
     {
       "type": "object",
       "additionalProperties": false,
+      "required": ["kind", "itemId", "npcId"],
+      "maxProperties": 4,
+      "properties": {
+        "kind": { "const": "handedTo" },
+        "itemId": { "$ref": "#/$defs/id" },
+        "npcId": { "$ref": "#/$defs/id" },
+        "parcelId": { "$ref": "#/$defs/id" },
+        "districtId": { "$ref": "#/$defs/id" },
+        "stationId": { "$ref": "#/$defs/id" },
+        "stopId": { "$ref": "#/$defs/id" }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
       "required": ["kind", "npcIds"],
       "properties": {
         "kind": { "const": "overheard" },

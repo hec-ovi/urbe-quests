@@ -9,7 +9,18 @@
     "activeStepIds": { "$ref": "#/$defs/ids" },
     "completedStepIds": { "$ref": "#/$defs/ids" },
     "flags": { "$ref": "#/$defs/ids" },
-    "endingId": { "$ref": "#/$defs/id" }
+    "endingId": { "$ref": "#/$defs/id" },
+    "handed": {
+      "description": "Quest items handed to a person outside a deliver step, by item id, with who has each; absent when nothing was handed.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["itemId", "npcId"],
+        "properties": { "itemId": { "$ref": "#/$defs/id" }, "npcId": { "$ref": "#/$defs/id" } }
+      }
+    }
   },
   "$defs": {
     "id": { "type": "string", "minLength": 1 },

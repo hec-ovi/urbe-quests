@@ -8,6 +8,8 @@ export type PlayerEvent =
   | { kind: 'observed'; districtId: string }
   | { kind: 'pickedUp'; itemId: string }
   | ({ kind: 'delivered'; itemId: string } & PlaceIdentity)
+  /** The player handed a quest item to a person, where they stand when the host knows it (their own home or work building). */
+  | ({ kind: 'handedTo'; itemId: string; npcId: string } & Partial<PlaceIdentity>)
   | { kind: 'overheard'; npcIds: string[] }
   | { kind: 'stole'; itemId: string }
   | { kind: 'killed'; npcId: string }

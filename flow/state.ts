@@ -6,6 +6,19 @@ export interface QuestlineState {
   completedStepIds: string[];
   flags: string[];
   endingId?: string;
+  /**
+   * Quest items the player handed to a person and no step took from them:
+   * one a talk with that person needs (`theirs`) or one no step still to come
+   * uses (`free`), by item id, with who has it now. Absent when nothing was
+   * handed, so a state from before has no such key.
+   */
+  handed?: QuestlineHanded[];
+}
+
+/** One quest item the player handed to a person. */
+export interface QuestlineHanded {
+  itemId: string;
+  npcId: string;
 }
 
 /** Validates an untrusted saved state against the immutable definition. */
@@ -15,7 +28,7 @@ export class QuestlineStateValidator {
       throw new QuestError('E_INVALID_FLOW', `${def.id}: invalid saved state: ${message}`);
     };
     if (!isRecord(input)) return fail('expected an object');
-    const allowedKeys = new Set(['activeStepIds', 'completedStepIds', 'flags', 'endingId']);
+    const allowedKeys = new Set(['activeStepIds', 'completedStepIds', 'flags', 'endingId', 'handed']);
     if (Object.keys(input).some((key) => !allowedKeys.has(key))) fail('unknown property');
 
     const activeIds = stringArray(input.activeStepIds, 'activeStepIds', fail);
@@ -39,6 +52,32 @@ export class QuestlineStateValidator {
 
     this.validateHistory(def, steps, active, completedIds, endingId, fail);
     this.validateFlags(steps, completedIds, flags, fail);
+    if (input.handed !== undefined) this.validateHanded(def, steps, completedIds, input.handed, fail);
+  }
+
+  /** Each handed item is one of the questline's, once, and one its completed steps left in the player's hands. */
+  private validateHanded(
+    def: QuestlineDefinition,
+    steps: Map<string, QuestStep>,
+    completedIds: string[],
+    handed: unknown,
+    fail: (message: string) => never,
+  ): void {
+    if (!Array.isArray(handed)) return fail('handed must be an array');
+    const items = new Set(def.items.map((item) => item.itemId));
+    const kept = heldAfter(steps, completedIds);
+    const seen = new Set<string>();
+    for (const entry of handed) {
+      if (!isRecord(entry) || Object.keys(entry).some((key) => key !== 'itemId' && key !== 'npcId')) fail('handed entries are { itemId, npcId }');
+      const { itemId, npcId } = entry as Record<string, unknown>;
+      if (typeof itemId !== 'string' || itemId.length === 0) fail('handed itemId must be a nonempty string');
+      if (typeof npcId !== 'string' || npcId.length === 0) fail('handed npcId must be a nonempty string');
+      const id = itemId as string;
+      if (!items.has(id)) fail(`handed unknown item ${id}`);
+      if (seen.has(id)) fail(`handed ${id} twice`);
+      if (!kept.has(id)) fail(`handed ${id}, which the completed steps never left with the player`);
+      seen.add(id);
+    }
   }
 
   private validateHistory(
@@ -94,6 +133,20 @@ export class QuestlineStateValidator {
     }
     if (!sameSet(replayed, new Set(savedFlags))) fail('flags do not match completion history');
   }
+}
+
+/** The items completed steps leave with the player, in order: taken or given, minus delivered. */
+export function heldAfter(steps: ReadonlyMap<string, QuestStep>, completedIds: Iterable<string>): Set<string> {
+  const held = new Set<string>();
+  for (const id of completedIds) {
+    const step = steps.get(id);
+    if (!step) continue;
+    const t = step.target;
+    if (t.kind === 'pickup' || t.kind === 'steal') held.add(t.itemId);
+    for (const itemId of step.gives) held.add(itemId);
+    if (t.kind === 'deliver') held.delete(t.itemId);
+  }
+  return held;
 }
 
 function stringArray(value: unknown, name: string, fail: (message: string) => never): string[] {
