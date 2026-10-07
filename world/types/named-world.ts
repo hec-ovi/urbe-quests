@@ -19,7 +19,8 @@ export type ParcelType =
   | 'commerce'
   | 'mall'
   | 'restaurant'
-  | 'coffee_shop';
+  | 'coffee_shop'
+  | 'park';
 
 export interface NamedDistrict {
   id: string;

@@ -51,6 +51,8 @@ export const VENUES: Record<ParcelType, Venue> = {
   mall: { word: 'mall', roles: ['vendor', 'clerk', 'security', 'cleaner', 'guest'], posts: ['day', 'evening'] },
   restaurant: { word: 'restaurant', roles: ['waiter', 'cook', 'vendor', 'cleaner'], posts: ['day', 'evening'] },
   coffee_shop: { word: 'coffee shop', roles: ['barista', 'vendor', 'cleaner'], posts: ['day', 'evening'] },
+  /** A public square: its pavilion's vendor sites are staffed by the simulation, so the square itself hires nobody. */
+  park: { word: 'square', roles: [], posts: [] },
 };
 
 /** Staffing an NPC type can hold, by the category Naming gave it. */

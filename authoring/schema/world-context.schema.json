@@ -52,7 +52,7 @@
             "properties": {
               "id": { "$ref": "urn:urbe:quests:authoring:values#/$defs/id" },
               "districtId": { "$ref": "urn:urbe:quests:authoring:values#/$defs/id" },
-              "type": { "enum": ["residential", "hotel", "offices", "corpo", "hospital", "clinic", "police", "military", "factory", "commerce", "mall", "restaurant", "coffee_shop"] },
+              "type": { "enum": ["residential", "hotel", "offices", "corpo", "hospital", "clinic", "police", "military", "factory", "commerce", "mall", "restaurant", "coffee_shop", "park"] },
               "tier": { "enum": ["poor", "mid", "rich", "high_rich"] },
               "name": { "$ref": "urn:urbe:quests:authoring:values#/$defs/text" }
             }
@@ -106,7 +106,7 @@
                 "additionalProperties": false,
                 "properties": {
                   "districts": { "type": "array", "items": { "$ref": "urn:urbe:quests:authoring:values#/$defs/id" } },
-                  "parcelTypes": { "type": "array", "items": { "enum": ["residential", "hotel", "offices", "corpo", "hospital", "clinic", "police", "military", "factory", "commerce", "mall", "restaurant", "coffee_shop"] } },
+                  "parcelTypes": { "type": "array", "items": { "enum": ["residential", "hotel", "offices", "corpo", "hospital", "clinic", "police", "military", "factory", "commerce", "mall", "restaurant", "coffee_shop", "park"] } },
                   "tiers": { "type": "array", "items": { "enum": ["poor", "mid", "rich", "high_rich"] } }
                 }
               },
