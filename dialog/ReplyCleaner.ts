@@ -20,12 +20,12 @@ interface Stage {
 
 /**
  * Looks at the head of every line: `Name:` or `assistant:` in front of the
- * NPC's own words is dropped; `Player:` or `User:` means the model is writing
+ * NPC's own words is dropped; `Player:`, `User:`, `Them:`, `They:` or `Stranger:` means the model is writing
  * the player's turn, so that line and everything after it is dropped.
  */
 class SpeakerTags implements Stage {
   private readonly own: RegExp;
-  private readonly other = /^[ \t*]*(player|user)[ \t*]*:/i;
+  private readonly other = /^[ \t*]*(player|user|them|they|stranger)[ \t*]*:/i;
   private readonly longest: number;
   private head = '';
   private lineStart = true;

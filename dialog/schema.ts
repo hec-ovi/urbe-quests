@@ -30,7 +30,11 @@ export interface DialogContext {
  * and parcels are not named yet. Unnamed places are described, never shown by id.
  */
 export interface DialogWorld {
-  meta: { naming: { theme: string }; gridAngle?: number };
+  /**
+   * `setting`, when the world has one, says plainly what the city is and how
+   * life runs in it, and stands in place of the bare theme word.
+   */
+  meta: { naming: { theme: string }; gridAngle?: number; setting?: string };
   districts: Array<Omit<NamedDistrict, 'name'> & { name?: string }>;
   parcels: NamedWorld['parcels'];
   transit?: NamedWorld['transit'];
@@ -263,6 +267,8 @@ export interface MemorySnapshot {
   turns: DialogTurn[];
   /** The game minute the person last overheard the player talking to somebody else. */
   heardAtMin?: number;
+  /** Their life so far, told once from their simulation record (`lifeHistory`) and kept as it was. */
+  life?: string;
 }
 
 /**

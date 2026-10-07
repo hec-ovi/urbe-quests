@@ -13,10 +13,10 @@ import type { ChatTool, ChatToolCall } from '../ports/chat.js';
 
 const prompt = promptLoader(new URL('./prompts/', import.meta.url));
 
-const FOLLOW = 'follow_player';
-const LEAD = 'lead_player_to';
+const FOLLOW = 'come_along';
+const LEAD = 'take_them_to';
 const WALK = 'walk_to';
-const MEET = 'meet_player';
+const MEET = 'meet_them';
 const GIVE = 'give_item';
 /** The actions that take no argument, by tool name, with the option that allows each and the offer kind it makes. */
 const PLAIN = [
@@ -109,11 +109,11 @@ export function offerTools(options: OfferOptions = {}): ChatTool[] {
     });
     const placeId = one('placeId', prompt('offers.md#place-id'));
     everyTool = [
-      tool(FOLLOW, prompt('offers.md#follow_player'), none),
-      tool(LEAD, prompt('offers.md#lead_player_to'), placeId),
+      tool(FOLLOW, prompt('offers.md#come_along'), none),
+      tool(LEAD, prompt('offers.md#take_them_to'), placeId),
       tool(WALK, prompt('offers.md#walk_to'), placeId),
       ...PLAIN.map((action) => tool(action.tool, prompt(`offers.md#${action.tool}`), none)),
-      tool(MEET, prompt('offers.md#meet_player'), none),
+      tool(MEET, prompt('offers.md#meet_them'), none),
       tool(GIVE, prompt('offers.md#give_item'), one('itemId', prompt('offers.md#item-id'))),
     ];
   }
@@ -122,8 +122,8 @@ export function offerTools(options: OfferOptions = {}): ChatTool[] {
 
 /**
  * What the person may do for the player right now, for the turn's message:
- * the tools they may call, the places lead_player_to and walk_to take by id,
- * the cards give_item takes by id and, on a call, where meet_player goes.
+ * the tools they may call, the places take_them_to and walk_to take by id,
+ * the cards give_item takes by id and, on a call, where meet_them goes.
  */
 export function offerListing(options: OfferOptions = {}): string {
   const allowed = [

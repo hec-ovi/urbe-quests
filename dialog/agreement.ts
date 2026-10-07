@@ -279,8 +279,8 @@ export function pendingPrompt(pending: Pending | undefined): { key: string; valu
 }
 
 const TOOLS: Record<CompanionOffer['kind'], string> = {
-  follow: 'follow_player',
-  lead: 'lead_player_to',
+  follow: 'come_along',
+  lead: 'take_them_to',
   walk: 'walk_to',
   stop: 'stop',
   home: 'go_home',
@@ -288,6 +288,6 @@ const TOOLS: Record<CompanionOffer['kind'], string> = {
   wait: 'wait_here',
   sit: 'sit',
   contact: 'give_number',
-  meet: 'meet_player',
+  meet: 'meet_them',
   give: 'give_item',
 };

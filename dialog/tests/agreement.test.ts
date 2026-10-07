@@ -55,7 +55,7 @@ describe('words and actions agree', () => {
     );
     expect(offers).toEqual([{ type: 'offer', kind: 'lead', placeId: 'p1724', name: HOME.name }]);
     // The prompt said so too: the offer stands, and accepting it is a lead there.
-    expect(requests[0]!.messages[1]!.content).toContain('A moment ago you offered to take the player to Seventh Avenue, floor 7, apartment 701. If their line accepts, that is their consent: call lead_player_to with placeId p1724');
+    expect(requests[0]!.messages[1]!.content).toContain('A moment ago you offered to take them to Seventh Avenue, floor 7, apartment 701. If what they say now accepts, that is their consent: call take_them_to with placeId p1724');
     expect(requests[0]!.messages[0]!.content).toContain('never make up a shop, a bar or a corner to head for');
   });
 

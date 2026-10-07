@@ -161,7 +161,7 @@ describe('Converse', () => {
     // How to answer goes ahead of the layers that change each turn; the turn is the line.
     expect(seen[0]?.system).toMatch(/^WORLD LAYER\n\nTYPE LAYER\n\nNPC LAYER\n\nAnswer as Mara Voss[^]*\n\nTURNS LAYER$/);
     expect(seen[0]?.system).toContain('[laugh] [sigh] [whisper] [angry] [gasp] [cry]');
-    expect(seen[0]?.prompt).toBe('The player is standing in front of you and says: "Where is the lift?"');
+    expect(seen[0]?.prompt).toBe('The person in front of you says: "Where is the lift?"');
   });
 
   it('rejects a reply with nothing left to say', async () => {
@@ -188,10 +188,10 @@ describe('Converse', () => {
       { content: 'Mara: "Noodle Saint' },
       { content: ' is two streets down. ' },
       { content: 'Come on."' },
-      { tool_calls: [{ index: 0, id: 'c1', function: { name: 'lead_player_to', arguments: '{"place' } }] },
+      { tool_calls: [{ index: 0, id: 'c1', function: { name: 'take_them_to', arguments: '{"place' } }] },
       { tool_calls: [{ index: 0, function: { arguments: 'Id":"p5"}' } }] },
-      { tool_calls: [{ index: 1, id: 'c2', function: { name: 'lead_player_to', arguments: '{"placeId":"p99"}' } }] },
-      { tool_calls: [{ index: 2, id: 'c3', function: { name: 'follow_player', arguments: '{}' } }] },
+      { tool_calls: [{ index: 1, id: 'c2', function: { name: 'take_them_to', arguments: '{"placeId":"p99"}' } }] },
+      { tool_calls: [{ index: 2, id: 'c3', function: { name: 'come_along', arguments: '{}' } }] },
     ]);
     const signal = new AbortController().signal;
     const offers = { places: [{ placeId: 'p5', name: 'Noodle Saint' }, { placeId: 'p8', name: 'Precinct 9' }] };
@@ -213,21 +213,21 @@ describe('Converse', () => {
     expect(system.endsWith('\n\nTURNS LAYER')).toBe(true);
     expect(system).toContain('Their asking is their consent, and your call means you do it as soon as the two of you are done talking');
     expect(system).toContain('decline in character, in words only, and call nothing');
-    expect(sent!.messages[1]!.content).toMatch(/^The player is standing in front of you and says: "Where is the lift\?"/);
+    expect(sent!.messages[1]!.content).toMatch(/^The person in front of you says: "Where is the lift\?"/);
     // Every tool, the same each turn, so the start of the prompt stays cached; what may be done now is in the message.
-    expect(sent!.tools?.map((tool) => tool.function.name)).toEqual(['follow_player', 'lead_player_to', 'walk_to', 'stop', 'go_home', 'go_to_work', 'wait_here', 'sit', 'give_number', 'meet_player', 'give_item']);
-    const lead = sent!.tools!.find((tool) => tool.function.name === 'lead_player_to')!.function;
+    expect(sent!.tools?.map((tool) => tool.function.name)).toEqual(['come_along', 'take_them_to', 'walk_to', 'stop', 'go_home', 'go_to_work', 'wait_here', 'sit', 'give_number', 'meet_them', 'give_item']);
+    const lead = sent!.tools!.find((tool) => tool.function.name === 'take_them_to')!.function;
     expect(lead.description).not.toContain('Noodle Saint');
     expect(lead.parameters).toMatchObject({ required: ['placeId'], properties: { placeId: { type: 'string' } } });
-    expect(sent!.messages[1]!.content).toContain('What you can do for the player right now: lead_player_to.');
+    expect(sent!.messages[1]!.content).toContain('What you can do for them right now: take_them_to.');
     expect(sent!.messages[1]!.content).toContain('The places you know the way to, by id:\n- p5: Noodle Saint\n- p8: Precinct 9');
   });
 
   it('answers a tool-only reply, echoing well-formed arguments, and streams the spoken words from a second request over the same tools', async () => {
     const { port, requests } = streamingPort(
       [{ tool_calls: [
-        { index: 0, function: { name: 'follow_player', arguments: '{}' } },
-        { index: 1, id: 'c2', function: { name: 'lead_player_to', arguments: '{"place' } },
+        { index: 0, function: { name: 'come_along', arguments: '{}' } },
+        { index: 1, id: 'c2', function: { name: 'take_them_to', arguments: '{"place' } },
       ] }],
       [{ content: 'Fine. Lead on.' }],
     );
@@ -239,12 +239,12 @@ describe('Converse', () => {
       { type: 'offer', kind: 'follow' },
       { type: 'done', reply: 'Fine. Lead on.', offers: [{ kind: 'follow' }] },
     ]);
-    expect(requests[0]!.tools?.map((tool) => tool.function.name)).toEqual(['follow_player', 'lead_player_to', 'walk_to', 'stop', 'go_home', 'go_to_work', 'wait_here', 'sit', 'give_number', 'meet_player', 'give_item']);
+    expect(requests[0]!.tools?.map((tool) => tool.function.name)).toEqual(['come_along', 'take_them_to', 'walk_to', 'stop', 'go_home', 'go_to_work', 'wait_here', 'sit', 'give_number', 'meet_them', 'give_item']);
     expect(requests[1]!.tools).toEqual(requests[0]!.tools);
     expect(requests[1]!.messages.slice(2)).toEqual([
       { role: 'assistant', content: '', tool_calls: [
-        { id: 'call_0', type: 'function', function: { name: 'follow_player', arguments: '{}' } },
-        { id: 'c2', type: 'function', function: { name: 'lead_player_to', arguments: '{}' } },
+        { id: 'call_0', type: 'function', function: { name: 'come_along', arguments: '{}' } },
+        { id: 'c2', type: 'function', function: { name: 'take_them_to', arguments: '{}' } },
       ] },
       { role: 'tool', tool_call_id: 'call_0', content: expect.stringContaining('you do it as soon as the two of you are done talking') },
       { role: 'tool', tool_call_id: 'c2', content: expect.stringContaining('not something you can do') },
@@ -253,7 +253,7 @@ describe('Converse', () => {
 
   it('keeps a cue the tool call came with in front of the spoken follow-up', async () => {
     const { port, requests } = streamingPort(
-      [{ content: '[sigh]' }, { tool_calls: [{ index: 0, id: 'c1', function: { name: 'follow_player', arguments: '{}' } }] }],
+      [{ content: '[sigh]' }, { tool_calls: [{ index: 0, id: 'c1', function: { name: 'come_along', arguments: '{}' } }] }],
       [{ content: 'Fine.' }],
     );
     const seen = await events(new Converse(port).replyStream({ ...input, offers: { follow: true } }));
@@ -263,7 +263,7 @@ describe('Converse', () => {
   });
 
   it('offers nothing for a turn whose spoken reply never came', async () => {
-    const { port } = streamingPort([{ tool_calls: [{ index: 0, function: { name: 'follow_player', arguments: '{}' } }] }], []);
+    const { port } = streamingPort([{ tool_calls: [{ index: 0, function: { name: 'come_along', arguments: '{}' } }] }], []);
     const seen: ReplyEvent[] = [];
     const stream = new Converse(port).replyStream({ ...input, offers: { follow: true } });
     await expect((async () => { for await (const event of stream) seen.push(event); })()).rejects.toMatchObject({ code: 'E_LLM' });
@@ -317,8 +317,8 @@ describe('Converse', () => {
       walk: true, stop: false, home: true, work: true, wait: true, sit: true,
     };
     const seen = await events(new Converse(port).replyStream({ ...input, offers }));
-    expect(requests[0]!.tools?.map((tool) => tool.function.name)).toEqual(['follow_player', 'lead_player_to', 'walk_to', 'stop', 'go_home', 'go_to_work', 'wait_here', 'sit', 'give_number', 'meet_player', 'give_item']);
-    expect(requests[0]!.messages[1]!.content).toContain('What you can do for the player right now: follow_player, lead_player_to, walk_to, go_home, go_to_work, wait_here, sit.');
+    expect(requests[0]!.tools?.map((tool) => tool.function.name)).toEqual(['come_along', 'take_them_to', 'walk_to', 'stop', 'go_home', 'go_to_work', 'wait_here', 'sit', 'give_number', 'meet_them', 'give_item']);
+    expect(requests[0]!.messages[1]!.content).toContain('What you can do for them right now: come_along, take_them_to, walk_to, go_home, go_to_work, wait_here, sit.');
     expect(seen.filter((event) => event.type === 'offer')).toEqual([
       { type: 'offer', kind: 'sit' },
       { type: 'offer', kind: 'wait' },
@@ -331,12 +331,12 @@ describe('Converse', () => {
     const { port, requests } = streamingPort([
       { content: 'Sure, here is my number. I will come over.' },
       { tool_calls: [{ index: 0, id: 'a', function: { name: 'give_number', arguments: '{}' } }] },
-      { tool_calls: [{ index: 1, id: 'b', function: { name: 'meet_player', arguments: '{}' } }] },
+      { tool_calls: [{ index: 1, id: 'b', function: { name: 'meet_them', arguments: '{}' } }] },
     ]);
     const seen = await events(new Converse(port).replyStream({ ...input, offers: { contact: true, meet: { name: 'Static Cafe' } } }));
     const tools = requests[0]!.tools ?? [];
-    expect(tools.map((tool) => tool.function.name)).toEqual(['follow_player', 'lead_player_to', 'walk_to', 'stop', 'go_home', 'go_to_work', 'wait_here', 'sit', 'give_number', 'meet_player', 'give_item']);
-    expect(requests[0]!.messages[1]!.content).toContain('Where the player is now, for meet_player: Static Cafe.');
+    expect(tools.map((tool) => tool.function.name)).toEqual(['come_along', 'take_them_to', 'walk_to', 'stop', 'go_home', 'go_to_work', 'wait_here', 'sit', 'give_number', 'meet_them', 'give_item']);
+    expect(requests[0]!.messages[1]!.content).toContain('Where they are now, for meet_them: Static Cafe.');
     expect(requests[0]!.messages[0]!.content).toContain('give them your number');
     expect(seen.filter((event) => event.type === 'offer')).toEqual([
       { type: 'offer', kind: 'contact' },
@@ -348,7 +348,7 @@ describe('Converse', () => {
     const { port } = streamingPort([
       { content: 'Sure.' },
       { tool_calls: [{ index: 0, id: 'a', function: { name: 'give_number', arguments: '{}' } }] },
-      { tool_calls: [{ index: 1, id: 'b', function: { name: 'meet_player', arguments: '{}' } }] },
+      { tool_calls: [{ index: 1, id: 'b', function: { name: 'meet_them', arguments: '{}' } }] },
     ]);
     const seen = await events(new Converse(port).replyStream({ ...input, offers: { wait: true } }));
     expect(seen.filter((event) => event.type === 'offer')).toEqual([]);
@@ -366,7 +366,7 @@ describe('Converse', () => {
     ] };
     const seen = await events(new Converse(port).replyStream({ ...input, offers: { give } }));
     const tools = requests[0]!.tools ?? [];
-    expect(tools.map((tool) => tool.function.name)).toEqual(['follow_player', 'lead_player_to', 'walk_to', 'stop', 'go_home', 'go_to_work', 'wait_here', 'sit', 'give_number', 'meet_player', 'give_item']);
+    expect(tools.map((tool) => tool.function.name)).toEqual(['come_along', 'take_them_to', 'walk_to', 'stop', 'go_home', 'go_to_work', 'wait_here', 'sit', 'give_number', 'meet_them', 'give_item']);
     expect(requests[0]!.messages[1]!.content).toContain('- card:staff:p9: Static Cafe staff card');
     expect(tools.at(-1)!.function.parameters).toMatchObject({ properties: { itemId: { type: 'string' } } });
     expect(requests[0]!.messages[0]!.content).toContain('copy of one of your access cards');

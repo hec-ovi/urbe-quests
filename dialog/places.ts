@@ -35,7 +35,7 @@ const UNKNOWN: Record<PlaceKey['kind'], string> = { parcel: 'a place outside the
 /** How far around a person the places they would mention reach, in metres. */
 const AROUND = 100;
 /** Most places a person names around them. */
-const AROUND_COUNT = 6;
+const AROUND_COUNT = 3;
 /** A building this near a person's feet is the one they stand at. */
 const AT_BUILDING = 12;
 /** Compass points from north (-z), clockwise. */
@@ -180,6 +180,11 @@ export class PlaceWords {
     if (!place) return name ?? UNKNOWN[key.kind];
     const called = name ?? place.name;
     return called === undefined ? `${place.what} in ${place.where}` : `${called}, ${place.what} in ${place.where}`;
+  }
+
+  /** The district a building stands in, in words: its name, else what it is ("a poor industrial district"). */
+  districtOf(parcelId: string): string {
+    return this.district(this.world.parcels.find((p) => p.id === parcelId)?.districtId);
   }
 
   /** The districts the world has named, in world order. */

@@ -9,6 +9,8 @@ import type { LLMPort } from '../ports/llm.js';
 import type { NPCType, NPCTypeSet } from '../world/types/named-world.js';
 import type { NPCInstance, RoutineEntry, SimulationPort } from '../world/types/simulation.js';
 import { BackgroundRenderer } from './BackgroundRenderer.js';
+import { lifeHistory } from './LifeHistory.js';
+import { dispositionOf } from '../world/disposition.js';
 import { MemoryStore, type MemoryStoreOptions } from './MemoryStore.js';
 import { listed, ordinal, PlaceWords, withArticle } from './places.js';
 import type { DialogPeople } from './people.js';
@@ -91,14 +93,14 @@ export class DialogContextService {
     if (quest.length > 0) segments.push({ id: 'quest', text: quest, shared: false });
     const memory = this.memoryStore.snapshot(npcId);
     if (memory.digest.length > 0) {
-      segments.push({ id: 'memory', text: prompt('context.md#memory', { notes: bullets(memory.digest) }), shared: false });
+      segments.push({ id: 'memory', text: prompt('context.md#memory', { notes: bullets(memory.digest.map(plainWords)) }), shared: false });
     }
     // The talk so far only grows, so it goes ahead of what changes every turn and the prompt cache keeps it.
     const turns = [...memory.turns, ...said(options.prior ?? [], timeMin)];
     if (turns.length > 0) {
       segments.push({
         id: 'conversation',
-        text: prompt('context.md#conversation', { turns: turns.map((turn) => `${turn.speaker === 'player' ? 'Player' : 'You'}: ${turn.text}`).join('\n') }),
+        text: prompt('context.md#conversation', { turns: turns.map((turn) => `${turn.speaker === 'player' ? 'Them' : 'You'}: ${turn.text}`).join('\n') }),
         shared: false,
       });
     }
@@ -135,7 +137,7 @@ export class DialogContextService {
     const who = heard.role ? `${heard.name}, the ${words(heard.role)}` : heard.name;
     const header = prompt('context.md#overheard-note', { who }).trim();
     const lines = heard.lines
-      .map((line) => ({ who: line.speaker === 'player' ? 'The player' : heard.name, text: stripCues(line.text) }))
+      .map((line) => ({ who: line.speaker === 'player' ? 'The stranger' : heard.name, text: stripCues(line.text) }))
       .filter((line) => line.text.length > 0);
     this.memoryStore.overhear(npcId, header, lines, heard.atMin);
   }
@@ -154,7 +156,10 @@ export class DialogContextService {
       this.worldSegment = [
         prompt('context.md#world', { system: SYSTEM_PROMPT }),
         ...(districts.length > 0 ? [prompt('context.md#districts', { districts: districts.join(', ') })] : []),
-        prompt('context.md#theme', { theme: this.world.meta.naming.theme }),
+        // A world's own setting says what the city is; a bare theme word is only its character.
+        this.world.meta.setting
+          ? prompt('context.md#setting', { setting: this.world.meta.setting.trim() })
+          : prompt('context.md#theme', { theme: this.world.meta.naming.theme }),
       ].join('\n');
     }
     return this.worldSegment;
@@ -163,7 +168,7 @@ export class DialogContextService {
   private renderType(type: string): string {
     let segment = this.typeSegments.get(type);
     if (segment === undefined) {
-      segment = this.typeOf(type).boilerplate;
+      segment = plainWords(this.typeOf(type).boilerplate);
       this.typeSegments.set(type, segment);
     }
     return segment;
@@ -182,10 +187,17 @@ export class DialogContextService {
     // relations, saved conversation and simulation state retain this npcId.
     const category = this.typeOf(npc.type).category;
     const parts = [this.background.render(characterName ? { ...npc, name: characterName } : npc, { timeMin, category, ...(look ? { look } : {}) })];
+    // Their life so far, told once and kept in their memory, so it never changes.
+    parts.push(this.memoryStore.life(npc.npcId, () => lifeHistory(npc, {
+      district: this.places.districtOf(npc.home.parcelId),
+      ...(npc.job ? { workplace: this.places.short({ kind: 'parcel', id: npc.job.parcelId }) } : {}),
+      category,
+      disposition: dispositionOf(npc, category),
+    })));
     if (characterName) parts.push(prompt('context.md#character', characterName));
     for (const runtime of this.questlines) {
       for (const role of runtime.def.roles) {
-        if (runtime.cast[role.roleId] === npc.npcId) parts.push(prompt('context.md#persona', { persona: role.persona }));
+        if (runtime.cast[role.roleId] === npc.npcId) parts.push(prompt('context.md#persona', { persona: plainWords(role.persona) }));
       }
     }
     return parts.join('\n');
@@ -346,7 +358,7 @@ export class DialogContextService {
   /** "your home: about 350 metres to the north-east, 5 minutes on foot, then the lift up". */
   private way(way: DialogWay): string {
     const what = way.what === 'home' ? 'your home' : way.what === 'work' ? 'your work' : way.name ?? 'that place';
-    const told = way.what === 'quest' ? `${what}, where the player's business takes them` : what;
+    const told = way.what === 'quest' ? `${what}, where their business takes them` : what;
     if (way.metres < 20) return prompt('context.md#way-here', { place: told, lift: way.lift ? `, the lift ${way.lift}` : '' }).trim();
     const minutes = way.minutes <= 1 ? 'a minute' : `${way.minutes} minutes`;
     return prompt('context.md#way', { place: told, metres: way.metres, point: way.point, minutes, lift: way.lift ? `, then the lift ${way.lift}` : '' }).trim();
@@ -467,6 +479,28 @@ const bullets = (lines: string[]): string => lines.map((line) => `- ${line}`).jo
 
 /** A room kind or role as people say it: underscores are spaces. */
 const words = (kind: string): string => kind.replace(/_/g, ' ');
+
+/**
+ * Text written outside the talk (memory notes from before, a world's type
+ * boilerplate, an authored persona) as the person reads it: what calls the
+ * person in front of them, or the person themselves, by the words of the
+ * machinery behind them says it in plain words instead, which are all that
+ * reach the talk.
+ */
+export function plainWords(note: string): string {
+  return note
+    .replace(/,?\s*grounded by the simulation\b/gi, '')
+    .replace(/\b([Tt])he simulation\b/g, (_, t: string) => `${t}heir own life`)
+    .replace(/\b[Ss]imulation\b/g, 'life')
+    .replace(/\b([Tt])he game\b/g, (_, t: string) => `${t}he city`)
+    .replace(/\b[Tt]he NPC\b/g, (match) => (match[0] === 'T' ? 'You' : 'you'))
+    .replace(/\bNPCs\b/g, 'people')
+    .replace(/\bNPC\b/g, 'person')
+    .replace(/\b([Tt])he player's\b/g, (_, t: string) => `${t}he stranger's`)
+    .replace(/\b([Tt])he player\b/g, (_, t: string) => `${t}he stranger`)
+    .replace(/\b[Pp]layers\b/g, 'strangers')
+    .replace(/\b[Pp]layer\b/g, 'stranger');
+}
 
 /** "the ground floor", "the third floor". */
 const floorWords = (index: number): string => `${ordinal(index)} floor`;

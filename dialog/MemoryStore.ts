@@ -65,7 +65,18 @@ export class MemoryStore {
 
   snapshot(npcId: string): MemorySnapshot {
     const memory = this.memory(npcId);
-    return { digest: [...memory.digest], turns: [...memory.turns], ...(memory.heardAtMin === undefined ? {} : { heardAtMin: memory.heardAtMin }) };
+    return {
+      digest: [...memory.digest], turns: [...memory.turns],
+      ...(memory.heardAtMin === undefined ? {} : { heardAtMin: memory.heardAtMin }),
+      ...(memory.life === undefined ? {} : { life: memory.life }),
+    };
+  }
+
+  /** This person's life so far: the one kept, else `tell()` told now and kept from then on. */
+  life(npcId: string, tell: () => string): string {
+    const memory = this.memory(npcId);
+    memory.life ??= tell();
+    return memory.life;
   }
 
   /**
@@ -97,6 +108,7 @@ export class MemoryStore {
         digest: [...snapshot.digest],
         turns: [...snapshot.turns],
         ...(snapshot.heardAtMin === undefined ? {} : { heardAtMin: snapshot.heardAtMin }),
+        ...(snapshot.life === undefined ? {} : { life: snapshot.life }),
       });
     }
   }
@@ -104,7 +116,7 @@ export class MemoryStore {
   private async fold(memory: Memory): Promise<void> {
     while (memory.turns.length > this.tailSize) {
       const folded = memory.turns.slice(0, this.foldSize);
-      const transcript = folded.map((t) => `${t.speaker}: ${t.text}`).join('\n');
+      const transcript = folded.map((t) => `${t.speaker === 'player' ? 'them' : 'you'}: ${t.text}`).join('\n');
       const note = cleanMarkup(await this.llm.complete({ system: SUMMARIZE_PROMPT, prompt: transcript }));
       if (note.length === 0) throw new QuestError('E_LLM', 'the model wrote no memory note');
       memory.turns.splice(0, folded.length);

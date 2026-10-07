@@ -101,7 +101,7 @@ describe('DialogContextService', () => {
     expect(context.segments.filter((s) => s.shared).map((s) => s.id)).toEqual(['world', 'type']);
 
     const [world, type, npc, quest, turns] = context.segments;
-    expect(world!.text).toContain('deflect in character');
+    expect(world!.text).toContain('Everyone you meet is quietly judging whether you are a real person.');
     expect(world!.text).toContain('Crown Spire');
     expect(type!.text).toContain('neon-lit cafe');
     const person = sim.getNPC(informerId);
@@ -128,12 +128,12 @@ describe('DialogContextService', () => {
   it("carries the giver's want, then unlocks the gated fact and the epilogue the questline reached", () => {
     const { service, runtime, informerId, buyerId } = setup();
     const quest = (npcId: string) => service.contextFor(npcId, TUE_10).segments.find((s) => s.id === 'quest')?.text ?? '';
-    expect(quest(informerId)).toContain('What you want from the player right now');
+    expect(quest(informerId)).toContain('What you want from them right now');
     expect(quest(informerId)).toContain('carry the precinct rumor out');
     expect(quest(buyerId)).not.toContain('carry the precinct rumor out');
 
     runtime.advance({ kind: 'talkedTo', npcId: informerId }, TUE_10);
-    expect(quest(informerId)).not.toContain('What you want from the player');
+    expect(quest(informerId)).not.toContain('What you want from them');
     expect(quest(informerId)).toContain('Helix pays someone at Precinct 9');
     expect(quest(informerId)).toContain('How it ended, as you lived it:\n- The rumor changes hands.');
     expect(quest(buyerId)).toContain('The rumor changes hands.');
@@ -198,10 +198,10 @@ describe('DialogContextService', () => {
     const bystander = sim.getNPCVendor({ type: 'cafe_barista', timeMin: TUE_10 + 8 * 60 });
 
     const informer = segment(service.contextFor(informerId, TUE_10), 'quest');
-    expect(informer).toContain('(these words address the player as you). It is background: what has happened since, and the matter you are on with them now, come first.\nYou are a courier who owes the cafe. Your debt is due Friday.');
-    expect(informer).toContain('The matter you have raised with the player and are on now. You opened it: "You again. The cameras are dark."');
+    expect(informer).toContain('(these words address them as you). It is background: what has happened since, and the matter you are on with them now, come first.\nYou are a courier who owes the cafe. Your debt is due Friday.');
+    expect(informer).toContain('The matter you have raised with them and are on now. You opened it: "You again. The cameras are dark."');
     expect(informer).toContain('Asked "Since when?", you answer: "A week."');
-    expect(informer).toContain('What would settle it, should the player choose to say it: "I\'ll carry it." or "Not my problem."');
+    expect(informer).toContain('What would settle it, should they choose to say it: "I\'ll carry it." or "Not my problem."');
     expect(informer).not.toContain('carry the precinct rumor out');
     expect(informer).not.toContain('Go.');
 
@@ -216,7 +216,7 @@ describe('DialogContextService', () => {
 
     delete definition.prologue;
     service.attachQuestline(new QuestlineRuntime(definition, runtime.cast, sim));
-    expect(segment(service.contextFor(informerId, TUE_10), 'quest')).not.toContain('Who the player is');
+    expect(segment(service.contextFor(informerId, TUE_10), 'quest')).not.toContain('Who the person you are talking with is');
   });
 
   it('keeps how the player came in behind the talk a later step is on', () => {
@@ -237,7 +237,7 @@ describe('DialogContextService', () => {
 
     const quest = segment(service.contextFor(informerId, TUE_10), 'quest');
     expect(quest).toMatch(/how they came into this, as they were told it when it began .* It is background: what has happened since, and the matter you are on with them now, come first\.\nYou are a courier who owes the cafe\. She has sent for you: go and see her\./);
-    expect(quest).toContain('The matter you have raised with the player and are on now. You opened it: "You carried it. Now they know your face."');
+    expect(quest).toContain('The matter you have raised with them and are on now. You opened it: "You carried it. Now they know your face."');
     expect(quest).not.toContain('Here is the rumor.');
   });
 
@@ -250,7 +250,7 @@ describe('DialogContextService', () => {
       { speaker: 'npc' as const, text: 'A week.' },
     ];
     expect(segment(service.contextFor(informerId, TUE_10 + 5, { prior }), 'conversation')).toContain(
-      'The conversation so far:\nPlayer: Hi.\nYou: Hm.\nYou: The cameras are dark.\nPlayer: Since when?\nYou: A week.',
+      'The conversation so far ("Them" is the person you are talking with):\nThem: Hi.\nYou: Hm.\nYou: The cameras are dark.\nThem: Since when?\nYou: A week.',
     );
     expect(segment(service.contextFor(informerId, TUE_10 + 5), 'conversation')).not.toContain('cameras');
 
@@ -291,9 +291,9 @@ describe('DialogContextService', () => {
     npc.transitJob = { place: { kind: 'stop', id: 'ss0' }, role: 'fare_agent', shift };
     expect(background()).toContain('You work at a subway station in The Sump as fare agent,');
     expect(segment(service.contextFor(informerId, TUE_10, { guide: { placeId: 'ss0', kind: 'stop' } }), 'place'))
-      .toContain('You have led the player to a subway station in The Sump, and you are both standing there now.\nYou work here.');
+      .toContain('You have led them to a subway station in The Sump, and you are both standing there now.\nYou work here.');
     expect(segment(service.contextFor(informerId, TUE_10, { guide: { placeId: 'ts1', kind: 'stop' } }), 'place'))
-      .toContain('led the player to Harbor Station, a train station in Kanaal Market,');
+      .toContain('led them to Harbor Station, a train station in Kanaal Market,');
 
     npc.transitJob = { place: { kind: 'route', id: 'Rsl0' }, role: 'driver', shift };
     expect(background()).toContain("You work on the city's transit lines as driver,");
@@ -307,14 +307,14 @@ describe('DialogContextService', () => {
       guide: { placeId: work, kind: 'parcel', notes: ['A cracked window behind the counter.'] },
     });
     expect(guided.segments.map((s) => s.id)).toEqual(['world', 'type', 'npc', 'quest', 'place', 'turns']);
-    expect(segment(guided, 'place')).toContain('You have led the player to Static Cafe, a coffee shop in Kanaal Market,');
+    expect(segment(guided, 'place')).toContain('You have led them to Static Cafe, a coffee shop in Kanaal Market,');
     expect(segment(guided, 'place')).toContain('You work here.');
     expect(segment(guided, 'place')).toContain('What is there right now:\n- A cracked window behind the counter.');
 
     const precinct = segment(service.contextFor(informerId, TUE_10, { guide: { placeId: 'p8', kind: 'parcel', name: 'the precinct' } }), 'place');
     expect(precinct).toContain('the precinct, a police station in Kanaal Market');
     expect(precinct).not.toContain('You work here.');
-    expect(segment(service.contextFor(informerId, TUE_10, { guide: { placeId: 's_9', kind: 'stop' } }), 'place')).toContain('led the player to a transit stop,');
+    expect(segment(service.contextFor(informerId, TUE_10, { guide: { placeId: 's_9', kind: 'stop' } }), 'place')).toContain('led them to a transit stop,');
     expect(service.contextFor(informerId, TUE_10).segments.some((s) => s.id === 'place')).toBe(false);
   });
 
@@ -333,7 +333,7 @@ describe('DialogContextService', () => {
     });
     expect(context.segments.map((s) => s.id)).toEqual(['world', 'type', 'npc', 'quest', 'place', 'events', 'turns']);
     const events = segment(context, 'events');
-    expect(events).toMatch(/^What has happened around you lately, as you saw it or heard it from the people nearby\. The player may not know\./);
+    expect(events).toMatch(/^Something that happened near here lately, as you saw it or heard it\. Mention it only if they ask what happened or it touches what you are talking about/);
     expect(events.split('\n').slice(1)).toEqual([
       '- A car ran someone down at speed in the street by Static Cafe in Kanaal Market, about 30 metres from where you stand, a moment ago. They still lie there.',
       '- A car hit someone in the street by Precinct 9 in Kanaal Market, right where you stand, 25 minutes ago.',
@@ -355,19 +355,19 @@ describe('DialogContextService', () => {
     const folding = service.recordExchange(informerId, { line: 'line 3', reply: 'reply 3', atMin: TUE_10 + 2 });
 
     const during = service.contextFor(informerId, TUE_10);
-    expect(segment(during, 'conversation')).toContain('Player: line 1\nYou: reply 1');
-    expect(segment(during, 'conversation')).toContain('Player: line 3\nYou: reply 3');
-    expect(folds).toEqual(['player: line 1\nnpc: reply 1']);
+    expect(segment(during, 'conversation')).toContain('Them: line 1\nYou: reply 1');
+    expect(segment(during, 'conversation')).toContain('Them: line 3\nYou: reply 3');
+    expect(folds).toEqual(['them: line 1\nyou: reply 1']);
 
-    notes[0]!('<think>short</think> The player asked about the lift.');
+    notes[0]!('<think>short</think> They asked you about the lift.');
     await folding;
     const after = service.contextFor(informerId, TUE_10);
-    expect(segment(after, 'memory')).toBe('You remember:\n- The player asked about the lift.');
+    expect(segment(after, 'memory')).toBe('You remember:\n- They asked you about the lift.');
     expect(segment(after, 'conversation')).not.toContain('line 1');
 
     const restored = setup({ memory: { tailSize: 4, foldSize: 2 } });
     restored.service.restoreMemory(service.serializeMemory());
-    expect(segment(restored.service.contextFor(restored.informerId, TUE_10), 'conversation')).toContain('Player: line 3');
+    expect(segment(restored.service.contextFor(restored.informerId, TUE_10), 'conversation')).toContain('Them: line 3');
   });
 
   it('keeps the turns when a fold fails and folds them with the next exchange', async () => {
@@ -376,13 +376,13 @@ describe('DialogContextService', () => {
     const { service, informerId } = setup({ memory: { tailSize: 2, foldSize: 2 }, llm });
     await service.recordExchange(informerId, { line: 'a', reply: 'b', atMin: TUE_10 });
     await expect(service.recordExchange(informerId, { line: 'c', reply: 'd', atMin: TUE_10 })).rejects.toThrow('model down');
-    expect(segment(service.contextFor(informerId, TUE_10), 'conversation')).toContain('Player: a\nYou: b\nPlayer: c');
+    expect(segment(service.contextFor(informerId, TUE_10), 'conversation')).toContain('Them: a\nYou: b\nThem: c');
 
     down = false;
     await service.recordExchange(informerId, { line: 'e', reply: 'f', atMin: TUE_10 });
     const context = service.contextFor(informerId, TUE_10);
     expect(segment(context, 'memory')).toBe('You remember:\n- Folded.\n- Folded.');
-    expect(segment(context, 'conversation')).toContain('The conversation so far:\nPlayer: e\nYou: f');
+    expect(segment(context, 'conversation')).toContain('The conversation so far ("Them" is the person you are talking with):\nThem: e\nYou: f');
   });
 
   it('remembers replies without cues, keeps a note shaped like a transcript and treats an empty note as a failed fold', async () => {
@@ -429,11 +429,11 @@ describe('DialogContextService', () => {
 
   it('says where a person stands: the street and corner, the building beside them, what is around, the light and where they are headed', () => {
     const { service, informerId } = setup({ world: withStreets });
-    const turns = segment(service.contextFor(informerId, TUE_10, { here: { x: 30, z: -3, light: 'night, under street lamps and neon' } }), 'turns');
+    const turns = segment(service.contextFor(informerId, TUE_10, { here: { x: 30, z: -3, light: 'night, under street lamps' } }), 'turns');
     expect(turns).toContain('You are standing on First Street near the corner of First Avenue, in Kanaal Market.');
     expect(turns).toContain('You are outside Static Cafe, a coffee shop.');
-    expect(turns).toContain('Around you:\n- Noodle Saint, a restaurant, about 20 metres to the south-east');
-    expect(turns).toContain('The light: night, under street lamps and neon.');
+    expect(turns).toContain('Nearby, should anyone ask the way:\n- Noodle Saint, a restaurant, about 20 metres to the south-east');
+    expect(turns).toContain('Outside it is night, under street lamps.');
     // A restaurant nobody can go into is no place around to go to.
     const shut = setup({ world: (world) => ({ ...withStreets(world), closed: ['p5'] }) });
     expect(segment(shut.service.contextFor(shut.informerId, TUE_10, { here: { x: 30, z: -3 } }), 'turns')).not.toContain('Noodle Saint');
@@ -459,7 +459,7 @@ describe('DialogContextService', () => {
     expect(housed).toContain('In the building right now, as far as you can tell:\n- Mira Chen, receptionist, on this floor in the lobby\n- a security, on the third floor');
 
     const guided = segment(service.contextFor(informerId, TUE_10, { guide: { placeId: 'street:2', kind: 'street' } }), 'place');
-    expect(guided).toContain('You have led the player to Second Street');
+    expect(guided).toContain('You have led them to Second Street');
   });
 
   it('says who a person lives with from their household alone, and what they do not have', () => {
@@ -493,7 +493,7 @@ describe('DialogContextService', () => {
     expect(now).not.toContain('Where do you live?');
     expect(now).toContain('- your home: about 350 metres to the north-east, 5 minutes on foot, then the lift up');
     expect(now).toContain('- your work: right here');
-    expect(now).toContain("- Static Cafe, where the player's business takes them: about 120 metres to the west, 2 minutes on foot");
+    expect(now).toContain("- Static Cafe, where their business takes them: about 120 metres to the west, 2 minutes on foot");
     expect(now).toContain('- apartment 301, floor 3, Kessler Block: about 40 metres to the north, a minute on foot, then the lift down');
     expect(segment(context, 'address')).not.toContain('metres');
   });
@@ -505,7 +505,7 @@ describe('DialogContextService', () => {
     const ids = context.segments.map((s) => s.id);
     expect(ids.indexOf('overheard')).toBeLessThan(ids.indexOf('turns'));
     expect(segment(context, 'overheard')).toContain("These are other people's words, not yours and not said to you");
-    expect(segment(context, 'overheard')).toContain('- You overheard the player talking to Mira Chen, the receptionist. The player said: "Who rents 1407?" Mira Chen answered: "Nobody since spring."');
+    expect(segment(context, 'overheard')).toContain('- You overheard them talking to Mira Chen, the receptionist. They said: "Who rents 1407?" Mira Chen answered: "Nobody since spring."');
     expect(segment(service.contextFor(informerId, TUE_10), 'overheard')).toBe('');
   });
 
@@ -517,7 +517,7 @@ describe('DialogContextService', () => {
     });
     heard('Who rents 1407?', '[sigh] Nobody since spring.', TUE_10);
     expect(segment(service.contextFor(informerId, TUE_10), 'memory')).toBe(
-      'You remember:\n- Overheard, not said to you: you were there when the player talked to Mira Chen, the front desk. The player said: "Who rents 1407?" Mira Chen said: "Nobody since spring."',
+      'You remember:\n- Overheard, not said to you: you were there when the stranger talked to Mira Chen, the front desk. The stranger said: "Who rents 1407?" Mira Chen said: "Nobody since spring."',
     );
     // The same talk goes on: one note, the newest four lines, each short.
     heard('And before that?', `A man who said "never again". ${'He paid in cash every week. '.repeat(10)}`, TUE_10 + 1);
@@ -525,8 +525,8 @@ describe('DialogContextService', () => {
     const memory = service.serializeMemory()[informerId]!;
     expect(memory.digest).toHaveLength(1);
     expect(memory.digest[0]).not.toContain('Who rents 1407?');
-    expect(memory.digest[0]).toContain('The player said: "And before that?" Mira Chen said: "A man who said \'never again\'.');
-    expect(memory.digest[0]).toMatch(/\u2026" The player said: "Thanks\." Mira Chen said: "Sure\."$/);
+    expect(memory.digest[0]).toContain('The stranger said: "And before that?" Mira Chen said: "A man who said \'never again\'.');
+    expect(memory.digest[0]).toMatch(/\u2026" The stranger said: "Thanks\." Mira Chen said: "Sure\."$/);
     expect(memory.digest[0]!.length).toBeLessThan(560);
     expect(memory.heardAtMin).toBe(TUE_10 + 2);
 
@@ -534,7 +534,7 @@ describe('DialogContextService', () => {
     await service.recordExchange(informerId, { line: 'Hi.', reply: 'Hm.', atMin: TUE_10 + 3 });
     service.recordOverheard(informerId, { name: 'Ada Ruiz', lines: [{ speaker: 'player', text: 'Seen Mira?' }, { speaker: 'npc', text: 'Upstairs.' }], atMin: TUE_10 + 4 });
     const later = service.serializeMemory()[informerId]!;
-    expect(later.digest.at(-1)).toBe('Overheard, not said to you: you were there when the player talked to Ada Ruiz. The player said: "Seen Mira?" Ada Ruiz said: "Upstairs."');
+    expect(later.digest.at(-1)).toBe('Overheard, not said to you: you were there when the stranger talked to Ada Ruiz. The stranger said: "Seen Mira?" Ada Ruiz said: "Upstairs."');
 
     const restored = setup();
     restored.service.restoreMemory(service.serializeMemory());
@@ -544,7 +544,7 @@ describe('DialogContextService', () => {
   it('tells only a person a story casts how far the place it points to lies', () => {
     const { service, sim, informerId } = setup();
     const ways = [{ what: 'quest' as const, name: 'Static Cafe', metres: 120, point: 'west', minutes: 2 }, { what: 'home' as const, metres: 300, point: 'north', minutes: 4 }];
-    expect(segment(service.contextFor(informerId, TUE_10, { addresses: { ways } }), 'turns')).toContain('Static Cafe, where the player\'s business takes them');
+    expect(segment(service.contextFor(informerId, TUE_10, { addresses: { ways } }), 'turns')).toContain('Static Cafe, where their business takes them');
     const bystander = sim.getNPCVendor({ type: 'cafe_barista', timeMin: TUE_10 + 8 * 60 });
     const told = segment(service.contextFor(bystander.npcId, TUE_10, { addresses: { ways } }), 'turns');
     expect(told).not.toContain('Static Cafe, where');
@@ -559,19 +559,19 @@ describe('DialogContextService', () => {
     const door = segment(service.contextFor(informerId, TUE_10, { guide: { placeId: 'p9', kind: 'parcel', notes: ['You stand at the door of your apartment, which you have opened.'] } }), 'place');
     expect(door).toContain('What is there right now:\n- You stand at the door of your apartment, which you have opened.');
     expect(segment(service.contextFor(informerId, TUE_10, { guide: { placeId: 'a103', kind: 'person', name: 'Mira Chen' } }), 'place'))
-      .toBe('You have walked the player to Mira Chen, who stands here with you both now. You have done what they asked; say so, and leave them to talk.');
+      .toBe('You have walked them to Mira Chen, who stands here with you both now. You have done what they asked; say so, and leave them to talk.');
     expect(segment(service.contextFor(informerId, TUE_10, { guide: { placeId: 'lift', kind: 'spot', name: 'the lift on the ground floor' } }), 'place'))
-      .toBe('You have walked the player to the lift on the ground floor, and you are both standing there now.');
+      .toBe('You have walked them to the lift on the ground floor, and you are both standing there now.');
   });
 
   it('tells a person what they are doing for the player now: following, leading, an errand', () => {
     const { service, informerId } = setup();
     const turns = (task: Parameters<typeof service.contextFor>[2]) => segment(service.contextFor(informerId, TUE_10, task), 'turns');
-    expect(turns({ task: { kind: 'leading', place: 'Static Cafe' } })).toContain('You are taking the player to Static Cafe, because they asked and you agreed.');
-    expect(turns({ task: { kind: 'following' } })).toContain('You are walking with the player, following them');
-    expect(turns({ task: { kind: 'sitting' } })).toContain('You are sitting here for a while, because the player asked you to.');
-    expect(turns({ task: { kind: 'walking', place: 'the lift' } })).toContain('The player asked you to go to the lift');
-    expect(turns({ task: { kind: 'brought', place: 'Static Cafe' } })).toContain('You have brought the player to Static Cafe, as they asked; you are there together now.');
+    expect(turns({ task: { kind: 'leading', place: 'Static Cafe' } })).toContain('You are taking them to Static Cafe, because they asked and you agreed.');
+    expect(turns({ task: { kind: 'following' } })).toContain('You are walking with them, following them');
+    expect(turns({ task: { kind: 'sitting' } })).toContain('You are sitting here for a while, because they asked you to.');
+    expect(turns({ task: { kind: 'walking', place: 'the lift' } })).toContain('They asked you to go to the lift');
+    expect(turns({ task: { kind: 'brought', place: 'Static Cafe' } })).toContain('You have brought them to Static Cafe, as they asked; you are there together now.');
     expect(turns({})).not.toContain('because they asked');
   });
 
@@ -590,7 +590,7 @@ describe('DialogContextService', () => {
     expect(address).toContain('- Home: apartment 201, floor 2, Blockhouse Elin, an apartment block on Second Street near the corner of First Avenue, in The Sump.');
     expect(address).toContain('- Work: the counter area, ground floor, Static Cafe, a coffee shop on First Street near the corner of First Avenue, in Kanaal Market.');
     expect(address).toContain('You carry access cards for apartment 201 at Blockhouse Elin (your home) and the staff rooms at Static Cafe (your work).');
-    expect(address).toContain('You caught the player trying to lift your card once.');
+    expect(address).toContain('You caught them trying to lift your card once.');
     expect(segment(context, 'turns')).toContain('Inside, you are on floor 2, in apartment 201, in the living room.');
     expect(service.contextFor(informerId, TUE_10, { addresses: {} }).segments.some((entry) => entry.id === 'address')).toBe(false);
   });
@@ -598,7 +598,7 @@ describe('DialogContextService', () => {
   it('tells a person the player called them, after the hour and what they are doing', () => {
     const { service, informerId } = setup();
     const turns = segment(service.contextFor(informerId, TUE_10, { call: { caller: 'player' } }), 'turns');
-    expect(turns).toContain('they called you, and you are talking to them on the phone');
+    expect(turns).toContain('they called you, and you are talking on the phone');
     expect(turns.indexOf('on the phone')).toBeGreaterThan(turns.indexOf('right now you are'));
     expect(segment(service.contextFor(informerId, TUE_10), 'turns')).not.toContain('on the phone');
   });
