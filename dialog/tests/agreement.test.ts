@@ -7,7 +7,7 @@
 import { describe, expect, it } from 'vitest';
 import type { ChatDelta, ChatRequest } from '../../ports/chat.js';
 import type { StreamingLLMPort } from '../../ports/llm.js';
-import { accepts, askedOf, inferOffers, pendingOf, placeIn, stanceOf } from '../agreement.js';
+import { accepts, amountIn, askedOf, heldOut, inferOffers, pendingOf, pendingPrompt, placeIn, stanceOf, thingIn, withHeldOut } from '../agreement.js';
 import { Converse, type ReplyEvent } from '../Converse.js';
 import type { OfferOptions } from '../offers.js';
 import type { DialogContext, DialogLine } from '../schema.js';
@@ -110,5 +110,110 @@ describe('words and actions agree', () => {
     expect(askedOf('i can follow you', OFFERS)).toBeUndefined();
     expect(placeIn('my place is up there', [HOME, SHOP], true)).toEqual(HOME);
     expect(inferOffers({ line: 'hello', reply: 'Follow me, the noodle saint is close.', options: OFFERS })).toEqual([{ kind: 'lead', placeId: 'p1322', name: 'Noodle Saint' }]);
+  });
+});
+
+const WHISKY = { itemId: 'quest:DRINK_WHISKY_KESSEL', name: 'amber whisky' };
+const MYCARD = { itemId: 'own:card-records', name: 'records floor 3 card' };
+const COFFEE = { itemId: 'coffee', name: 'cup of coffee', price: 3 };
+const WHISKY_GLASS = { itemId: 'whisky', name: 'glass of whisky', price: 18 };
+const WATCH = { itemId: 'own:watch-1', name: 'a pocket watch', price: 7 };
+const TRADE: OfferOptions = {
+  ...OFFERS,
+  take: { items: [WHISKY, MYCARD] },
+  credits: { carried: 30, purse: 40 },
+  sell: { items: [COFFEE, WHISKY_GLASS] },
+  buy: { items: [WATCH] },
+};
+
+describe('things and money change hands in words', () => {
+  it('reads the sum a line names, and no address, count or time', () => {
+    expect(amountIn("here's 10 credits")).toBe(10);
+    expect(amountIn('twenty cr')).toBe(20);
+    expect(amountIn('Can you lend me 5?')).toBe(5);
+    expect(amountIn('I will pay you fifty for it')).toBe(50);
+    expect(amountIn('a hundred credits, no less')).toBe(100);
+    expect(amountIn('Take these 12 notes.')).toBe(12);
+    expect(amountIn('floor 14')).toBeUndefined();
+    expect(amountIn('apartment 1407')).toBeUndefined();
+    expect(amountIn('I am looking for apartment 1407')).toBeUndefined();
+    expect(amountIn('give me 5 minutes')).toBeUndefined();
+    expect(amountIn('can you give me 2 beers')).toBeUndefined();
+    expect(amountIn('take this one')).toBeUndefined();
+    expect(amountIn('one credit')).toBe(1);
+    expect(amountIn('meet me at 10')).toBeUndefined();
+  });
+
+  it('reads credits held out only when the player has them', () => {
+    expect(heldOut("Here's 10 credits for your trouble.", { carried: 0, purse: 40 })).toBe(10);
+    expect(heldOut("Here's 10 credits for your trouble.", { carried: 0, purse: 5 })).toBeUndefined();
+    expect(heldOut('Can you lend me 10?', { carried: 30, purse: 40 })).toBeUndefined();
+    expect(heldOut("Here's 10 credits", undefined)).toBeUndefined();
+    expect(withHeldOut({ credits: { carried: 3, purse: 40 } }, 'A tip, 5 cr.')).toEqual({ credits: { carried: 3, purse: 40, offered: 5 } });
+    // What the host held out stands.
+    expect(withHeldOut({ credits: { carried: 3, purse: 40, offered: 20 } }, 'A tip, 5 cr.')).toEqual({ credits: { carried: 3, purse: 40, offered: 20 } });
+    expect(thingIn('Here, have the whisky', [WHISKY, MYCARD])).toEqual(WHISKY);
+    expect(thingIn('Here, this is for you', [WHISKY])).toEqual(WHISKY);
+    expect(thingIn('Here, this is for you', [WHISKY, MYCARD])).toBeUndefined();
+    expect(thingIn('one coffee', [COFFEE], true)).toEqual(COFFEE);
+    expect(thingIn('something', [COFFEE], true)).toBeUndefined();
+  });
+
+  it('reads what the player asks: take, accept, pay, sell and buy', () => {
+    expect(askedOf('Here, take the whisky.', TRADE)).toEqual({ kind: 'take', ...WHISKY });
+    expect(askedOf('I brought you this whisky', TRADE)).toEqual({ kind: 'take', ...WHISKY });
+    expect(askedOf("Here's 10 credits for your help.", TRADE)).toEqual({ kind: 'accept', amount: 10 });
+    expect(askedOf("Here's 10 credits for your help.", { ...TRADE, credits: { carried: 30, purse: 5 } })).toBeUndefined();
+    expect(askedOf('Can you lend me 5?', TRADE)).toEqual({ kind: 'pay', amount: 5 });
+    expect(askedOf('Can you lend me 50?', TRADE)).toBeUndefined();
+    expect(askedOf("I'll have a cup of coffee, please.", TRADE)).toEqual({ kind: 'sell', itemId: 'coffee', name: 'cup of coffee', price: 3 });
+    expect(askedOf('Can I get a whisky?', TRADE)).toEqual({ kind: 'sell', itemId: 'whisky', name: 'glass of whisky', price: 18 });
+    expect(askedOf('Would you buy my pocket watch?', TRADE)).toEqual({ kind: 'buy', itemId: WATCH.itemId, name: WATCH.name, amount: 7 });
+    expect(askedOf('Would you buy my pocket watch for 5 credits?', TRADE)).toEqual({ kind: 'buy', itemId: WATCH.itemId, name: WATCH.name, amount: 5 });
+    expect(askedOf('Would you buy my pocket watch for 50 credits?', TRADE)).toMatchObject({ kind: 'buy', amount: 7 });
+    // Handing a card over is no asking for one, and asking a price is no order.
+    expect(askedOf('here, take this card', { ...TRADE, take: { items: [MYCARD] } })).toEqual({ kind: 'take', ...MYCARD });
+    expect(askedOf('Can you give me access to your apartment?', TRADE)).toEqual({ kind: 'give', itemId: CARD.itemId, name: CARD.name });
+    expect(askedOf('how much is the whisky', TRADE)).toBeUndefined();
+    // One of the things they carry, asked for by its name; a copy of a card stays with the card ask.
+    const FLASK = { itemId: 'carry:flask', name: 'a hip flask of schnapps' };
+    const carrying = { ...TRADE, give: { items: [{ ...CARD, copy: true }, FLASK] } };
+    expect(askedOf('Could you lend me your flask?', carrying)).toEqual({ kind: 'give', itemId: FLASK.itemId, name: FLASK.name });
+    expect(askedOf('Can I have your key card?', carrying)).toEqual({ kind: 'give', itemId: CARD.itemId, name: CARD.name });
+    expect(askedOf('Can I have something?', carrying)).toBeUndefined();
+    expect(askedOf("I'll take the coffee", { ...TRADE, take: { items: [WHISKY] } })).toEqual({ kind: 'sell', itemId: 'coffee', name: 'cup of coffee', price: 3 });
+    expect(askedOf("Here's the 10 credits", { ...TRADE, take: { items: [WHISKY] } })).toEqual({ kind: 'accept', amount: 10 });
+  });
+
+  it('makes no offer for a price asked', async () => {
+    expect((await offered('how much is the whisky', 'Eighteen. Sure.', [], TRADE)).offers).toEqual([]);
+  });
+
+  it('hands money over when the person agrees in words, and nothing when they refuse', async () => {
+    expect((await offered('Can you lend me 5?', 'Here you go.', [], TRADE)).offers).toEqual([{ type: 'offer', kind: 'pay', amount: 5 }]);
+    expect((await offered('Can you lend me 5?', 'No.', [], TRADE)).offers).toEqual([]);
+    expect(inferOffers({ line: 'Can you lend me 5?', reply: 'Here you go.', options: TRADE })).toEqual([{ kind: 'pay', amount: 5 }]);
+    expect(inferOffers({ line: 'Can you lend me 5?', reply: 'No.', options: TRADE })).toEqual([]);
+    // A pending ask the person takes up a turn later.
+    const asked: DialogLine[] = [{ speaker: 'player', text: 'Can you lend me 5?' }, { speaker: 'npc', text: 'What for?' }];
+    expect(pendingOf(asked, TRADE)).toEqual({ offer: { kind: 'pay', amount: 5 }, by: 'player' });
+    expect(pendingPrompt(pendingOf(asked, TRADE))).toEqual({ key: 'pending-asked-amount', values: { tool: 'give_credits', amount: '5' } });
+    expect(inferOffers({ line: 'please', reply: 'Fine.', turns: asked, options: TRADE })).toEqual([{ kind: 'pay', amount: 5 }]);
+    expect((await offered('please', 'Fine.', asked, TRADE)).offers).toEqual([{ type: 'offer', kind: 'pay', amount: 5 }]);
+  });
+
+  it('takes what is handed or held out on a thank-you, and money held out a turn before', async () => {
+    expect((await offered('Here, take the whisky.', 'Thank you. Kind of you.', [], TRADE)).offers).toEqual([{ type: 'offer', kind: 'take', ...WHISKY }]);
+    expect((await offered("Here's 10 credits for your help.", 'Thanks.', [], TRADE)).offers).toEqual([{ type: 'offer', kind: 'accept', amount: 10 }]);
+    expect((await offered("Here's 10 credits for your help.", 'Thanks, but I cannot take that.', [], TRADE)).offers).toEqual([]);
+    expect((await offered('Come with me', 'Thanks for asking. I have somewhere to be.', [], TRADE)).offers).toEqual([]);
+    const held: DialogLine[] = [{ speaker: 'player', text: "Here's 10 credits." }, { speaker: 'npc', text: 'What is this for?' }];
+    expect(pendingPrompt(pendingOf(held, TRADE))).toEqual({ key: 'pending-offered-amount', values: { tool: 'take_credits', amount: '10' } });
+    expect((await offered('For your help earlier.', 'All right.', held, TRADE)).offers).toEqual([{ type: 'offer', kind: 'accept', amount: 10 }]);
+  });
+
+  it('never makes money or a thing change hands on the person\'s own words alone', async () => {
+    expect((await offered('hello', 'Here, take 5 credits for the tram.', [], TRADE)).offers).toEqual([]);
+    expect((await offered('Nice day.', 'Sure. I could sell you a coffee.', [], TRADE)).offers).toEqual([]);
   });
 });

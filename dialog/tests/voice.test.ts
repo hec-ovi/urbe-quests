@@ -20,9 +20,9 @@ import type { NPCInstance } from '../../world/types/simulation.js';
 import { loadFixtureWorld } from '../../world/index.js';
 import { Converse } from '../Converse.js';
 import { DialogContextService, plainWords } from '../DialogContextService.js';
-import { groundingProblems, voiceProblems } from '../grounding.js';
+import { groundingProblems, moneyProblems, voiceProblems } from '../grounding.js';
 import type { OfferOptions } from '../offers.js';
-import type { DialogWorld } from '../schema.js';
+import type { DialogCarry, DialogWorld } from '../schema.js';
 
 const TUE_10 = 1 * 1440 + 10 * 60;
 /** A city's own setting, plainly said, as a world may carry it in place of a theme word. */
@@ -65,6 +65,33 @@ const OFFERS: OfferOptions = {
   places: [{ placeId: 'p5', name: 'Noodle Saint', relation: 'venue' }, { placeId: 'p9', name: 'Blockhouse Elin', relation: 'home' }],
 };
 
+/** Lines a person hears when things and money change hands, as the host and a player say them. */
+const TRADE_LINES = [
+  'Here, this is for you: a hip flask.',
+  'Here, 10 credits.',
+  'Can you lend me 5 credits?',
+  'Would you buy my pocket watch?',
+  'A cup of coffee, please.',
+  'How much money do you have on you?',
+];
+
+const TRADE_OFFERS: OfferOptions = {
+  ...OFFERS,
+  give: { items: [{ itemId: 'carry:effect', name: 'a folded Bulletin' }] },
+  take: { items: [{ itemId: 'own:flask', name: 'a hip flask' }] },
+  credits: { carried: 12, purse: 40 },
+  sell: { items: [{ itemId: 'coffee', name: 'cup of coffee', price: 3 }] },
+  buy: { items: [{ itemId: 'own:watch', name: 'a pocket watch', price: 7 }] },
+};
+
+/** What each of the five has on them for the trade lines. */
+const CARRY: DialogCarry = {
+  credits: 12,
+  means: 'getting-by',
+  items: [{ name: 'a phone' }, { name: 'your residence papers, stamped' }, { name: 'a folded Bulletin' }],
+  dealings: [{ what: 'got-thing', name: 'a pocket watch', atMin: TUE_10 - 90 }],
+};
+
 /** The whole request as a model server renders it: the tools first, then the system text and the turn. */
 function rendered(request: ChatRequest): string {
   return [
@@ -86,15 +113,15 @@ function liveUrl(given: string): string {
   return `http://${gateway}:8080/v1`;
 }
 
-/** Asks `port` for each line, as a talk does, and hands each request and reply to `check`. */
-async function talk(port: StreamingLLMPort, check: (npc: NPCInstance, line: string, request: ChatRequest, reply: string) => void, requests: ChatRequest[]) {
+/** Asks `port` for each line, as a talk does, and hands each request and reply to `check`; `trade` puts things and money on the table. */
+async function talk(port: StreamingLLMPort, check: (npc: NPCInstance, line: string, request: ChatRequest, reply: string) => void, requests: ChatRequest[], trade = false) {
   const { service, everyone } = people();
   const converse = new Converse(port);
   for (const npc of everyone) {
-    for (const line of LINES) {
-      const context = service.contextFor(npc.npcId, TUE_10, { here: { x: 30, z: -3, light: 'daylight' } });
+    for (const line of trade ? TRADE_LINES : LINES) {
+      const context = service.contextFor(npc.npcId, TUE_10, { here: { x: 30, z: -3, light: 'daylight' }, ...(trade ? { carry: CARRY } : {}) });
       let reply = '';
-      for await (const event of converse.replyStream({ context, name: `${npc.name.given} ${npc.name.family}`, line, offers: OFFERS })) {
+      for await (const event of converse.replyStream({ context, name: `${npc.name.given} ${npc.name.family}`, line, offers: trade ? TRADE_OFFERS : OFFERS })) {
         if (event.type === 'done') reply = event.reply;
       }
       check(npc, line, requests.at(-1)!, reply);
@@ -130,6 +157,27 @@ describe('a person passes for a resident', () => {
     expect(new Set(lives.values()).size).toBe(5);
     // Each life is kept in the person's memory, as told the first time.
     for (const [npcId, memory] of Object.entries(service.serializeMemory())) expect(lives.get(npcId)).toContain(memory.life!.split('\n')[1]!);
+  });
+
+  it('never says the words of the machinery when things and money change hands, and knows what they carry as all they have', async () => {
+    const requests: ChatRequest[] = [];
+    const port: StreamingLLMPort = {
+      complete: async () => '',
+      async *stream(request) {
+        requests.push(structuredClone(request));
+        yield { content: 'Hm. Not today.' } as ChatDelta;
+      },
+    };
+    await talk(port, (npc, line, request) => {
+      expect(voiceProblems(rendered(request)), `${npc.npcId} / ${line}`).toEqual([]);
+      const system = request.messages[0]!.content as string;
+      expect(system).toContain('Money here is credits, paid in Bureau notes.');
+      expect(system).toContain('What you have on you right now, and nothing else:\n- 12 credits in Bureau notes');
+      expect(request.messages[1]!.content).toContain('You have 12 credits on you.');
+    }, requests, true);
+    expect(requests).toHaveLength(5 * TRADE_LINES.length);
+    // The line that holds credits out puts them on the table.
+    expect(requests[1]!.messages[1]!.content).toContain('They hold out 10 credits to you.');
   });
 
   it('tells a household as it is, and never a relative or a past the record lacks', () => {
@@ -226,6 +274,30 @@ describe('a person passes for a resident', () => {
       const found = [...voiceProblems(reply), ...groundingProblems(reply, rendered(request))];
       if (found.length) problems.push(`${npc.name.given} ${npc.name.family} / ${line} / ${reply} / ${found.join(', ')}`);
     }, requests);
+    expect(problems).toEqual([]);
+  });
+
+  it.skipIf(!process.env.LIVE_TALK_URL)('keeps a live model to the person\'s own voice and pockets when things and money change hands', { timeout: 900_000 }, async () => {
+    const base = liveUrl(process.env.LIVE_TALK_URL!);
+    const requests: ChatRequest[] = [];
+    const port: StreamingLLMPort = {
+      complete: async () => '',
+      async *stream(request, options) {
+        requests.push(request);
+        const response = await fetch(`${base}/chat/completions`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...request, ...(process.env.LIVE_TALK_MODEL ? { model: process.env.LIVE_TALK_MODEL } : {}), stream: true, cache_prompt: true }),
+          ...(options?.signal ? { signal: options.signal } : {}),
+        });
+        yield* chatDeltas(response.body!);
+      },
+    };
+    const problems: string[] = [];
+    await talk(port, (npc, line, request, reply) => {
+      const found = [...voiceProblems(reply), ...groundingProblems(reply, rendered(request)), ...moneyProblems(reply, CARRY)];
+      if (found.length) problems.push(`${npc.name.given} ${npc.name.family} / ${line} / ${reply} / ${found.join(', ')}`);
+    }, requests, true);
     expect(problems).toEqual([]);
   });
 });

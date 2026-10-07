@@ -3,7 +3,7 @@ import { CUE_LIST, stripCues } from '../flow/cues.js';
 import { promptLoader } from '../prompts.js';
 import { ChatToolCalls, type ChatMessage, type ChatRequest, type ChatToolCall } from '../ports/chat.js';
 import type { LLMPort, StreamingLLMPort } from '../ports/llm.js';
-import { inferOffers, pendingOf, pendingPrompt } from './agreement.js';
+import { inferOffers, pendingOf, pendingPrompt, withHeldOut } from './agreement.js';
 import { offerKey, offerListing, offerOf, offerTools, type CompanionOffer, type OfferOptions } from './offers.js';
 import { cleanReply, ReplyCleaner } from './ReplyCleaner.js';
 import type { DialogContext, DialogLine, SegmentId } from './schema.js';
@@ -63,12 +63,14 @@ export class Converse {
       yield { type: 'done', reply, offers: [] };
       return;
     }
-    const tools = offerTools(input.offers);
+    // Credits the line holds out are on the table for this turn, as if the host had held them out.
+    const options = withHeldOut(input.offers, input.line);
+    const tools = offerTools(options);
     const { system, prompt, names } = request(input, tools.length > 0);
     // What the person may do now and what the last exchange left on the table, said last, where it changes.
-    const pending = tools.length > 0 ? pendingPrompt(pendingOf(input.turns, input.offers)) : undefined;
+    const pending = tools.length > 0 ? pendingPrompt(pendingOf(input.turns, options)) : undefined;
     const asked = tools.length > 0
-      ? [prompt, offerListing(input.offers), ...(pending ? [prompts(`offers.md#${pending.key}`, pending.values)] : [])].join('\n\n')
+      ? [prompt, offerListing(options), ...(pending ? [prompts(`offers.md#${pending.key}`, pending.values)] : [])].join('\n\n')
       : prompt;
     const messages: ChatMessage[] = [
       { role: 'system', content: system },
@@ -86,7 +88,7 @@ export class Converse {
       const answered: ChatMessage[] = [
         ...messages,
         { role: 'assistant', content: reply, tool_calls: made.map(wellFormed) },
-        ...made.map((call) => answer(call, input.offers)),
+        ...made.map((call) => answer(call, options)),
       ];
       // A cue the first answer made stays in front of the words, a space apart.
       let gap = reply.length > 0 ? ' ' : '';
@@ -101,13 +103,13 @@ export class Converse {
 
     const called = new Map<string, CompanionOffer>();
     for (const call of made) {
-      const offer = offerOf(call, input.offers);
+      const offer = offerOf(call, options);
       if (offer) called.set(offerKey(offer), offer);
     }
     // Words and actions agree: what the reply agrees to in words alone happens too (see agreement.ts).
     const offers = new Map<string, CompanionOffer>();
     const inferred = tools.length > 0
-      ? inferOffers({ line: input.line, reply: stripCues(reply), turns: input.turns ?? [], options: input.offers ?? {}, made: [...called.values()] })
+      ? inferOffers({ line: input.line, reply: stripCues(reply), turns: input.turns ?? [], options: options ?? {}, made: [...called.values()] })
       : [...called.values()];
     for (const offer of inferred) offers.set(offerKey(offer), offer);
     for (const offer of offers.values()) yield { type: 'offer', ...offer };
@@ -130,7 +132,11 @@ function request(input: ConverseInput, offers: boolean): { system: string; promp
   const segments = input.context.segments;
   const split = segments.findIndex((segment) => CHANGING.has(segment.id));
   const at = split < 0 ? segments.length : split;
-  const rules = [prompts('reply.md#rules', { name, cues: CUE_LIST }).trim(), ...(offers ? [prompts('offers.md#instructions').trim()] : [])];
+  // How to agree, then how to deal in things and money: fixed text, the same every turn.
+  const rules = [
+    prompts('reply.md#rules', { name, cues: CUE_LIST }).trim(),
+    ...(offers ? [prompts('offers.md#instructions').trim(), prompts('offers.md#instructions-trade').trim()] : []),
+  ];
   const system = [...segments.slice(0, at).map((segment) => segment.text), ...rules, ...segments.slice(at).map((segment) => segment.text)].join('\n\n');
   const prompt = prompts('reply.md#line', { line: input.line }).trim();
   return { system, prompt, names: [name, name.split(' ')[0]!] };

@@ -5,6 +5,7 @@
  * exchange, tiered memory, death and persistence.
  */
 
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import type { LLMPort } from '../../ports/llm.js';
 import { loadFixtureWorld, StubSimulation } from '../../world/index.js';
@@ -12,7 +13,8 @@ import type { QuestlineDefinition } from '../../flow/schema.js';
 import { QuestlineRuntime } from '../../flow/QuestlineRuntime.js';
 import { Converse } from '../Converse.js';
 import { DialogContextService } from '../DialogContextService.js';
-import type { DialogContext, DialogWorld, SegmentId } from '../schema.js';
+import { moneyProblems, voiceProblems } from '../grounding.js';
+import type { DialogCarry, DialogContext, DialogWorld, SegmentId } from '../schema.js';
 
 const TUE_10 = 1 * 1440 + 600;
 
@@ -601,5 +603,96 @@ describe('DialogContextService', () => {
     expect(turns).toContain('they called you, and you are talking on the phone');
     expect(turns.indexOf('on the phone')).toBeGreaterThan(turns.indexOf('right now you are'));
     expect(segment(service.contextFor(informerId, TUE_10), 'turns')).not.toContain('on the phone');
+  });
+});
+
+describe('what a person carries', () => {
+  const CARRY: DialogCarry = {
+    credits: 23,
+    means: 'getting-by',
+    items: [
+      { name: 'a phone' },
+      { name: 'your residence papers, stamped' },
+      { name: 'a rubber stamp in a tin' },
+      { name: 'amber whisky', from: 'stranger', atMin: TUE_10 - 45 },
+      { name: 'a pocket watch', from: 'stranger' },
+    ],
+    dealings: [
+      { what: 'got-thing', name: 'amber whisky', atMin: TUE_10 - 45 },
+      { what: 'gave-credits', amount: 5, atMin: TUE_10 - 30 },
+      { what: 'bribe-refused', amount: 20, atMin: TUE_10 - 1 },
+      { what: 'lifted', atMin: TUE_10 - 1500 },
+    ],
+    asked: 8,
+  };
+
+  it('tells what they have on them in the turns segment alone, as all they have', () => {
+    const { service, informerId } = setup();
+    const context = service.contextFor(informerId, TUE_10, { carry: CARRY });
+    const holding = context.segments.filter((entry) => entry.text.includes('What you have on you right now'));
+    expect(holding.map((entry) => entry.id)).toEqual(['turns']);
+    const turns = segment(context, 'turns');
+    expect(turns).toContain([
+      'What you have on you right now, and nothing else:',
+      '- 23 credits in Bureau notes',
+      '- a phone',
+      '- your residence papers, stamped',
+      '- a rubber stamp in a tin',
+      '- amber whisky, which they gave you 45 minutes ago',
+      '- a pocket watch, which they gave you earlier',
+      'You get by from one pay to the next.',
+    ].join('\n'));
+    expect(turns).toContain('Between you and them so far: they gave you amber whisky, 45 minutes ago; you gave them 5 credits, 30 minutes ago; '
+      + 'they offered you 20 credits to look the other way, and you would not have it, a moment ago; you caught them lifting something from your pockets, about a day ago.');
+    expect(turns).toContain('You asked them for 8 credits and have not been paid.');
+    expect(turns.indexOf('What you have on you')).toBeGreaterThan(turns.indexOf('right now you are'));
+    // The rest of the context is the same with or without it.
+    const without = service.contextFor(informerId, TUE_10);
+    expect(context.segments.filter((entry) => entry.id !== 'turns')).toEqual(without.segments.filter((entry) => entry.id !== 'turns'));
+    expect(segment(without, 'turns')).not.toContain('on you');
+  });
+
+  it('tells no money at all, and each household\'s means in plain words', () => {
+    const { service, informerId } = setup();
+    const told = (carry: DialogCarry) => segment(service.contextFor(informerId, TUE_10, { carry }), 'turns');
+    expect(told({ credits: 0, means: 'short', items: [] })).toContain('What you have on you right now, and nothing else:\n- No money at all\nMoney is short in your household this week; every credit counts.');
+    expect(told({ credits: 90, means: 'comfortable', items: [] })).toContain('You are comfortable; a few credits are nothing to you.');
+    expect(told({ credits: 200, means: 'well-off', items: [] })).toContain('You are well off and used to paying for things.');
+    expect(told({ credits: 5, means: 'short', items: [] })).not.toContain('Between you and them');
+  });
+
+  it('says nothing of the machinery behind a person in any trade prompt', () => {
+    const sections = (file: string, names: string[]) => {
+      const text = readFileSync(new URL(`../prompts/${file}`, import.meta.url), 'utf8');
+      return names.map((name) => {
+        const body = text.split(`## ${name}\n`)[1];
+        expect(body, `${file}#${name}`).toBeDefined();
+        return { name: `${file}#${name}`, text: body!.split('\n## ')[0]! };
+      });
+    };
+    const added = [
+      ...sections('offers.md', [
+        'instructions-trade', 'give_item-any', 'item-id-any', 'take_item', 'give_credits', 'take_credits', 'ask_credits', 'sell_item', 'buy_item', 'amount',
+        'available-things', 'available-copy', 'available-take', 'available-credits', 'available-offered', 'available-sell', 'available-buy',
+        'pending-asked-item', 'pending-offered-item', 'pending-offered-buy', 'pending-asked-amount', 'pending-offered-amount',
+      ]),
+      ...sections('context.md', [
+        'carry', 'carry-credits', 'carry-credits-none', 'carry-from', 'carry-from-earlier', 'carry-means-short', 'carry-means-getting-by',
+        'carry-means-comfortable', 'carry-means-well-off', 'carry-dealings', 'carry-asked', 'deal', 'deal-gave-credits', 'deal-got-credits',
+        'deal-gave-thing', 'deal-got-thing', 'deal-lent', 'deal-lifted', 'deal-bribe-refused', 'deal-credits', 'deal-something',
+      ]),
+    ];
+    for (const section of added) expect(voiceProblems(section.text), section.name).toEqual([]);
+  });
+
+  it('catches a reply that hands over or promises more than the person carries', () => {
+    const carry: DialogCarry = { credits: 30, means: 'getting-by', items: [] };
+    expect(moneyProblems("Here's 50 credits. Don't spend it all at once.", carry)).toEqual(["money: here's 50 credits"]);
+    expect(moneyProblems("Here's 20 credits.", carry)).toEqual([]);
+    expect(moneyProblems("I'll give you forty for it.", carry)).toEqual(["money: i'll give you forty"]);
+    expect(moneyProblems('Take 10 credits and go.', carry)).toEqual([]);
+    expect(moneyProblems('Take 100 credits and go.', carry)).toEqual(['money: take 100 credits']);
+    expect(moneyProblems('Here is 45 minutes of my time, no more.', carry)).toEqual([]);
+    expect(moneyProblems("Here's 50 credits.", undefined)).toEqual([]);
   });
 });

@@ -3,9 +3,12 @@
  * of the machinery behind a person that must never reach a prompt or a
  * reply, stock genre phrases, and what a reply claims that the person's own
  * context does not give them (an incident, a relative, a named person or
- * place). Plain heuristics over words: a problem they report is worth a look,
+ * place, a sum beyond what they carry). Plain heuristics over words: a problem they report is worth a look,
  * and a reply they pass may still be wrong.
  */
+
+import { NUMBER_WORDS } from './agreement.js';
+import type { DialogCarry } from './schema.js';
 
 /** Words that would give the person away as anything but a resident. */
 export const META_WORDS = ['npc', 'npcs', 'game', 'games', 'gameplay', 'player', 'players', 'ai', 'model', 'models', 'simulation', 'simulated', 'roleplay'];
@@ -100,6 +103,31 @@ export function groundingProblems(text: string, context: string): string[] {
       if (index === 0 || !/^[A-Z][a-z'-]+$/.test(word) || COMMON.has(word.toLowerCase())) continue;
       if (!new RegExp(`\\b${word.toLowerCase().replace(/[^a-z'-]/g, '')}\\b`).test(known)) problems.push(`name: ${word}`);
     }
+  }
+  return [...new Set(problems)];
+}
+
+const SUM_WORD = `\\d{1,4}|(?:a |one )?hundred|${Object.keys(NUMBER_WORDS).join('|')}`;
+/** A reply that hands over or promises a sum: "here's 50", "I'll give you 20", "take 10 credits". */
+const HANDS_OVER = new RegExp(
+  `\\b(?:(?:here'?s|here is|here are|i'll give you|i will give you|i can give you|i'll pay you|i will pay you|i can pay you|i'll lend you|i will lend you|i can lend you|i can spare)\\s+(?:you\\s+)?(?:the\\s+)?(${SUM_WORD})\\b(?!\\s*(?:minutes?|hours?|days?|weeks?|years?|metres?|meters?|floors?|blocks?|of)\\b)(?:\\s*(?:credits?|cr|notes?)\\b)?` +
+    `|\\b(?:take|have|keep)\\s+(?:these\\s+|this\\s+|the\\s+)?(${SUM_WORD})\\s*(?:credits?|cr|notes?)\\b)`,
+  'gi',
+);
+
+/**
+ * Sums a reply hands over or promises beyond what the person carries
+ * (`carry.credits`): "Here's 50 credits" from someone with 30 on them is
+ * `money: here's 50 credits`. None without `carry`.
+ */
+export function moneyProblems(text: string, carry: DialogCarry | undefined): string[] {
+  if (!carry) return [];
+  const reply = text.replace(/[\u2018\u2019\u02bc]/g, "'");
+  const problems: string[] = [];
+  for (const match of reply.matchAll(HANDS_OVER)) {
+    const said = (match[1] ?? match[2]!).toLowerCase();
+    const amount = /^\d+$/.test(said) ? Number(said) : said.endsWith('hundred') ? 100 : NUMBER_WORDS[said]!;
+    if (amount > carry.credits) problems.push(`money: ${match[0].toLowerCase().trim()}`);
   }
   return [...new Set(problems)];
 }

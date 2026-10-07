@@ -24,6 +24,8 @@ import type {
   DialogExchange,
   DialogBuilding,
   DialogCall,
+  DialogCarry,
+  DialogDealing,
   DialogGuide,
   DialogHere,
   DialogLine,
@@ -108,7 +110,7 @@ export class DialogContextService {
     if (options.guide) segments.push({ id: 'place', text: this.renderPlace(npc, options.guide), shared: false });
     if (options.events?.length) segments.push({ id: 'events', text: this.renderEvents(options.events, timeMin), shared: false });
     if (options.people) segments.push({ id: 'people', text: this.renderPeople(options.people), shared: false });
-    segments.push({ id: 'turns', text: this.renderNow(npc, timeMin, options.here, options.task, options.call, options.addresses), shared: false });
+    segments.push({ id: 'turns', text: this.renderNow(npc, timeMin, options.here, options.task, options.call, options.addresses, options.carry), shared: false });
     return { npcId, ...(characterName ? { characterName: { ...characterName } } : {}), segments };
   }
 
@@ -374,7 +376,7 @@ export class DialogContextService {
     return parts.join(', ');
   }
 
-  private renderNow(npc: NPCInstance, timeMin: number, here: DialogHere | undefined, task?: DialogTask, call?: DialogCall, addresses?: DialogAddresses): string {
+  private renderNow(npc: NPCInstance, timeMin: number, here: DialogHere | undefined, task?: DialogTask, call?: DialogCall, addresses?: DialogAddresses, carry?: DialogCarry): string {
     const inside = addresses?.here;
     const behavior = this.sim.behaviorAt(npc.npcId, timeMin);
     const day = dayName(Math.floor(timeMin / 1440) % 7);
@@ -396,6 +398,7 @@ export class DialogContextService {
     const cast = this.questlines.some((runtime) => Object.values(runtime.cast).includes(npc.npcId));
     const ways = (addresses?.ways ?? []).filter((way) => way.what !== 'quest' || cast).map((way) => this.way(way));
     if (ways.length > 0) lines.push(prompt('context.md#ways', { ways: bullets(ways) }));
+    if (carry) lines.push(...renderCarry(carry, timeMin));
     return lines.join('\n');
   }
 
@@ -476,6 +479,38 @@ export class DialogContextService {
 }
 
 const bullets = (lines: string[]): string => lines.map((line) => `- ${line}`).join('\n');
+
+/**
+ * What the person has on them, as all they have: their credits and each
+ * thing they carry, a thing the player gave them with when; how their
+ * household stands for money; what passed between them and the player; and
+ * a sum they asked for and were not paid.
+ */
+function renderCarry(carry: DialogCarry, timeMin: number): string[] {
+  const credits = Math.max(0, Math.floor(carry.credits));
+  const items = [
+    credits > 0 ? prompt('context.md#carry-credits', { amount: credits }) : prompt('context.md#carry-credits-none'),
+    ...carry.items.map((item) => {
+      if (item.from !== 'stranger') return item.name;
+      return item.atMin === undefined
+        ? prompt('context.md#carry-from-earlier', { name: item.name })
+        : prompt('context.md#carry-from', { name: item.name, span: span(timeMin - item.atMin) });
+    }),
+  ];
+  const lines = [prompt('context.md#carry', { items: bullets(items) }), prompt(`context.md#carry-means-${carry.means}`)];
+  const dealings = (carry.dealings ?? []).map((dealing) => prompt('context.md#deal', { deal: dealt(dealing), span: span(timeMin - dealing.atMin) }));
+  if (dealings.length > 0) lines.push(prompt('context.md#carry-dealings', { dealings: dealings.join('; ') }));
+  if (carry.asked !== undefined && carry.asked > 0) lines.push(prompt('context.md#carry-asked', { amount: carry.asked }));
+  return lines;
+}
+
+/** One dealing from the person's side: "they gave you 10 credits", "you caught them lifting a pen from your pockets". */
+function dealt(dealing: DialogDealing): string {
+  const what = dealing.amount !== undefined && dealing.amount > 0
+    ? prompt('context.md#deal-credits', { amount: dealing.amount })
+    : dealing.name ?? prompt('context.md#deal-something');
+  return prompt(`context.md#deal-${dealing.what}`, { what });
+}
 
 /** A room kind or role as people say it: underscores are spaces. */
 const words = (kind: string): string => kind.replace(/_/g, ' ');

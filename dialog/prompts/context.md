@@ -388,3 +388,88 @@ While you were with them, you overheard them talking to other people. These are 
 ## overheard-note
 
 Overheard, not said to you: you were there when the stranger talked to {{who}}.
+
+## carry
+
+What you have on you right now, and nothing else:
+{{items}}
+
+## carry-credits
+
+{{amount}} credits in Bureau notes
+
+## carry-credits-none
+
+No money at all
+
+## carry-from
+
+{{name}}, which they gave you {{span}} ago
+
+## carry-from-earlier
+
+{{name}}, which they gave you earlier
+
+## carry-means-short
+
+Money is short in your household this week; every credit counts.
+
+## carry-means-getting-by
+
+You get by from one pay to the next.
+
+## carry-means-comfortable
+
+You are comfortable; a few credits are nothing to you.
+
+## carry-means-well-off
+
+You are well off and used to paying for things.
+
+## carry-dealings
+
+Between you and them so far: {{dealings}}.
+
+## carry-asked
+
+You asked them for {{amount}} credits and have not been paid.
+
+## deal
+
+{{deal}}, {{span}} ago
+
+## deal-gave-credits
+
+you gave them {{what}}
+
+## deal-got-credits
+
+they gave you {{what}}
+
+## deal-gave-thing
+
+you gave them {{what}}
+
+## deal-got-thing
+
+they gave you {{what}}
+
+## deal-lent
+
+you lent them {{what}}
+
+## deal-lifted
+
+you caught them lifting {{what}} from your pockets
+
+## deal-bribe-refused
+
+they offered you {{what}} to look the other way, and you would not have it
+
+## deal-credits
+
+{{amount}} credits
+
+## deal-something
+
+something

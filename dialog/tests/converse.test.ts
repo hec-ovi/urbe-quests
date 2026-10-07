@@ -11,6 +11,8 @@ import { CUES, stripCues, TAG } from '../../flow/cues.js';
 import type { LLMPort, StreamingLLMPort } from '../../ports/llm.js';
 import { Converse, type ReplyEvent } from '../Converse.js';
 import { cleanReply, ReplyCleaner } from '../ReplyCleaner.js';
+import { DialogContextService } from '../DialogContextService.js';
+import { loadFixtureWorld, StubSimulation } from '../../world/index.js';
 import type { DialogContext } from '../schema.js';
 
 const NAMES = ['Mara Voss', 'Mara'];
@@ -48,6 +50,12 @@ async function events(stream: AsyncIterable<ReplyEvent>): Promise<ReplyEvent[]> 
   for await (const event of stream) seen.push(event);
   return seen;
 }
+
+/** Every action tool, in the order every request carries them. */
+const TOOL_NAMES = [
+  'come_along', 'take_them_to', 'walk_to', 'stop', 'go_home', 'go_to_work', 'wait_here', 'sit', 'give_number', 'meet_them', 'give_item',
+  'take_item', 'give_credits', 'take_credits', 'ask_credits', 'sell_item', 'buy_item',
+];
 
 const spoken = (seen: ReplyEvent[]) => seen.flatMap((e) => (e.type === 'delta' ? [e.text] : [])).join('');
 
@@ -215,7 +223,7 @@ describe('Converse', () => {
     expect(system).toContain('decline in character, in words only, and call nothing');
     expect(sent!.messages[1]!.content).toMatch(/^The person in front of you says: "Where is the lift\?"/);
     // Every tool, the same each turn, so the start of the prompt stays cached; what may be done now is in the message.
-    expect(sent!.tools?.map((tool) => tool.function.name)).toEqual(['come_along', 'take_them_to', 'walk_to', 'stop', 'go_home', 'go_to_work', 'wait_here', 'sit', 'give_number', 'meet_them', 'give_item']);
+    expect(sent!.tools?.map((tool) => tool.function.name)).toEqual(TOOL_NAMES);
     const lead = sent!.tools!.find((tool) => tool.function.name === 'take_them_to')!.function;
     expect(lead.description).not.toContain('Noodle Saint');
     expect(lead.parameters).toMatchObject({ required: ['placeId'], properties: { placeId: { type: 'string' } } });
@@ -239,7 +247,7 @@ describe('Converse', () => {
       { type: 'offer', kind: 'follow' },
       { type: 'done', reply: 'Fine. Lead on.', offers: [{ kind: 'follow' }] },
     ]);
-    expect(requests[0]!.tools?.map((tool) => tool.function.name)).toEqual(['come_along', 'take_them_to', 'walk_to', 'stop', 'go_home', 'go_to_work', 'wait_here', 'sit', 'give_number', 'meet_them', 'give_item']);
+    expect(requests[0]!.tools?.map((tool) => tool.function.name)).toEqual(TOOL_NAMES);
     expect(requests[1]!.tools).toEqual(requests[0]!.tools);
     expect(requests[1]!.messages.slice(2)).toEqual([
       { role: 'assistant', content: '', tool_calls: [
@@ -317,7 +325,7 @@ describe('Converse', () => {
       walk: true, stop: false, home: true, work: true, wait: true, sit: true,
     };
     const seen = await events(new Converse(port).replyStream({ ...input, offers }));
-    expect(requests[0]!.tools?.map((tool) => tool.function.name)).toEqual(['come_along', 'take_them_to', 'walk_to', 'stop', 'go_home', 'go_to_work', 'wait_here', 'sit', 'give_number', 'meet_them', 'give_item']);
+    expect(requests[0]!.tools?.map((tool) => tool.function.name)).toEqual(TOOL_NAMES);
     expect(requests[0]!.messages[1]!.content).toContain('What you can do for them right now: come_along, take_them_to, walk_to, go_home, go_to_work, wait_here, sit.');
     expect(seen.filter((event) => event.type === 'offer')).toEqual([
       { type: 'offer', kind: 'sit' },
@@ -335,7 +343,7 @@ describe('Converse', () => {
     ]);
     const seen = await events(new Converse(port).replyStream({ ...input, offers: { contact: true, meet: { name: 'Static Cafe' } } }));
     const tools = requests[0]!.tools ?? [];
-    expect(tools.map((tool) => tool.function.name)).toEqual(['come_along', 'take_them_to', 'walk_to', 'stop', 'go_home', 'go_to_work', 'wait_here', 'sit', 'give_number', 'meet_them', 'give_item']);
+    expect(tools.map((tool) => tool.function.name)).toEqual(TOOL_NAMES);
     expect(requests[0]!.messages[1]!.content).toContain('Where they are now, for meet_them: Static Cafe.');
     expect(requests[0]!.messages[0]!.content).toContain('give them your number');
     expect(seen.filter((event) => event.type === 'offer')).toEqual([
@@ -366,12 +374,81 @@ describe('Converse', () => {
     ] };
     const seen = await events(new Converse(port).replyStream({ ...input, offers: { give } }));
     const tools = requests[0]!.tools ?? [];
-    expect(tools.map((tool) => tool.function.name)).toEqual(['come_along', 'take_them_to', 'walk_to', 'stop', 'go_home', 'go_to_work', 'wait_here', 'sit', 'give_number', 'meet_them', 'give_item']);
+    expect(tools.map((tool) => tool.function.name)).toEqual(TOOL_NAMES);
     expect(requests[0]!.messages[1]!.content).toContain('- card:staff:p9: Static Cafe staff card');
-    expect(tools.at(-1)!.function.parameters).toMatchObject({ properties: { itemId: { type: 'string' } } });
+    expect(tools.find((tool) => tool.function.name === 'give_item')!.function.parameters).toMatchObject({ properties: { itemId: { type: 'string' } } });
     expect(requests[0]!.messages[0]!.content).toContain('copy of one of your access cards');
     expect(seen.filter((event) => event.type === 'offer')).toEqual([
       { type: 'offer', kind: 'give', itemId: 'card:home:p404/floor:14/f14-home-7', name: 'Kessler Block 1407 key card, which opens apartment 1407' },
     ]);
+  });
+});
+
+describe('Converse with things and money on the table', () => {
+  const credits = { carried: 30, purse: 40 };
+
+  it('takes the credits held out when the person calls take_credits, and offers it the sum the line held out', async () => {
+    const { port, requests } = streamingPort([
+      { content: 'Thank you.' },
+      { tool_calls: [{ index: 0, id: 'a', function: { name: 'take_credits', arguments: '{"amount":10}' } }] },
+    ]);
+    const seen = await events(new Converse(port).replyStream({ ...input, line: "Here's 10 credits for your trouble.", offers: { credits } }));
+    expect(seen.filter((event) => event.type === 'offer')).toEqual([{ type: 'offer', kind: 'accept', amount: 10 }]);
+    expect(requests[0]!.messages[1]!.content).toContain('They hold out 10 credits to you.');
+    expect(requests[0]!.messages[1]!.content).toContain('What you can do for them right now: give_credits, take_credits, ask_credits.');
+  });
+
+  it('refuses a sum beyond what the person carries, answering the call as not theirs to make', async () => {
+    const { port, requests } = streamingPort(
+      [{ tool_calls: [{ index: 0, id: 'a', function: { name: 'give_credits', arguments: '{"amount":999}' } }] }],
+      [{ content: 'I do not have that kind of money.' }],
+    );
+    const seen = await events(new Converse(port).replyStream({ ...input, line: 'Can you lend me 999 credits?', offers: { credits } }));
+    expect(seen.filter((event) => event.type === 'offer')).toEqual([]);
+    expect(requests[1]!.messages.at(-1)).toEqual({ role: 'tool', tool_call_id: 'a', content: expect.stringContaining('not something you can do') });
+  });
+
+  it('makes every offer two calls in one reply make', async () => {
+    const { port } = streamingPort([
+      { content: 'Thanks. Here is something for the road.' },
+      { tool_calls: [{ index: 0, id: 'a', function: { name: 'take_item', arguments: '{"itemId":"own:flask"}' } }] },
+      { tool_calls: [{ index: 1, id: 'b', function: { name: 'give_credits', arguments: '{"amount":5}' } }] },
+    ]);
+    const offers = { credits, take: { items: [{ itemId: 'own:flask', name: 'a hip flask' }] } };
+    const seen = await events(new Converse(port).replyStream({ ...input, line: 'Here, take this flask.', offers }));
+    expect(seen.filter((event) => event.type === 'offer')).toEqual([
+      { type: 'offer', kind: 'take', itemId: 'own:flask', name: 'a hip flask' },
+      { type: 'offer', kind: 'pay', amount: 5 },
+    ]);
+  });
+
+  it('tells the person how to deal in things and money, the same every turn', async () => {
+    const { port, requests } = streamingPort([{ content: 'Hm.' }], [{ content: 'Hm.' }]);
+    await events(new Converse(port).replyStream({ ...input, offers: { follow: true } }));
+    await events(new Converse(port).replyStream({ ...input, offers: { credits: { carried: 3, purse: 40 }, sell: { items: [{ itemId: 'coffee', name: 'cup of coffee', price: 3 }] } } }));
+    const [first, second] = requests.map((request) => request.messages[0]!.content as string);
+    expect(first).toContain('Money here is credits, paid in Bureau notes.');
+    expect(first!.indexOf('Their asking is their consent')).toBeLessThan(first!.indexOf('Money here is credits'));
+    expect(second).toBe(first);
+    expect(requests[1]!.tools).toEqual(requests[0]!.tools);
+  });
+
+  it('keeps the system prompt the same up to the talk so far, whatever the person carries this turn', async () => {
+    const { world, types } = loadFixtureWorld('neon-bay');
+    const sim = new StubSimulation({ seed: 'carry-test', world, types });
+    const person = sim.getNPCVendor({ type: 'cafe_barista', timeMin: 1440 + 600 });
+    const service = new DialogContextService({ world, types, sim, llm: { complete: async () => '' } });
+    const { port, requests } = streamingPort([{ content: 'Hm.' }], [{ content: 'Hm.' }]);
+    const carry = (credits: number) => ({ credits, means: 'getting-by' as const, items: [{ name: 'a phone' }] });
+    for (const credits of [23, 0]) {
+      const context = service.contextFor(person.npcId, 1440 + 600, { carry: carry(credits) });
+      await events(new Converse(port).replyStream({ context, name: 'Mara Voss', line: 'Hello.', offers: { credits: { carried: credits, purse: 40 } } }));
+    }
+    const [first, second] = requests.map((request) => request.messages[0]!.content as string);
+    const prefix = (text: string) => text.slice(0, text.indexOf('It is Tuesday'));
+    expect(prefix(first!).length).toBeGreaterThan(1000);
+    expect(prefix(second!)).toBe(prefix(first!));
+    expect(first).toContain('- 23 credits in Bureau notes');
+    expect(second).toContain('- No money at all');
   });
 });

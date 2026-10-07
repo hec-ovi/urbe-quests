@@ -117,6 +117,51 @@ export interface ContextOptions {
    * adds the `overheard` segment, marked as other people's words.
    */
   overheard?: DialogOverheard[];
+  /**
+   * What the person has on them now, as the host keeps it: their credits,
+   * how their household stands for money, the things they carry and what
+   * passed between them and the player. The turns segment says it, as all
+   * they have on them.
+   */
+  carry?: DialogCarry;
+}
+
+/** How a household stands for money this week. */
+export type DialogMeans = 'short' | 'getting-by' | 'comfortable' | 'well-off';
+
+/** What a person has on them now, by the host's account. */
+export interface DialogCarry {
+  /** Whole credits on them. */
+  credits: number;
+  means: DialogMeans;
+  /** The things they carry besides their access cards (the address segment tells those), in plain words: "a phone", "a photo of Rian". */
+  items: DialogCarried[];
+  /** What passed between them and the player, oldest first. */
+  dealings?: DialogDealing[];
+  /** A sum they asked the player for and have not been paid. */
+  asked?: number;
+}
+
+/** One thing a person carries: `from: 'stranger'` when the player gave it to them, at `atMin`. */
+export interface DialogCarried {
+  name: string;
+  from?: 'stranger';
+  atMin?: number;
+}
+
+/**
+ * One thing that passed between the person and the player, told from the
+ * person's side: `gave-credits` / `gave-thing` they gave the player,
+ * `got-credits` / `got-thing` they got from the player, `lent` they lent the
+ * player, `lifted` they caught the player lifting from their pockets, and
+ * `bribe-refused` they refused the player's money to look the other way.
+ * `amount` for credits, `name` for a thing.
+ */
+export interface DialogDealing {
+  what: 'gave-credits' | 'got-credits' | 'gave-thing' | 'got-thing' | 'lifted' | 'bribe-refused' | 'lent';
+  amount?: number;
+  name?: string;
+  atMin: number;
 }
 
 /** One exchange the person overheard between the player and somebody else. */
