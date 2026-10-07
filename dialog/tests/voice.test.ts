@@ -5,8 +5,9 @@
  * history (the same every time, kept in their memory) and the rule to speak
  * from it alone, and the checks on replies catch the invented incidents,
  * family and names a model gave in play. Ten lines go to five people; with
- * LIVE_TALK_URL set (an OpenAI-compatible base URL), the same lines go to that
- * model and every reply is checked against the prompt it answered.
+ * LIVE_TALK_URL set (an OpenAI-compatible base URL, or `host` for port 8080 on
+ * the machine the container runs on), the same lines go to that model and
+ * every reply is checked against the prompt it answered.
  */
 
 import { readFileSync } from 'node:fs';
@@ -70,6 +71,19 @@ function rendered(request: ChatRequest): string {
     ...(request.tools ?? []).map((tool) => JSON.stringify(tool)),
     ...request.messages.map((message) => (typeof message.content === 'string' ? message.content : '')),
   ].join('\n');
+}
+
+/**
+ * The model server's base URL: `LIVE_TALK_URL` as given, or with `host` the
+ * machine this container runs on, by its default gateway, at port 8080 (a
+ * container may not resolve host.docker.internal).
+ */
+function liveUrl(given: string): string {
+  if (given !== 'host') return given.replace(/\/+$/, '');
+  const route = readFileSync('/proc/net/route', 'utf8').split('\n').map((line) => line.trim().split(/\s+/)).find((fields) => fields[1] === '00000000');
+  const hex = route?.[2] ?? '0100007F';
+  const gateway = [6, 4, 2, 0].map((at) => parseInt(hex.slice(at, at + 2), 16)).join('.');
+  return `http://${gateway}:8080/v1`;
 }
 
 /** Asks `port` for each line, as a talk does, and hands each request and reply to `check`. */
@@ -160,6 +174,16 @@ describe('a person passes for a resident', () => {
     expect(groundingProblems('Someone crashed a car outside this morning.', context)).toEqual(['incident: crashed']);
     expect(voiceProblems('In this city, the neon never sleeps, choom.')).toEqual(['stock: neon', 'stock: in this city', 'stock: choom']);
     expect(voiceProblems('Are you a player? I am no NPC in your game.')).toEqual(['meta: npc', 'meta: game', 'meta: player']);
+    // Sleeping somewhere is no crash, and a curly apostrophe is no name.
+    expect(groundingProblems('You looking for a place to crash? I\u2019m not running a hostel. I\u2019ve got one room.', context)).toEqual([]);
+    expect(groundingProblems('Nothing much. You looking for something, or just killing time? Fire away.', context)).toEqual([]);
+    expect(groundingProblems('They killed a man by the depot.', context)).toEqual(['incident: killed']);
+    expect(groundingProblems('Ive got a shift, and then Im off at six.', context)).toEqual([]);
+    // Living alone with somebody at home contradicts the household.
+    const shared = service.contextFor(everyone[3]!.npcId, TUE_10).segments.map((segment) => segment.text).join('\n\n');
+    expect(groundingProblems('Ada and Rian are home. I have been living alone since I was nineteen, mostly.', shared)).toEqual(['household: lives alone']);
+    expect(groundingProblems('I live alone. Since I was nineteen.', context)).toEqual([]);
+    expect(groundingProblems('Just my roommate and me.', context)).toEqual(['family: my roommate']);
     // A grounded reply passes.
     const grounded = `I sell what I can and I sleep when I can. ${street!.name.given} is the name.`;
     expect(groundingProblems(grounded, context)).toEqual([]);
@@ -182,7 +206,7 @@ describe('a person passes for a resident', () => {
   });
 
   it.skipIf(!process.env.LIVE_TALK_URL)('keeps a live model to the person\'s own life and voice for ten lines to five people', { timeout: 900_000 }, async () => {
-    const base = process.env.LIVE_TALK_URL!.replace(/\/+$/, '');
+    const base = liveUrl(process.env.LIVE_TALK_URL!);
     const port: StreamingLLMPort = {
       complete: async () => '',
       async *stream(request, options) {

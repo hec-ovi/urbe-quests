@@ -105,7 +105,8 @@ export function lifeHistory(npc: NPCInstance, input: LifeInput): string {
   const cares = [
     ...(partner ? items('care-partner', { name: partner.name.given }) : []),
     ...(child ? items('care-child', { name: child.name.given }) : []),
-    ...some(items('cares'), id, 'cares', partner || child ? 1 : 2),
+    // Somebody who lives with others does not long to be left alone at home.
+    ...some(items('cares').filter((care) => npc.family.length === 0 || care !== 'being left alone'), id, 'cares', partner || child ? 1 : 2),
   ];
   lines.push(`What you care about: ${listed(cares)}.`);
 
