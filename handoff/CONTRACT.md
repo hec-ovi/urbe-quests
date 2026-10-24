@@ -63,3 +63,7 @@ The CLI writer emits the questlines file at the given path plus `objectives.json
 - Engine investigation v1.1 and v1.2, through its scene-request contracts.
 - Engine scenery 1.0, through its scene spec and capabilities contracts.
 - Engine mission-assets v1.0, through its create-request contract.
+
+### Timed authored replies (0.31.0)
+
+A talk's `dialogue` may include `timing: { seconds, fallback }`. Seconds must be finite and positive; fallback names a completing choice. The host owns elapsed time, pause behavior and the draining choice indicator, hides the fallback from explicit replies and calls `chooseDialogue` with its id on silence. A completing choice may name `nextStepId`, which must be one of that step's declared `next` destinations. It selects that edge; its conditions run after the normal step effects. Keep these edges unconditional unless the step's effects satisfy their conditions. With explicit destinations on every completing choice, an exclusive step may declare several unconditional edges. Existing definitions without these fields retain their behavior.

@@ -298,3 +298,60 @@ describe('authored dialogue validation', () => {
     expect(validateJson(def)).toBe(false);
   });
 });
+
+function timedDefinition(): QuestlineDefinition {
+  const def = definition(), step = def.steps[0]!;
+  step.branching = 'exclusive';
+  step.dialogue = {
+    opening: 'Will you publish the ledger?', timing: { seconds: 6, fallback: 'silence' },
+    choices: [
+      { id: 'yes', text: 'Publish it.', reply: 'Then we go on the record.', completesStep: true, nextStepId: 'publish' },
+      { id: 'silence', text: 'Stay silent.', reply: 'I will keep it hidden.', completesStep: true, nextStepId: 'conceal' },
+    ],
+  };
+  return def;
+}
+
+describe('timed authored choices', () => {
+  it('carries an independent timer through JSON and the runtime dialogue view', () => {
+    const def = timedDefinition();
+    const validate = new Ajv2020({ strict: true }).compile(questlineSchema);
+    expect(validate(def), JSON.stringify(validate.errors)).toBe(true);
+    const { runtime, npcId } = setup(def);
+    const d = runtime.dialogueFor('briefing', npcId, TUE_10)!;
+    expect(d.timing).toEqual({ seconds: 6, fallback: 'silence' });
+    d.timing!.seconds = 1;
+    expect(runtime.dialogueFor('briefing', npcId, TUE_10)!.timing!.seconds).toBe(6);
+  });
+
+  it.each([['yes', 'publish'], ['silence', 'conceal']])('commits %s to only %s and restores it', (choice, next) => {
+    const def = timedDefinition(), { runtime, npcId, sim } = setup(def);
+    expect(runtime.chooseDialogue('briefing', npcId, choice!, TUE_10)).toMatchObject({
+      accepted: true, advanceResult: { completedStepIds: ['briefing'], activatedStepIds: [next] },
+    });
+    expect(runtime.serialize().activeStepIds).toEqual(['other_lead', next]);
+    const restored = QuestlineRuntime.restore(def, { clerk: npcId }, sim, runtime.serialize());
+    expect(restored.serialize()).toEqual(runtime.serialize());
+    expect(restored.chooseDialogue('briefing', npcId, choice!, TUE_10)).toEqual({ accepted: false, reason: 'stale' });
+  });
+
+  it('evaluates the selected edge after normal completion effects', () => {
+    const def = timedDefinition();
+    def.steps[0]!.next[0]!.when = [{ kind: 'flagSet', flag: 'briefed' }];
+    const { runtime, npcId } = setup(def);
+    expect(runtime.chooseDialogue('briefing', npcId, 'yes', TUE_10)).toMatchObject({
+      accepted: true, advanceResult: { activatedStepIds: ['publish'] },
+    });
+  });
+
+  it.each(['negative', 'not-finite', 'missing-fallback', 'informational-fallback', 'unknown-edge', 'informational-edge'])('rejects %s', (kind) => {
+    const def = timedDefinition(), d = def.steps[0]!.dialogue!;
+    if (kind === 'negative') d.timing!.seconds = -1;
+    if (kind === 'not-finite') d.timing!.seconds = NaN;
+    if (kind === 'missing-fallback') d.timing!.fallback = 'missing';
+    if (kind === 'informational-fallback') { d.choices[1]!.completesStep = false; delete d.choices[1]!.nextStepId; }
+    if (kind === 'unknown-edge') d.choices[1]!.nextStepId = 'other_lead';
+    if (kind === 'informational-edge') d.choices[1]!.completesStep = false;
+    expect(() => new FlowValidator().validate(def)).toThrow();
+  });
+});

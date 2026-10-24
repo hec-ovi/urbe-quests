@@ -256,6 +256,7 @@ export class QuestlineRuntime {
       availability: this.stepAvailability(stepId, timeMin),
       ...(role.characterName !== undefined ? { characterName: { ...role.characterName } } : {}),
       opening: dialogue.opening,
+      ...(dialogue.timing !== undefined ? { timing: { ...dialogue.timing } } : {}),
       choices: dialogue.choices.map((choice) => ({ ...choice })),
     };
   }
@@ -273,7 +274,7 @@ export class QuestlineRuntime {
     if (!gate.available) return { accepted: false, reason: 'unavailable', availability: gate };
     if (!choice.completesStep) return { accepted: true, reply: choice.reply };
     const advanceResult: AdvanceResult = { completedStepIds: [], activatedStepIds: [] };
-    this.complete(step, timeMin, advanceResult);
+    this.complete(step, timeMin, advanceResult, choice.nextStepId);
     if (this.endingId !== undefined) advanceResult.endingId = this.endingId;
     return { accepted: true, reply: choice.reply, advanceResult };
   }
@@ -344,7 +345,7 @@ export class QuestlineRuntime {
     return { available: true };
   }
 
-  private complete(step: QuestStep, timeMin: number, result: AdvanceResult): void {
+  private complete(step: QuestStep, timeMin: number, result: AdvanceResult, nextStepId?: string): void {
     this.active.delete(step.stepId);
     this.completed.add(step.stepId);
     result.completedStepIds.push(step.stepId);
@@ -378,6 +379,7 @@ export class QuestlineRuntime {
       return;
     }
     for (const edge of step.next) {
+      if (nextStepId !== undefined && edge.toStepId !== nextStepId) continue;
       if (!this.evaluator.all(edge.when, timeMin)) continue;
       if (!this.completed.has(edge.toStepId) && !this.active.has(edge.toStepId)) {
         this.active.add(edge.toStepId);

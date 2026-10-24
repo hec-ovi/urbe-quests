@@ -56,7 +56,7 @@ export class FlowValidator {
         if (!stepIds.has(edge.toStepId)) fail(`step ${step.stepId}: edge to unknown step ${edge.toStepId}`);
         if (edge.toStepId === step.stepId) fail(`step ${step.stepId}: edge to itself`);
       }
-      if (step.branching === 'exclusive') {
+      if (step.branching === 'exclusive' && !step.dialogue?.choices.filter(c => c.completesStep).every(c => c.nextStepId !== undefined)) {
         const fallback = step.next.findIndex((edge) => edge.when.length === 0);
         if (fallback >= 0 && fallback !== step.next.length - 1) {
           fail(`step ${step.stepId}: unconditional exclusive edge shadows every edge after it`);
@@ -122,8 +122,10 @@ export class FlowValidator {
       }
       if (hasTag(choice.text)) fail(`step ${step.stepId}: the player's text in choice ${choice.id} holds a bracketed tag`);
       npcLine(choice.reply, `reply in choice ${choice.id}`);
+      if (choice.nextStepId !== undefined && (!choice.completesStep || !step.next.some(edge => edge.toStepId === choice.nextStepId))) fail(`step ${step.stepId}: choice ${choice.id} must select a declared outgoing edge`);
       if (typeof choice.completesStep !== 'boolean') fail(`step ${step.stepId}: dialogue choice has no completion decision`);
     }
+    if (dialogue.timing !== undefined && (!Number.isFinite(dialogue.timing.seconds) || dialogue.timing.seconds <= 0 || !dialogue.choices.some(c => c.id === dialogue.timing!.fallback && c.completesStep))) fail(`step ${step.stepId}: timing needs positive seconds and a completing fallback choice`);
     if (!dialogue.choices.some((choice) => choice.completesStep)) {
       fail(`step ${step.stepId}: dialogue has no completing choice`);
     }

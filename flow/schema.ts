@@ -224,11 +224,15 @@ export interface QuestStep {
 }
 
 export interface QuestStepDialogue {
+  /** A host may choose this hidden choice after seconds of game time. */
+  timing?: { seconds: number; fallback: string };
   opening: string;
   choices: QuestDialogueChoice[];
 }
 
 export interface QuestDialogueChoice {
+  /** Select one of this step's declared outgoing edges on completion. */
+  nextStepId?: string;
   id: string;
   /** The player's spoken response, shown on a selectable button. */
   text: string;

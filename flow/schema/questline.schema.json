@@ -397,6 +397,10 @@
       "additionalProperties": false,
       "required": ["opening", "choices"],
       "properties": {
+        "timing": {
+          "type": "object", "additionalProperties": false, "required": ["seconds", "fallback"],
+          "properties": { "seconds": { "type": "number", "exclusiveMinimum": 0 }, "fallback": { "$ref": "#/$defs/id" } }
+        },
         "opening": { "$ref": "#/$defs/text" },
         "choices": {
           "type": "array",
@@ -410,7 +414,8 @@
               "id": { "$ref": "#/$defs/id" },
               "text": { "$ref": "#/$defs/text" },
               "reply": { "$ref": "#/$defs/text" },
-              "completesStep": { "type": "boolean" }
+              "completesStep": { "type": "boolean" },
+              "nextStepId": { "$ref": "#/$defs/id" }
             }
           }
         }
